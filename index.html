@@ -41,13 +41,41 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 body:not(.admin) .adm{display:none!important}
 
-/* intro */
-#intro{position:fixed;inset:0;z-index:100;display:grid;place-items:center;pointer-events:none}
-#intro .half{position:absolute;top:0;bottom:0;width:50.5%;background:var(--pattern),linear-gradient(90deg,#2a0b10,#5a1624);transition:transform 1.3s var(--ease) .9s}
-#intro .l{left:0;border-right:2px solid var(--gold)} #intro .r{right:0;border-left:2px solid var(--gold)}
-#intro .crest{position:relative;text-align:center;transition:opacity .5s .8s,transform .8s var(--ease) .6s;padding:0 16px}
-#intro.open .l{transform:translateX(-101%)} #intro.open .r{transform:translateX(101%)}
-#intro.open .crest{opacity:0;transform:scale(1.15)}
+/* kad undangan */
+#invite{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse 70% 60% at 50% 40%,rgba(244,213,141,.16),transparent 70%),var(--pattern),radial-gradient(1100px 650px at 85% -10%,#6b1a2a,transparent 60%),#1A0709;perspective:1800px;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+#invite.gone{opacity:0;transform:scale(1.06);pointer-events:none}
+.inv{position:relative;width:min(400px,86vw,62vh);aspect-ratio:5/7;display:block;padding:0;border-radius:14px;transform-style:preserve-3d;animation:invFloat 5s ease-in-out infinite;filter:drop-shadow(0 30px 50px rgba(0,0,0,.55))}
+@keyframes invFloat{50%{transform:translateY(-10px) rotateX(2deg)}}
+#invite.open .inv{animation:none}
+.inv .paper{position:absolute;inset:0;border-radius:14px;background:radial-gradient(circle at 50% 30%,#fffaf0,#f6e8cc);box-shadow:inset 0 0 0 8px #f6e8cc,inset 0 0 0 9px var(--gold3),inset 0 0 0 13px #f6e8cc,inset 0 0 0 14px var(--gold3);color:#4A1520;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12% 11%;gap:2px;transform:scale(.94);filter:brightness(.55);transition:transform 1s var(--ease) .55s,filter 1s var(--ease) .55s}
+#invite.open .paper{transform:none;filter:none}
+.paper .s1{font:600 10.5px "Plus Jakarta Sans";letter-spacing:.22em;color:var(--gold3)}
+.paper .s2{font:italic 600 clamp(20px,5.2vw,26px)/1.1 var(--af);margin-top:10px}
+.paper .s3{font:700 clamp(30px,8vw,42px)/1 var(--hf);letter-spacing:.06em;background:linear-gradient(100deg,#7a4f12,#b8892f 40%,#7a4f12);-webkit-background-clip:text;background-clip:text;color:transparent}
+.paper .s4{font:italic 500 clamp(14px,3.6vw,17px)/1.3 var(--af);color:#6b3a2a;margin-top:6px}
+.paper .orn{width:60%;height:12px;margin:12px 0;background:radial-gradient(circle,var(--gold3) 2.5px,transparent 3px) center/12px 12px no-repeat,linear-gradient(var(--gold3),var(--gold3)) center/100% 1px no-repeat}
+.paper .s5{font:700 clamp(12px,3.2vw,14px)/1.5 "Plus Jakarta Sans";color:#4A1520}
+.paper .s6{font:600 11px "Plus Jakarta Sans";letter-spacing:.2em;color:var(--gold3);margin-top:12px}
+.door{position:absolute;top:0;bottom:0;width:50%;background:var(--pattern),linear-gradient(160deg,#6b1a2a,#3a0d18 60%,#2a0b10);box-shadow:inset 0 0 0 6px rgba(26,7,9,.6),inset 0 0 0 7px rgba(var(--gold-rgb),.7);transition:transform 1.25s cubic-bezier(.6,.05,.25,1) .3s,filter 1.25s .3s;overflow:hidden}
+.door.l{left:0;border-radius:14px 0 0 14px;transform-origin:left center;border-right:1px solid var(--gold)}
+.door.r{right:0;border-radius:0 14px 14px 0;transform-origin:right center;border-left:1px solid var(--gold)}
+.door::after{content:"";position:absolute;top:0;bottom:0;width:60%;left:-80%;background:linear-gradient(100deg,transparent,rgba(244,213,141,.18),transparent);transform:skewX(-18deg);animation:sheen 4.5s ease-in-out infinite}
+.door.r::after{animation-delay:.25s}
+@keyframes sheen{0%,55%{left:-80%}100%{left:140%}}
+#invite.open .door.l{transform:rotateY(-112deg);filter:brightness(.55)}
+#invite.open .door.r{transform:rotateY(112deg);filter:brightness(.55)}
+.cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none;transition:opacity .35s;color:var(--gold2);transform:translateZ(1px)}
+#invite.open .cover{opacity:0}
+.cover .k{font:700 12px "Plus Jakarta Sans";letter-spacing:.4em;color:var(--gold)}
+.cover .seal{width:104px;height:104px;margin:18px 0 14px;border-radius:50%;display:grid;place-items:center;background:var(--medal);color:var(--on-gold);font:700 34px var(--hf);box-shadow:0 0 0 6px rgba(26,7,9,.55),0 0 0 7px var(--gold),0 0 40px rgba(var(--gold-rgb),.55);overflow:hidden;transition:transform .45s var(--ease)}
+.cover .seal img{width:100%;height:100%;object-fit:contain;background:#fff}
+#invite.open .seal{transform:scale(1.35)}
+.cover .t{font:700 clamp(30px,8vw,40px)/1 var(--hf);letter-spacing:.08em}
+.cover .y{font:600 italic 20px var(--af);color:var(--cream)}
+.cover .hint{position:absolute;bottom:9%;display:flex;gap:10px;align-items:center;font:600 12.5px "Plus Jakarta Sans";color:var(--cream);letter-spacing:.06em}
+.cover .hint i{width:10px;height:10px;border-radius:50%;background:var(--gold2);animation:pulseG 1.6s infinite}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(var(--gold2-rgb),.7)}80%,100%{box-shadow:0 0 0 12px rgba(var(--gold2-rgb),0)}}
+.inv:focus-visible{outline:3px solid var(--gold2);outline-offset:6px}
 .mono{width:96px;height:96px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--gold);box-shadow:0 0 0 6px rgba(var(--gold-rgb),.12),0 0 40px rgba(var(--gold-rgb),.35);font:700 34px var(--hf);color:var(--gold2);overflow:hidden;background:var(--navy)}
 .mono img{width:100%;height:100%;object-fit:contain}
 
@@ -329,7 +357,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   .ms{grid-template-columns:1fr auto;gap:8px 12px}.ms-aw{grid-column:1/-1;order:3}.ms-kpi .n{font-size:26px}
   #stage .bar select{max-width:100%}
 }
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.anim .rise,#stage .name .w>span{opacity:1;transform:none;filter:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}#invite.open .door{opacity:0}.anim .rise,#stage .name .w>span{opacity:1;transform:none;filter:none}}
 </style>
 </head>
 <body>
@@ -365,11 +393,28 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
 
 <canvas id="dust" aria-hidden="true"></canvas>
 
-<div id="intro" aria-hidden="true">
-  <div class="half l"></div><div class="half r"></div>
-  <div class="crest"><div class="mono js-logo">SB</div>
-    <div class="hf gold-text" style="font-size:clamp(26px,5vw,48px);font-weight:700">SRI BITARA</div>
-    <div class="serif-i" style="color:var(--cream);font-size:20px">Majlis Anugerah · SK Bandar Tawau 2026</div></div>
+<div id="invite">
+  <button class="inv" id="invCard" aria-label="Buka kad undangan Majlis Anugerah Sri Bitara 2026">
+    <span class="paper" aria-hidden="true">
+      <span class="s1">DENGAN SEGALA HORMATNYA, ANDA DIJEMPUT KE</span>
+      <span class="s2">Majlis Anugerah</span>
+      <span class="s3">SRI BITARA</span>
+      <span class="s3" style="font-size:clamp(22px,5.5vw,28px)">2026</span>
+      <span class="s4" id="invTag"></span>
+      <span class="orn"></span>
+      <span class="s5" id="invDate"></span>
+      <span class="s5" id="invVenue" style="font-weight:600"></span>
+      <span class="s6">SK BANDAR TAWAU</span>
+    </span>
+    <span class="door l" aria-hidden="true"></span><span class="door r" aria-hidden="true"></span>
+    <span class="cover" aria-hidden="true">
+      <span class="k">KAD UNDANGAN</span>
+      <span class="seal js-logo">SB</span>
+      <span class="t gold-text">SRI BITARA</span>
+      <span class="y">2026</span>
+      <span class="hint"><i></i>Ketik kad untuk membuka</span>
+    </span>
+  </button>
 </div>
 
 <div class="app">
@@ -612,6 +657,7 @@ addEventListener('hashchange',()=>show(location.hash.slice(1)||'dashboard'));
 
 function render(fromPoll,nav){
   document.body.classList.toggle('admin',!!PIN);
+  if($('#invite'))fillInvite();
   $$('.js-logo').forEach(el=>{const u=logoURL();el.innerHTML=u?`<img src="${esc(u)}" alt="Logo sekolah">`:'SB'});
   if(VIEW==='dashboard')renderDash(nav);
   if(VIEW==='anugerah')renderAw();
@@ -884,7 +930,7 @@ function renderSet(){
       <label class="f" style="grid-column:1/-1">Lokasi<input class="fi" id="sLokasi" value="${esc(s.lokasi)}"></label>
     </div>
     <div class="set-row" style="margin-top:12px"><span><b>Papar nama penerima kepada umum</b><br><small class="muted">Jika DIMATIKAN, orang awam hanya nampak bilangan penerima. Nama sentiasa kelihatan kepada admin.</small></span><label class="sw"><input type="checkbox" id="sShow" ${s.showNames?'checked':''} aria-label="Papar nama penerima kepada umum"><span></span></label></div>
-    <div class="set-row"><span><b>Logo sekolah</b><br><small class="muted">PNG/JPG, dipaparkan di menu, intro & Mod Pentas.</small></span><span style="display:flex;gap:8px;align-items:center"><span class="mono js-logo" style="width:46px;height:46px;font-size:16px;margin:0">${logoURL()?`<img src="${esc(logoURL())}" alt="Logo">`:'SB'}</span><label class="btn ghost sm" style="cursor:pointer"><svg class="i"><use href="#i-up"/></svg>Muat naik<input type="file" accept="image/*" id="sLogo" class="sr"></label></span></div>
+    <div class="set-row"><span><b>Logo sekolah</b><br><small class="muted">PNG/JPG, dipaparkan di kad undangan, menu & Mod Pentas.</small></span><span style="display:flex;gap:8px;align-items:center"><span class="mono js-logo" style="width:46px;height:46px;font-size:16px;margin:0">${logoURL()?`<img src="${esc(logoURL())}" alt="Logo">`:'SB'}</span><label class="btn ghost sm" style="cursor:pointer"><svg class="i"><use href="#i-up"/></svg>Muat naik<input type="file" accept="image/*" id="sLogo" class="sr"></label></span></div>
     <button class="btn" id="sSave" style="margin-top:14px"><svg class="i"><use href="#i-check"/></svg>Simpan</button>
   </div>
   <div class="setp card ${SETTAB==='import'?'on':''}" data-p="import">
@@ -1074,9 +1120,26 @@ function dust(t){if(!document.hidden){dx.clearRect(0,0,du.width,du.height);dx.fi
 sizeDust();addEventListener('resize',sizeDust);if(!RM)requestAnimationFrame(dust);
 
 /* ---------- mula ---------- */
-const intro=$('#intro');
-if(RM||store.get('intro',false,sessionStorage))intro.remove();
-else{store.set('intro',true,sessionStorage);requestAnimationFrame(()=>requestAnimationFrame(()=>intro.classList.add('open')));setTimeout(()=>intro.remove(),2600)}
+// kad undangan: shown on every load; the app stays inert until the card is tapped
+function fillInvite(){
+  const s=D.settings,d=new Date(s.tarikh+'T'+(s.masa||'07:30'));
+  $('#invTag').textContent=s.tagline;
+  $('#invDate').textContent=isNaN(d)?'':d.toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+s.masa;
+  $('#invVenue').textContent=s.lokasi;
+}
+let invT;
+function enterApp(){
+  clearTimeout(invT);const inv=$('#invite');if(!inv||inv.classList.contains('gone'))return;
+  inv.classList.add('gone');$('.app').inert=false;show(VIEW);
+  setTimeout(()=>inv.remove(),RM?0:700);
+}
+$('.app').inert=true;
+$('#invCard').focus();
+$('#invCard').onclick=()=>{
+  const inv=$('#invite');
+  if(inv.classList.contains('open'))return enterApp(); // second tap skips the reveal
+  fillInvite();inv.classList.add('open');invT=setTimeout(enterApp,RM?600:2900);
+};
 {const c=store.get('cache',null);if(c&&!DEMO)setData(c)}
 show(location.hash.slice(1)||'dashboard');
 refresh();

@@ -29,7 +29,19 @@ def page_for(ctx, url):
     pg.on('console', lambda m: m.type == 'error' and 'drive.google.com' not in m.text and 'ERR_' not in m.text and errors.append(m.text))
     pg.on('dialog', lambda d: d.accept())
     pg.goto(url)
-    pg.wait_for_timeout(2800)  # intro curtain
+    # kad undangan: app is locked until the card is tapped, on every load
+    expect(pg.locator('#invCard')).to_be_visible()
+    pg.wait_for_timeout(400)
+    assert pg.evaluate("document.querySelector('.app').inert"), 'app locked behind invitation'
+    if SHOTS and not getattr(page_for, 'shot', False):
+        page_for.shot = True
+        pg.screenshot(path=str(SHOTS / 'invite-closed.png'))
+        pg.click('#invCard', force=True); pg.wait_for_timeout(1700)
+        pg.screenshot(path=str(SHOTS / 'invite-open.png'))
+    else:
+        pg.click('#invCard', force=True)
+    pg.wait_for_selector('#invite', state='detached', timeout=6000)
+    assert not pg.evaluate("document.querySelector('.app').inert")
     return pg
 
 
