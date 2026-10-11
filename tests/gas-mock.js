@@ -77,7 +77,7 @@ function makeGAS({ sharingBlocked = false } = {}) {
     Logger: { log: () => {} }
   };
   const code = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8')
-    .replace("const ADMIN_PIN = 'TUKAR_PIN_INI';", `const ADMIN_PIN = '${TEST_PIN}';`);
+    .replace(/const ADMIN_PIN = '[^']*';/, `const ADMIN_PIN = '${TEST_PIN}';`);
   vm.createContext(ctx);
   vm.runInContext(code, ctx);
   const get = params => JSON.parse(ctx.doGet({ parameter: params || {} }).getContent());

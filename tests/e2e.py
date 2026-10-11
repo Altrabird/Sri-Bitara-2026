@@ -6,6 +6,7 @@ from playwright.sync_api import sync_playwright, expect
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 URL = (ROOT / 'index.html').as_uri()
+DEMO_URL = URL + '?api=demo'
 XLSX = sys.argv[1] if len(sys.argv) > 1 else None
 SHOTS = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else None
 PORT = 8787
@@ -39,8 +40,8 @@ def shot(pg, name):
 
 def unlock(pg, pin):
     pg.click('.nav[data-v=tetapan]')
-    pg.locator('#pin input').first.click()
-    pg.keyboard.type(pin)
+    pg.fill('#pinIn', pin)
+    pg.press('#pinIn', 'Enter')
     expect(pg.locator('#admin')).to_be_visible(timeout=8000)
 
 
@@ -68,7 +69,7 @@ with sync_playwright() as p:
 
     # ---------- A: demo mode ----------
     ctx = b.new_context(viewport={'width': 1440, 'height': 900})
-    pg = page_for(ctx, URL)
+    pg = page_for(ctx, DEMO_URL)
     assert 'Mod demo' in pg.inner_text('#sync')
     assert pg.evaluate('D.anugerah.length') == 23
     common_flow(pg, 'demo')
@@ -145,7 +146,7 @@ with sync_playwright() as p:
 
     # mobile layout check
     ctx = b.new_context(viewport={'width': 390, 'height': 844})
-    pg = page_for(ctx, URL)
+    pg = page_for(ctx, DEMO_URL)
     shot(pg, 'mobile-dashboard')
     assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth'), 'no horizontal scroll'
     for v in ['anugerah', 'ajk', 'tentatif', 'galeri', 'tetapan']:
@@ -164,10 +165,10 @@ with sync_playwright() as p:
         assert pg.evaluate('D.anugerah.length') == 0
         # wrong PIN
         pg.click('.nav[data-v=tetapan]')
-        pg.locator('#pin input').first.click(); pg.keyboard.type('111111')
+        pg.fill('#pinIn', '111111'); pg.press('#pinIn', 'Enter')
         expect(pg.locator('#pinMsg')).to_have_text('PIN salah', timeout=8000)
         pg.wait_for_timeout(600)
-        pg.locator('#pin input').first.click(); pg.keyboard.type('246810')
+        pg.fill('#pinIn', '246810'); pg.press('#pinIn', 'Enter')
         expect(pg.locator('#admin')).to_be_visible(timeout=8000)
         pg.wait_for_function('D.anugerah.length===23 && D.ajk.length===23', timeout=15000)  # seeded via confirm()
         if XLSX:

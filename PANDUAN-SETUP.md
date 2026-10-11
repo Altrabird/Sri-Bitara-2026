@@ -10,7 +10,7 @@ Ikut langkah 1 hingga 3 sekali sahaja supaya semua telefon dan LCD berkongsi dat
 
 1. Buka **https://script.google.com**, kemudian klik **Projek baharu**.
 2. Padam kod contoh. Salin **semua** isi fail `Code.gs` dan tampal.
-3. Di baris atas, tukar `TUKAR_PIN_INI` kepada **PIN admin 6 digit** anda, contohnya `const ADMIN_PIN = '169298';`
+3. Di baris atas, tukar `TUKAR_PIN_INI` kepada **PIN admin** anda (sekurang-kurangnya 4 aksara, nombor atau huruf; huruf besar/kecil dibezakan)
    > PIN ini hanya ada dalam skrip Google anda. Jangan tampal PIN sebenar ke GitHub.
 4. Klik **Simpan**. Pilih fungsi **`setup`** di menu atas, kemudian klik **Jalankan** dan benarkan akses (*Review permissions → Allow*).
    Google Sheet **"Data Majlis Sri Bitara 2026"** dan folder **"Galeri Sri Bitara 2026"** akan dicipta dalam Drive anda.
@@ -35,7 +35,7 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 
 ## 3. Log masuk admin kali pertama
 
-1. Buka aplikasi dan pergi ke **Tetapan**. Masukkan PIN 6 digit.
+1. Buka aplikasi dan pergi ke **Tetapan**. Masukkan PIN admin.
 2. Aplikasi akan bertanya sama ada mahu mengisi **data permulaan**. Pilih **OK**. Ini mengisi 23 kategori anugerah, 23 AJK, tentatif draf dan senarai persiapan.
 3. Di **Tetapan → Maklumat Majlis**, sahkan tarikh, masa dan lokasi, muat naik logo sekolah, kemudian klik **Simpan**.
 

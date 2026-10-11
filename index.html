@@ -215,7 +215,8 @@ mark{background:rgba(var(--gold-rgb),.35);color:inherit;border-radius:3px}
 /* forms & tetapan */
 .gate{max-width:420px;margin:6vh auto;text-align:center}
 .pin{display:flex;gap:8px;justify-content:center;margin:20px 0}
-.pin input{width:48px;height:58px;text-align:center;font:700 26px var(--hf);color:var(--gold2);background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.pin{align-items:center}
+.pin input{width:220px;height:58px;text-align:center;letter-spacing:.3em;font:700 26px var(--hf);color:var(--gold2);background:var(--panel);border:1px solid var(--line);border-radius:10px}
 .pin input:focus{border-color:var(--gold);outline:none;box-shadow:0 0 0 3px rgba(var(--gold-rgb),.2)}
 .shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
@@ -396,8 +397,8 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
       <div class="card gate" id="gate">
         <div class="mono" style="width:70px;height:70px"><svg class="i" style="width:30px;height:30px"><use href="#i-lock"/></svg></div>
         <h3 style="font-size:20px">KHAS UNTUK ADMIN</h3>
-        <p class="muted" style="font-size:13px">Masukkan PIN admin 6 digit<span id="demoPin"></span></p>
-        <form class="pin" id="pin" autocomplete="off"></form>
+        <p class="muted" style="font-size:13px">Masukkan PIN admin<span id="demoPin"></span></p>
+        <form class="pin" id="pin" autocomplete="off"><input id="pinIn" type="password" maxlength="32" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="PIN admin"><button class="btn" style="min-height:58px">Buka</button></form>
         <p id="pinMsg" style="color:var(--bad);font-size:13px;min-height:20px"></p>
       </div>
       <div id="admin" style="display:none"></div>
@@ -431,7 +432,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
 
 <script>
 /* ================= KONFIGURASI ================= */
-const API_URL = ''; // ← tampal URL Web App Google Apps Script (.../exec) di sini selepas deploy Code.gs
+const API_URL = 'https://script.google.com/macros/s/AKfycbwh54z1yrC5Z5KKIleEUGjMedFaNQ0Bt6yL5-tmx0_Qq8_voqOa1ZHZl0w0mPHVwfU5Jg/exec'; // ← tampal URL Web App Google Apps Script (.../exec) di sini selepas deploy Code.gs
 /* =============================================== */
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -439,7 +440,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const store={get(k,d,s=localStorage){try{return JSON.parse(s.getItem('sbt.'+k))??d}catch{return d}},set(k,v,s=localStorage){try{s.setItem('sbt.'+k,JSON.stringify(v))}catch{}},del(k,s=localStorage){try{s.removeItem('sbt.'+k)}catch{}}};
-const API=(()=>{const q=new URLSearchParams(location.search).get('api');if(q!==null)q?store.set('api',q):store.del('api');return store.get('api','')||API_URL})();
+const API=(()=>{const q=new URLSearchParams(location.search).get('api');if(q!==null)q?store.set('api',q):store.del('api');const v=store.get('api','')||API_URL;return v==='demo'?'':v})(); // ?api=demo forces demo mode, ?api= resets
 const DEMO=!API, DEMO_PIN='123456';
 const KLS=['INOVATIF','INTELEK','KREATIF','KRITIS','PATRIOTIK'];
 const CAT={K:'Kurikulum',H:'Hal Ehwal Murid',KO:'Kokurikulum'};
@@ -573,7 +574,7 @@ function show(v){
   $('#vt').textContent=TITLES[v][0];$('#vs').textContent=v==='dashboard'?D.settings.nama:TITLES[v][1];
   render(false,true);
   setTimeout(()=>$('#v-'+v)?.classList.remove('anim'),1400);
-  if(v==='tetapan'&&!PIN)setTimeout(()=>$('#pin input')?.focus(),250);
+  if(v==='tetapan'&&!PIN)setTimeout(()=>$('#pinIn')?.focus(),250);
 }
 $$('.nav').forEach(b=>b.onclick=()=>go(b.dataset.v));
 addEventListener('hashchange',()=>show(location.hash.slice(1)||'dashboard'));
@@ -741,14 +742,8 @@ $('#upl').addEventListener('drop',e=>uploadFiles(e.dataTransfer.files));
 $('#upl').onsubmit=e=>e.preventDefault();
 
 /* ---------- tetapan: PIN ---------- */
-$('#pin').innerHTML=Array.from({length:6},(_,i)=>`<input inputmode="numeric" maxlength="1" aria-label="Digit PIN ${i+1}">`).join('');
 if(DEMO)$('#demoPin').textContent=' (mod demo: '+DEMO_PIN+')';
-const pins=$$('#pin input');
-pins.forEach((p,i)=>{
-  p.oninput=()=>{p.value=p.value.replace(/\D/g,'').slice(-1);if(p.value&&pins[i+1])pins[i+1].focus();if(pins.every(x=>x.value))tryPin(pins.map(x=>x.value).join(''))};
-  p.onkeydown=e=>{if(e.key==='Backspace'&&!p.value&&pins[i-1])pins[i-1].focus()};
-  p.onpaste=e=>{const t=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(t.length===6){e.preventDefault();t.split('').forEach((c,k)=>pins[k].value=c);tryPin(t)}};
-});
+$('#pin').onsubmit=e=>{e.preventDefault();const v=$('#pinIn').value;if(v.length>=4)tryPin(v);else $('#pinMsg').textContent='PIN sekurang-kurangnya 4 aksara'};
 async function tryPin(pin){
   $('#pinMsg').textContent='Menyemak…';
   try{
@@ -756,12 +751,12 @@ async function tryPin(pin){
     PIN=pin;store.set('pin',pin,sessionStorage);INFO=j.info;setData(j.data);$('#pinMsg').textContent='';
     render();toast('Mod admin dibuka');
     if(!D.anugerah.length&&!D.ajk.length&&!D.tentatif.length&&confirm('Pangkalan data masih kosong. Isi dengan data permulaan (23 kategori anugerah, AJK, tentatif draf, senarai persiapan)?'))seedRemote();
-  }catch(e){$('#pinMsg').textContent=e.message;$('#pin').classList.add('shake');setTimeout(()=>{$('#pin').classList.remove('shake');pins.forEach(x=>x.value='');pins[0].focus()},420)}
+  }catch(e){$('#pinMsg').textContent=e.message;$('#pin').classList.add('shake');setTimeout(()=>{$('#pin').classList.remove('shake');$('#pinIn').value='';$('#pinIn').focus()},420)}
 }
 async function seedRemote(){
   try{for(const t of ['anugerah','ajk','tentatif','persiapan'])await call('saveTable',{table:t,rows:SEED[t]},{quiet:true});await call('saveSettings',{settings:SET_DEFAULT},{quiet:true});toast('Data permulaan dimuatkan')}catch(e){toast(e.message,true)}
 }
-function lockAdmin(){PIN='';INFO=null;store.del('pin',sessionStorage);pins.forEach(x=>x.value='');closeStage();refresh()}
+function lockAdmin(){PIN='';INFO=null;store.del('pin',sessionStorage);$('#pinIn').value='';closeStage();refresh()}
 
 /* ---------- tetapan: panel ---------- */
 let SETTAB=store.get('settab','majlis',sessionStorage), IMPORT=null;
