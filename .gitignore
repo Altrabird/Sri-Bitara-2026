@@ -1,0 +1,9 @@
+# student data (names, IC numbers, addresses) — never commit
+RUJUKAN/
+# design mocks contain real 2025 student names
+mockup/
+*.xlsx
+*.xls
+*.csv
+__pycache__/
+node_modules/
