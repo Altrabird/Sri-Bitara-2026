@@ -106,6 +106,29 @@ with sync_playwright() as p:
         assert pg.evaluate(f'D.penerima.find(p=>p.id==="{second}").status') == 'Diterima', 'auto-mark on advance'
         pg.keyboard.press('Escape')
         pg.keyboard.press('Escape')
+        # Senarai Murid: pupils with more than one award
+        pg.click('.nav[data-v=anugerah]')
+        pg.click('#awMode [data-m=murid]')
+        expect(pg.locator('#awList .ms').first).to_be_visible()
+        kpis = pg.eval_on_selector_all('#awList .ms-kpi .n', 'e=>e.map(x=>x.textContent)')
+        by_name = pg.evaluate("(()=>{const c={};D.penerima.forEach(p=>(c[p.nama]=c[p.nama]||new Set()).add(p.aid));const v=Object.values(c);return [v.length,v.filter(s=>s.size>1).length]})()")
+        print('senarai murid KPI:', kpis, '| by name only:', by_name)
+        assert [int(kpis[0]), int(kpis[1])] == by_name, 'one entry per pupil name'
+        assert int(kpis[1]) == pg.locator('#awList .ms').count() > 0
+        assert pg.evaluate("D.penerima.some(p=>D.anugerah.find(a=>a.id===p.aid).nama==='Anugerah Duta Sahsiah'&&p.kelas.startsWith('5 '))"), 'Duta Sahsiah Tahun 5 inferred'
+        assert all(int(x) >= 2 for x in pg.eval_on_selector_all('#awList .ms-c b', 'e=>e.map(x=>x.textContent)'))
+        pg.fill('#awQ', 'alex daniel')
+        row = pg.locator('#awList .ms').first
+        expect(row).to_contain_text('Bahasa Melayu')
+        expect(row).to_contain_text('Pendidikan Moral')
+        pg.fill('#awQ', '')
+        shot(pg, 'demo-senarai-murid')
+        pg.uncheck('#msMulti')
+        assert pg.locator('#awList .ms').count() == int(kpis[0])
+        pg.locator('#awList .b').first.click()
+        expect(pg.locator('#drawer')).to_have_class('drawer on')
+        pg.keyboard.press('Escape')
+        pg.click('#awMode [data-m=kad]')
     # tentatif live control
     pg.click('.nav[data-v=tentatif]')
     pg.locator('#tl .ti').nth(2).locator('button').click()
@@ -143,6 +166,9 @@ with sync_playwright() as p:
         pg.locator('#awGrid .aw').first.click()
         expect(pg.locator('#drawer .body')).to_contain_text('akan diumumkan')
         pg.keyboard.press('Escape')
+        pg.click('#awMode [data-m=murid]')
+        expect(pg.locator('#awList')).to_contain_text('akan diumumkan')
+        pg.click('#awMode [data-m=kad]')
     ctx.close()
 
     # mobile layout check

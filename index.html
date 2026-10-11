@@ -144,6 +144,19 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .aw .prog i{display:block;height:100%;background:var(--ok)}
 .aw::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(var(--gold2-rgb),.13),transparent);transform:skewX(-18deg);transition:left .7s var(--ease)}
 .aw:hover::after{left:130%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{padding:0 14px;min-height:44px;font-weight:700;font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.seg button.on{background:var(--gold-grad);color:var(--on-gold)}
+.ms-kpi{grid-template-columns:repeat(3,1fr);margin-bottom:16px}
+.ms-kpi .n{font:700 34px var(--hf)}.ms-kpi .l{color:var(--muted);font-size:12.5px}
+.ms{display:grid;grid-template-columns:minmax(200px,1.1fr) 2.6fr 74px;gap:14px;align-items:center;padding:12px 16px;border-radius:8px;background:var(--glass);border:1px solid var(--line);margin-bottom:8px}
+.ms.hi{border-color:rgba(var(--gold-rgb),.65);box-shadow:inset 3px 0 0 var(--gold)}
+.ms-n b{display:block;font-size:14px;line-height:1.35}.ms-n .cf{display:block;color:var(--warn);letter-spacing:0;font-weight:600}.ms-n small{color:var(--gold);font-size:11.5px;letter-spacing:.08em;font-weight:700}
+.ms-aw{display:flex;flex-wrap:wrap;gap:6px}
+.b{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:600;color:var(--cream);min-height:32px;text-align:left}
+.b:hover{border-color:var(--gold)}.b i{width:8px;height:8px;border-radius:50%;flex:none}.b.ok{border-color:rgba(63,182,139,.55)}
+.ms-c{text-align:center}.ms-c b{font:700 30px/1 var(--hf);color:var(--gold2);display:block}.ms-c small{font-size:10.5px;color:var(--muted)}
+.lg{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}.lg i{width:9px;height:9px;border-radius:50%}
 
 /* drawer */
 .scrim{position:fixed;inset:0;background:rgba(5,2,3,.6);backdrop-filter:blur(4px);z-index:40;opacity:0;pointer-events:none;transition:opacity .3s}
@@ -313,6 +326,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   .ti .acts{grid-column:1/-1;justify-content:flex-start}
   .bar{grid-template-columns:110px 1fr 40px}
   .rcp{grid-template-columns:1fr auto}.rcp .k{grid-column:1/-1}
+  .ms{grid-template-columns:1fr auto;gap:8px 12px}.ms-aw{grid-column:1/-1;order:3}.ms-kpi .n{font-size:26px}
   #stage .bar select{max-width:100%}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.anim .rise,#stage .name .w>span{opacity:1;transform:none;filter:none}}
@@ -382,10 +396,12 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <section class="view" id="v-dashboard"></section>
     <section class="view" id="v-anugerah">
       <div class="tools">
-        <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="awQ" placeholder="Cari anugerah…" aria-label="Cari anugerah"></label>
+        <div class="seg" id="awMode" role="group" aria-label="Mod paparan"><button data-m="kad"><svg class="i" style="width:16px"><use href="#i-dash"/></svg>Kategori</button><button data-m="murid"><svg class="i" style="width:16px"><use href="#i-users"/></svg>Senarai Murid</button></div>
+        <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="awQ" placeholder="Cari anugerah…" aria-label="Cari"></label>
         <div id="awCats" style="display:flex;gap:8px;flex-wrap:wrap"></div>
       </div>
       <div class="grid awards" id="awGrid"></div>
+      <div id="awList"></div>
     </section>
     <section class="view" id="v-ajk">
       <div class="tools"><label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ajkQ" placeholder="Cari nama guru / jawatankuasa…" aria-label="Cari AJK"></label></div>
@@ -456,7 +472,7 @@ const DEMO=!API, DEMO_PIN='123456';
 const KLS=['INOVATIF','INTELEK','KREATIF','KRITIS','PATRIOTIK'];
 const CAT={K:'Kurikulum',H:'Hal Ehwal Murid',KO:'Kokurikulum'};
 const CATIC={K:'i-book',H:'i-shield',KO:'i-trophy'};
-const COL={K:'var(--gold2)',H:'var(--gold)',KO:'var(--gold3)'};
+const COL={K:'#F4D58D',H:'#E8907A',KO:'#7FC8A9'};
 const GKAT=['Majlis','Persiapan','Photo Booth','Lain-lain'];
 
 /* ---------- data permulaan (tiada data murid) ---------- */
@@ -678,7 +694,58 @@ let awCat='ALL',DRAWER=null;
 $('#awCats').innerHTML=[['ALL','Semua'],...Object.entries(CAT)].map(([k,n])=>`<button class="chip ${k==='ALL'?'on':''}" data-c="${k}">${n}</button>`).join('');
 $$('#awCats .chip').forEach(b=>b.onclick=()=>{awCat=b.dataset.c;$$('#awCats .chip').forEach(x=>x.classList.toggle('on',x===b));renderAw()});
 $('#awQ').oninput=renderAw;
+let AWMODE=store.get('awmode','kad',sessionStorage),AWMULTI=true,AWKLS='',AWCONF=false;
+$$('#awMode button').forEach(b=>b.onclick=()=>{AWMODE=b.dataset.m;store.set('awmode',AWMODE,sessionStorage);$('#awQ').value='';renderAw()});
+// one entry per pupil name; if the source lists the same name under different classes we flag it instead of splitting
+function studentMap(){
+  const aw=new Map(D.anugerah.filter(a=>awCat==='ALL'||a.kat===awCat).map(a=>[a.id,a])),m=new Map();
+  (D.penerima||[]).forEach(p=>{
+    if(!aw.has(p.aid))return;
+    const s=m.get(p.nama)||{nama:p.nama,kc:{},items:[]};
+    if(p.kelas)s.kc[p.kelas]=(s.kc[p.kelas]||0)+1;
+    if(!s.items.some(i=>i.a.id===p.aid))s.items.push({a:aw.get(p.aid),p});
+    m.set(p.nama,s);
+  });
+  return [...m.values()].map(s=>{const ks=Object.entries(s.kc).sort((x,y)=>y[1]-x[1]);return {...s,kelas:ks[0]?.[0]||'',conf:ks.length>1?ks.map(k=>k[0]):null}});
+}
+function renderAwList(){
+  const box=$('#awList');
+  if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;return}
+  const all=studentMap(),multi=all.filter(s=>s.items.length>1);
+  const q=$('#awQ').value.trim().toUpperCase();
+  const classes=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort);
+  if(AWKLS&&!classes.includes(AWKLS))AWKLS='';
+  const nconf=all.filter(s=>s.conf).length;if(!nconf)AWCONF=false;
+  const list=(AWMULTI?multi:all).filter(s=>(!AWKLS||s.kelas===AWKLS||s.conf?.includes(AWKLS))&&(!AWCONF||s.conf)&&(!q||s.nama.includes(q)||s.kelas.includes(q)))
+    .sort((a,b)=>b.items.length-a.items.length||classSort(a.kelas||'9',b.kelas||'9')||a.nama.localeCompare(b.nama));
+  const dist={};multi.forEach(s=>{const n=Math.min(s.items.length,4);dist[n]=(dist[n]||0)+1});
+  const top=multi.length?Math.max(...multi.map(s=>s.items.length)):0;
+  const short=n=>n.replace(/^Anugerah\s+/i,'');
+  box.innerHTML=`<div class="grid ms-kpi">
+    <div class="card"><div class="n">${all.length}</div><div class="l">Murid menerima anugerah</div></div>
+    <div class="card"><div class="n">${multi.length}</div><div class="l">Menerima lebih daripada 1 anugerah</div></div>
+    <div class="card"><div class="n">${top||'—'}</div><div class="l">Anugerah terbanyak oleh seorang murid</div></div>
+  </div>
+  <div class="tools">
+    <label class="set-row" style="border:0;padding:0;gap:10px;flex-wrap:nowrap"><span class="sw"><input type="checkbox" id="msMulti" ${AWMULTI?'checked':''} aria-label="Hanya murid lebih daripada 1 anugerah"><span></span></span><b style="font-size:13px">Hanya &gt; 1 anugerah</b></label>
+    <select class="fi" id="msKls" style="width:auto;min-width:160px" aria-label="Tapis kelas"><option value="">Semua kelas</option>${classes.map(k=>`<option ${k===AWKLS?'selected':''}>${esc(k)}</option>`).join('')}</select>
+    ${[2,3,4].filter(n=>dist[n]).map(n=>`<span class="chip">${n}${n===4?'+':''} anugerah: <b>${dist[n]}</b></span>`).join('')}
+    ${nconf?`<button class="chip warn ${AWCONF?'on':''}" id="msConf" title="Nama sama tersenarai dengan kelas berbeza dalam senarai anugerah">⚠ ${nconf} murid: kelas tidak konsisten</button>`:''}
+    <button class="btn ghost sm" id="msCsv" style="margin-left:auto"><svg class="i"><use href="#i-dl"/></svg>CSV</button>
+  </div>
+  <div class="tools" style="margin-top:-6px">${Object.entries(CAT).map(([k,n])=>`<span class="lg"><i style="background:${COL[k]}"></i>${n}</span>`).join('')}<span class="lg">· ${list.length} murid dipaparkan</span></div>
+  ${list.length?list.map(s=>`<div class="ms ${s.items.length>2?'hi':''}"><div class="ms-n"><b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf" title="Kelas berbeza dalam senarai anugerah — sila semak">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b ${p.status==='Diterima'?'ok':''}" data-aid="${esc(a.id)}" title="${esc(CAT[a.kat]||'')} · ${esc(p.kelas||'tiada kelas')}${p.status==='Diterima'?' · Diterima':''}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}${p.status==='Diterima'?' ✓':''}</button>`).join('')}</div><div class="ms-c"><b>${s.items.length}</b><small>anugerah</small></div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan tapisan.':'Tiada penerima.'}</p></div>`}`;
+  $('#msMulti').onchange=e=>{AWMULTI=e.target.checked;renderAwList()};
+  $('#msKls').onchange=e=>{AWKLS=e.target.value;renderAwList()};
+  if($('#msConf'))$('#msConf').onclick=()=>{AWCONF=!AWCONF;renderAwList()};
+  $('#msCsv').onclick=()=>downloadCSV('Pemetaan-Penerima-Sri-Bitara-2026.csv',[['Nama','Kelas','Bil. Anugerah','Anugerah','Kategori','Catatan Kelas']].concat(list.map(s=>[s.nama,s.kelas,s.items.length,s.items.map(i=>i.a.nama).join('; '),[...new Set(s.items.map(i=>CAT[i.a.kat]))].join('; '),s.conf?'Kelas berbeza: '+s.conf.join(' / '):''])));
+  $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
+}
 function renderAw(){
+  $$('#awMode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===AWMODE);b.setAttribute('aria-pressed',b.dataset.m===AWMODE)});
+  $('#awQ').placeholder=AWMODE==='murid'?'Cari nama murid / kelas…':'Cari anugerah…';
+  $('#awGrid').style.display=AWMODE==='murid'?'none':'';$('#awList').style.display=AWMODE==='murid'?'':'none';
+  if(AWMODE==='murid')return renderAwList();
   const q=$('#awQ').value.toLowerCase();
   const list=D.anugerah.filter(a=>(awCat==='ALL'||a.kat===awCat)&&a.nama.toLowerCase().includes(q));
   $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a);return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}</div><h4>${esc(a.nama)}</h4><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b> penerima</span></div>${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
@@ -882,13 +949,13 @@ function parseWorkbook(wb){
     const title=head.find(c=>/ANUGERAH|CEMERLANG|PENCAPAIAN|PENGLIBATAN|IKON/i.test(c));
     if(!title)continue;
     const kat=head.some(c=>/^HEM$/i.test(c))?'H':head.some(c=>/KOKURIKULUM|PAJSK/i.test(c))?'KO':'K';
-    let tahun='',defKelas='',cmap=null;const recs=[],seen=new Set();
+    let tahun='',defKelas='',cmap=null,named=false;const recs=[],seen=new Set();
     for(const r of rows){
       if(r.includes(title))continue;
       const tm=r.map(c=>c.match(/^TAHUN\s*(\d)\s*(.*)$/i)).find(Boolean);
-      if(tm){tahun=tm[1];const rest=tm[2].toUpperCase();defKelas=KLS.includes(rest)?tahun+' '+rest:'';cmap=null;continue}
+      if(tm){tahun=tm[1];const rest=tm[2].toUpperCase();defKelas=KLS.includes(rest)?tahun+' '+rest:'';cmap=null;named=false;continue}
       const kIdx=r.map((c,i)=>KLS.includes(c.toUpperCase())?i:-1).filter(i=>i>=0);
-      if(kIdx.length>=2||(kIdx.length===1&&r.filter(Boolean).length===1)){cmap={};kIdx.forEach(i=>cmap[i]=r[i].toUpperCase());continue}
+      if(kIdx.length>=2||(kIdx.length===1&&r.filter(Boolean).length===1)){if(cmap&&named&&tahun&&kIdx.length>=2)tahun=String(+tahun+1);named=false;cmap={};kIdx.forEach(i=>cmap[i]=r[i].toUpperCase());continue}
       const role=r.find(c=>/^(PEN\.? )?KETUA KELAS$/i.test(c))||'';
       const kelasCell=r.find(c=>/^\d\s+(INOVATIF|INTELEK|KREATIF|KRITIS|PATRIOTIK)$/i.test(c));
       r.forEach((c,i)=>{
@@ -896,7 +963,7 @@ function parseWorkbook(wb){
         const kelas=(kelasCell||(cmap&&cmap[i]&&tahun?tahun+' '+cmap[i]:defKelas)).toUpperCase().replace(/\s+/g,' ');
         const th=(kelas.match(/^(\d)/)||[])[1]||tahun;
         const key=c.toUpperCase()+'|'+kelas;if(seen.has(key))return;seen.add(key);
-        recs.push({nama:c.toUpperCase(),kelas,tahun:th,catatan:role.toUpperCase()});
+        recs.push({nama:c.toUpperCase(),kelas,tahun:th,catatan:role.toUpperCase()});named=true;
       });
     }
     if(recs.length)out.push({nama:titleCase(title.replace(/\b20\d\d\b/g,'').replace(/\s+/g,' ').trim()),kat,recs,sheet:sn});
@@ -926,10 +993,12 @@ function drawImport(){
 function exportCSV(){
   if(!D.penerima?.length)return toast('Tiada penerima untuk dimuat turun',true);
   const aw=new Map(D.anugerah.map(a=>[a.id,a]));
+  downloadCSV('Penerima-Sri-Bitara-2026.csv',[['Anugerah','Kategori','Tahun','Kelas','Nama','Catatan','Status']].concat(D.anugerah.flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map(p=>[a.nama,CAT[a.kat],p.tahun,p.kelas,p.nama,p.catatan,p.status]))));
+}
+function downloadCSV(name,rows){
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const lines=[['Anugerah','Kategori','Tahun','Kelas','Nama','Catatan','Status'].map(q).join(',')].concat(D.anugerah.flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map(p=>[a.nama,CAT[a.kat],p.tahun,p.kelas,p.nama,p.catatan,p.status].map(q).join(','))));
-  const url=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
-  const a=Object.assign(document.createElement('a'),{href:url,download:'Penerima-Sri-Bitara-2026.csv'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  const a=Object.assign(document.createElement('a'),{href:url,download:name});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 /* ---------- mod pentas ---------- */
