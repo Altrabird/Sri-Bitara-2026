@@ -46,12 +46,13 @@ def unlock(pg, pin):
 
 
 def import_xlsx(pg):
+    pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=import]')
     pg.set_input_files('#xlsx', XLSX)
     expect(pg.locator('#impSave')).to_be_visible(timeout=20000)
     rows = pg.eval_on_selector_all('#impOut tbody tr', 'rs=>rs.map(r=>[r.cells[0].firstChild.textContent,r.cells[1].querySelector("select").value,+r.cells[2].textContent])')
     pg.click('#impSave')
-    pg.wait_for_function('D.penerima && D.penerima.length>0', timeout=15000)
+    pg.wait_for_function("!document.querySelector('#impSave') && D.penerima.length>100", timeout=20000)
     return rows
 
 
@@ -171,6 +172,25 @@ with sync_playwright() as p:
         pg.fill('#pinIn', '246810'); pg.press('#pinIn', 'Enter')
         expect(pg.locator('#admin')).to_be_visible(timeout=8000)
         pg.wait_for_function('D.anugerah.length===23 && D.ajk.length===23', timeout=15000)  # seeded via confirm()
+        # add recipients: pick class, tick pupils from the Hadir roster, plus one manual name
+        pg.click('.nav[data-v=anugerah]')
+        pg.locator('#awGrid .aw').nth(5).click()
+        expect(pg.locator('#adKls')).to_be_visible(timeout=8000)
+        pg.select_option('#adKls', '4 KREATIF')
+        expect(pg.locator('#addp .st')).to_have_count(3)
+        pg.locator('#addp .st input').nth(0).check()
+        pg.locator('#addp .st input').nth(2).check()
+        expect(pg.locator('#adN')).to_have_text(' (2)')
+        pg.fill('#adMan', 'murid baharu')
+        pg.click('#adGo')
+        expect(pg.locator('#drawer .rcp')).to_have_count(3, timeout=8000)
+        expect(pg.locator('#addp .st.have')).to_have_count(2)
+        assert pg.evaluate("D.penerima.every(p=>p.kelas==='4 KREATIF'&&p.tahun==='4')")
+        assert pg.evaluate("D.penerima.some(p=>p.nama==='MURID BAHARU')")
+        shot(pg, 'remote-add')
+        pg.locator('#drawer .del-p').first.click()
+        expect(pg.locator('#drawer .rcp')).to_have_count(2, timeout=8000)
+        pg.keyboard.press('Escape')
         if XLSX:
             import_xlsx(pg)
             n = pg.evaluate('D.penerima.length')
@@ -185,7 +205,7 @@ with sync_playwright() as p:
         pg.evaluate('lockAdmin()')
         pg.wait_for_timeout(1500)
         if XLSX:
-            assert pg.evaluate('D.penerima.length') == n, 'public sees names when showNames on'
+            got = pg.evaluate('D.penerima && D.penerima.length'); assert got == n, f'public sees names when showNames on: {got} vs {n}'
         # a second visitor gets the same live data
         pg2 = page_for(ctx, URL)
         expect(pg2.locator('#sync')).to_contain_text('Langsung', timeout=8000)

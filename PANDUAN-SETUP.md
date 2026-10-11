@@ -46,6 +46,7 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 | Tugas | Di mana |
 |---|---|
 | Import senarai penerima 2026 | **Tetapan → Import Penerima**. Pilih fail Excel (format sama seperti 2025), semak kategori, kemudian klik **Gantikan semua**. Helaian senarai murid/IC diabaikan dan **tidak** dimuat naik. |
+| **Tambah penerima satu per satu** | **Anugerah**, buka kad anugerah, kemudian di **Tambah Penerima**: (1) pilih **kelas**, (2) tandakan murid, kemudian klik **Tambah**. Senarai murid diambil dari Google Sheet Hadir@SKBT. Murid tiada dalam senarai boleh ditaip di ruang *Nama lain*. Butang 🗑 memadam penerima. |
 | Papar nama penerima kepada umum | **Tetapan → Maklumat Majlis**, togol *Papar nama penerima*. Jika DIMATIKAN, umum hanya nampak bilangan penerima. |
 | Kemas kini AJK / Tentatif / % Persiapan | Tab masing-masing dalam **Tetapan**. Untuk AJK, tulis satu nama setiap baris dan tambah **(K)** untuk Ketua. |
 | Muat turun senarai penerima (CSV) | **Tetapan → Import Penerima → CSV** (untuk JK Sijil / JK Pengurus Penerima) |

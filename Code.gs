@@ -12,6 +12,9 @@
 const ADMIN_PIN = 'TUKAR_PIN_INI';           // ← WAJIB tukar. Jangan kongsi PIN sebenar di GitHub.
 const NAMA_FAIL = 'Data Majlis Sri Bitara 2026';
 const NAMA_FOLDER = 'Galeri Sri Bitara 2026';
+// Senarai murid (Hadir@SKBT). Akaun yang deploy skrip ini mesti boleh membuka sheet ini.
+const ROSTER_ID = '1CiS8GhmhsDtOxZP0L3ZDmQDiA3DTbc1R0mQRQOfe1qY';
+const ROSTER_GID = 237821847;
 
 const TABLES = {
   anugerah:  ['id', 'kat', 'nama'],
@@ -43,6 +46,7 @@ function doPost(e) {
     checkPin_(req.pin);
     if (req.action === 'login') return out_({ ok: true });
     if (req.action === 'admin') return out_({ ok: true, data: allData_(), info: info_() });
+    if (req.action === 'roster') return out_({ ok: true, roster: roster_() });
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try { return out_(Object.assign({ ok: true }, handle_(req))); }
@@ -67,6 +71,25 @@ function handle_(r) {
       writeTable_('anugerah', r.anugerah || []);
       writeTable_('penerima', r.penerima || []);
       break;
+    case 'addPenerima': {
+      const cur = readTable_('penerima');
+      const have = {};
+      cur.forEach(function (p) { have[p.aid + '|' + p.nama + '|' + p.kelas] = true; });
+      const add = (r.rows || []).map(function (x) {
+        const kelas = cell_(x.kelas).trim().toUpperCase();
+        return { id: cell_(x.id), aid: cell_(x.aid), tahun: (kelas.match(/^(\d)/) || [])[1] || cell_(x.tahun), kelas: kelas,
+          nama: cell_(x.nama).trim().toUpperCase().replace(/\s+/g, ' '), catatan: cell_(x.catatan).trim().toUpperCase(), status: '' };
+      }).filter(function (x) { return x.id && x.aid && x.nama && !have[x.aid + '|' + x.nama + '|' + x.kelas]; });
+      if (add.length) writeTable_('penerima', cur.concat(add));
+      extra.added = add.length;
+      break;
+    }
+    case 'delPenerima': {
+      const del = {};
+      (r.ids || []).forEach(function (id) { del[String(id)] = true; });
+      writeTable_('penerima', readTable_('penerima').filter(function (p) { return !del[p.id]; }));
+      break;
+    }
     case 'setStatus':
       setStatus_(r.ids || [], r.status === 'Diterima' ? 'Diterima' : '');
       break;
@@ -210,6 +233,31 @@ function setStatus_(ids, status) {
   for (let i = 1; i < vals.length; i++) {
     if (want[String(vals[i][ci])]) sh.getRange(i + 1, si + 1).setValue(status);
   }
+}
+
+/* ---------- senarai murid (admin sahaja: mengandungi nama murid) ---------- */
+function roster_() {
+  const c = CacheService.getScriptCache();
+  const hit = c.get('roster');
+  if (hit) return JSON.parse(hit);
+  let ss;
+  try { ss = SpreadsheetApp.openById(ROSTER_ID); }
+  catch (_) { throw new Error('Tiada akses ke Google Sheet senarai murid. Kongsi sheet itu (Viewer) dengan akaun yang deploy skrip ini.'); }
+  const sh = ss.getSheets().filter(function (s) { return s.getSheetId() === ROSTER_GID; })[0] || ss.getSheetByName('Students') || ss.getSheets()[0];
+  const v = sh.getDataRange().getValues();
+  let hr = -1, ni = -1, ki = -1;
+  for (let i = 0; i < Math.min(5, v.length) && hr < 0; i++) {
+    const h = v[i].map(function (x) { return String(x).trim().toLowerCase(); });
+    ni = h.findIndex(function (x) { return /^(nama|nama penuh|nama murid|name|student name|full name)$/.test(x); });
+    ki = h.findIndex(function (x) { return /^(kelas|nama kelas|class|class name)$/.test(x); });
+    if (ni >= 0 && ki >= 0) hr = i;
+  }
+  if (hr < 0) throw new Error('Lajur Nama / Kelas tidak dijumpai dalam sheet senarai murid');
+  const norm = function (s) { return String(s).trim().toUpperCase().replace(/\s+/g, ' '); };
+  const out = v.slice(hr + 1).map(function (r) { return { nama: norm(r[ni]), kelas: norm(r[ki]) }; })
+    .filter(function (x) { return x.nama && x.kelas; });
+  try { c.put('roster', JSON.stringify(out), 600); } catch (_) { /* too big to cache */ }
+  return out;
 }
 
 /* ---------- galeri ---------- */

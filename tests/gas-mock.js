@@ -3,7 +3,12 @@
 const fs = require('fs'), vm = require('vm'), http = require('http'), path = require('path');
 const TEST_PIN = '246810';
 
-function makeGAS({ sharingBlocked = false } = {}) {
+const KLS = ['INOVATIF', 'INTELEK', 'KREATIF', 'KRITIS', 'PATRIOTIK'];
+// fake Hadir@SKBT roster: header on row 2 (title row above), 3 pupils per class
+const DEFAULT_ROSTER = [['Senarai Murid'], ['No', 'Name', 'Class', 'IC']].concat(
+  [1, 2, 3, 4, 5, 6].flatMap(t => KLS.flatMap(k => [1, 2, 3].map(n => [n, `murid ${t}${k[0]}${k[1]} nombor ${n}`, `${t} ${k}`, '000000000000']))));
+
+function makeGAS({ sharingBlocked = false, roster = DEFAULT_ROSTER, rosterAccess = true } = {}) {
   const props = {}, cache = {}, files = {}, folders = {}, sheets = {};
   let nid = 0, ss = null;
   class Range {
@@ -22,7 +27,8 @@ function makeGAS({ sharingBlocked = false } = {}) {
     }
   }
   class Sheet {
-    constructor(name) { this.name = name; this.cells = []; }
+    constructor(name, id = 0) { this.name = name; this.id = id; this.cells = []; }
+    getSheetId() { return this.id; }
     set(r, c, v) { (this.cells[r - 1] = this.cells[r - 1] || [])[c - 1] = v; }
     get(r, c) { const v = (this.cells[r - 1] || [])[c - 1]; return v === undefined ? '' : v; }
     getLastRow() { return this.cells.length; }
@@ -48,7 +54,15 @@ function makeGAS({ sharingBlocked = false } = {}) {
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     SpreadsheetApp: {
       create: () => { sheets.Sheet1 = new Sheet('Sheet1'); return (ss = Spreadsheet('ss' + ++nid)); },
-      openById: id => { if (!ss || ss.getId() !== id) throw new Error('not found'); return ss; }
+      openById: id => {
+        if (id === '1CiS8GhmhsDtOxZP0L3ZDmQDiA3DTbc1R0mQRQOfe1qY' && rosterAccess) {
+          const other = new Sheet('Lain', 1), sh = new Sheet('Murid', 237821847);
+          roster.forEach((r, i) => r.forEach((v, j) => sh.set(i + 1, j + 1, v)));
+          return { getSheets: () => [other, sh], getSheetByName: () => null };
+        }
+        if (!ss || ss.getId() !== id) throw new Error('not found');
+        return ss;
+      }
     },
     DriveApp: {
       Access: { ANYONE_WITH_LINK: 'ANYONE_WITH_LINK' }, Permission: { VIEW: 'VIEW' },

@@ -162,6 +162,17 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .tg{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);min-height:34px;white-space:nowrap}
 .tg.ok{background:rgba(63,182,139,.15);border-color:var(--ok);color:var(--ok-text)}
 span.tg{display:inline-flex;align-items:center}
+.rcp-act{display:flex;gap:6px;align-items:center}
+.del-p{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}
+.del-p:hover{color:var(--bad);border-color:var(--bad)}
+.addp{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(var(--gold-rgb),.05)}
+.addp h5{font:700 14px var(--hf);letter-spacing:.2em;color:var(--gold);margin-bottom:10px}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.addrow .fi{flex:1 1 160px;width:auto}
+.studs{max-height:280px;overflow:auto;display:grid;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--panel)}
+.st{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:6px;font-size:13px;cursor:pointer;min-height:42px}
+.st:hover{background:var(--soft)}.st input{width:18px;height:18px;accent-color:var(--gold);flex:none}
+.st.have{opacity:.55;cursor:default}.st small{margin-left:auto;color:var(--ok-text);font-size:11px;font-weight:700}
+.warnmsg{color:var(--warn);font-size:12.5px;margin-bottom:8px}
 
 /* AJK */
 .org-top{display:flex;justify-content:center;margin-bottom:8px}
@@ -482,6 +493,7 @@ const SEED={
 /* ---------- state ---------- */
 let D={settings:{...SET_DEFAULT},anugerah:[],penerima:null,ajk:[],tentatif:[],persiapan:[],galeri:[]};
 let PIN=store.get('pin','',sessionStorage), INFO=null, VIEW='dashboard', LAST=0;
+let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set()};
 
 /* ---------- backend: demo (localStorage) ---------- */
 function ldb(){let db=store.get('db',null);if(!db){db={settings:{...SET_DEFAULT},...structuredClone(SEED),penerima:[],galeri:[]};store.set('db',db)}return db}
@@ -501,6 +513,9 @@ function localCall(r){
     case 'saveSettings':Object.keys(r.settings).forEach(k=>{if(k in SET_DEFAULT)db.settings[k]=r.settings[k]});break;
     case 'saveTable':db[r.table]=r.rows;break;
     case 'replacePenerima':db.anugerah=r.anugerah;db.penerima=r.penerima;break;
+    case 'roster':return {ok:true,roster:['1','2','3','4','5','6'].flatMap(t=>KLS.flatMap(k=>[1,2,3,4].map(n=>({nama:`MURID CONTOH ${t}${k.slice(0,3)} ${n}`,kelas:t+' '+k}))))};
+    case 'addPenerima':{const have=new Set(db.penerima.map(p=>p.aid+'|'+p.nama+'|'+p.kelas));const add=r.rows.filter(x=>!have.has(x.aid+'|'+x.nama+'|'+x.kelas)).map(x=>({...x,status:''}));db.penerima.push(...add);out.added=add.length;break}
+    case 'delPenerima':db.penerima=db.penerima.filter(p=>!r.ids.includes(p.id));break;
     case 'setStatus':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.status=r.status==='Diterima'?'Diterima':''});break;
     case 'upload':if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
     case 'deletePhoto':db.galeri=db.galeri.filter(g=>g.id!==r.id);break;
@@ -671,24 +686,51 @@ function renderAw(){
 }
 function openAw(id){
   const a=D.anugerah.find(x=>x.id===id);if(!a)return closeDrawer();
-  DRAWER=id;const c=counts(a);
+  if(DRAWER!==id)ADD.sel.clear();DRAWER=id;const c=counts(a);const sc=$('#drawer .body')?.scrollTop||0;
   let body;
   if(canNames()){
     const ps=D.penerima.filter(p=>p.aid===id).sort(byKelas);
     const groups={};ps.forEach(p=>(groups[p.tahun||'-']=groups[p.tahun||'-']||[]).push(p));
-    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span>${PIN?`<button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button>`:(p.status==='Diterima'?'<span class="tg ok">✓ Diterima</span>':'<span></span>')}</div>`).join('')}</div>`).join(''):'<div class="empty"><p>Tiada penerima untuk anugerah ini.</p></div>';
+    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span>${PIN?`<span class="rcp-act"><button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button></span>`:(p.status==='Diterima'?'<span class="tg ok">✓ Diterima</span>':'<span></span>')}</div>`).join('')}</div>`).join(''):'<div class="empty"><p>Tiada penerima untuk anugerah ini.</p></div>';
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
   $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n} penerima${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
-  <div class="body">${PIN&&c.n?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}${body}</div>`;
+  <div class="body">${PIN&&c.n?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}${PIN?'<div class="addp" id="addp"></div>':''}${body}</div>`;
   $('#drawer .x').onclick=closeDrawer;
   $('#toStage')&&($('#toStage').onclick=()=>{closeDrawer();openStage(id)});
   $$('#drawer .tg[data-id]').forEach(b=>b.onclick=()=>toggleGot(b.dataset.id));
+  $$('#drawer .del-p').forEach(b=>b.onclick=async()=>{const p=D.penerima.find(x=>x.id===b.dataset.del);if(!p||!confirm(`Padam ${p.nama} (${p.kelas}) dari anugerah ini?`))return;try{await call('delPenerima',{ids:[p.id]},{quiet:true});toast('Penerima dipadam')}catch(e){toast(e.message,true)}});
+  if(PIN)drawAdd(id);
+  $('#drawer .body').scrollTop=sc;
   if(!$('#drawer').classList.contains('on')){$('#drawer').classList.add('on');$('#scrim').classList.add('on');$('#drawer .x').focus()}
 }
 async function toggleGot(pid){
   const p=D.penerima.find(x=>x.id===pid);if(!p)return;
   const st=p.status==='Diterima'?'':'Diterima';p.status=st;openAw(DRAWER);
   try{await call('setStatus',{ids:[pid],status:st},{quiet:true})}catch(e){toast(e.message,true);refresh()}
+}
+const tahunOf=k=>(String(k).match(/^(\d)/)||[])[1]||'';
+const classSort=(a,b)=>(+tahunOf(a)||9)-(+tahunOf(b)||9)||KLS.indexOf(a.split(' ')[1])-KLS.indexOf(b.split(' ')[1])||a.localeCompare(b);
+async function loadRoster(){const j=DEMO?localCall({action:'roster',pin:PIN}):await remote({action:'roster',pin:PIN});ROSTER=j.roster;return ROSTER}
+async function drawAdd(aid){
+  if(!ROSTER&&!ROSTER_ERR){$('#addp').innerHTML='<h5>TAMBAH PENERIMA</h5><p class="muted">Memuatkan senarai murid…</p>';try{await loadRoster()}catch(e){ROSTER_ERR=e.message}if(DRAWER!==aid)return}
+  const box=$('#addp');if(!box)return;
+  const classes=ROSTER?[...new Set(ROSTER.map(r=>r.kelas))].sort(classSort):['1','2','3','4','5','6'].flatMap(t=>KLS.map(k=>t+' '+k));
+  const have=new Set(D.penerima.filter(p=>p.aid===aid).map(p=>p.nama+'|'+p.kelas));
+  const studs=ADD.kls&&ROSTER?ROSTER.filter(r=>r.kelas===ADD.kls).sort((x,y)=>x.nama.localeCompare(y.nama)):[];
+  box.innerHTML=`<h5>TAMBAH PENERIMA</h5>${ROSTER_ERR?`<p class="warnmsg">${esc(ROSTER_ERR)} Anda masih boleh menaip nama secara manual.</p>`:''}
+  <div class="addrow"><select class="fi" id="adKls" aria-label="Pilih kelas"><option value="">1. Pilih kelas…</option>${classes.map(k=>`<option ${k===ADD.kls?'selected':''}>${esc(k)}</option>`).join('')}</select><input class="fi" id="adCat" maxlength="40" placeholder="Catatan (pilihan)" value="${esc(ADD.cat)}" aria-label="Catatan"></div>
+  ${ADD.kls?`${studs.length?`<p class="muted" style="font-size:12.5px;margin:10px 0 6px">2. Tandakan murid · ${studs.length} murid dalam ${esc(ADD.kls)}</p><div class="studs">${studs.map(r=>{const h=have.has(r.nama+'|'+r.kelas);return `<label class="st ${h?'have':''}"><input type="checkbox" value="${esc(r.nama)}" ${h?'checked disabled':ADD.sel.has(r.nama)?'checked':''}><span>${esc(r.nama)}</span>${h?'<small>SUDAH</small>':''}</label>`}).join('')}</div>`:ROSTER?'<p class="muted" style="margin-top:8px">Tiada murid dalam kelas ini.</p>':''}
+  <div class="addrow"><input class="fi" id="adMan" maxlength="80" placeholder="Nama lain (tiada dalam senarai)" aria-label="Nama manual"><button class="btn" id="adGo"><svg class="i"><use href="#i-plus"/></svg>Tambah<span id="adN"></span></button></div>`:''}`;
+  const cnt=()=>$('#adN')&&($('#adN').textContent=ADD.sel.size?` (${ADD.sel.size})`:'');cnt();
+  $('#adKls').onchange=e=>{ADD.kls=e.target.value;ADD.sel.clear();drawAdd(aid)};
+  $('#adCat').oninput=e=>ADD.cat=e.target.value;
+  $$('#addp .studs input:not(:disabled)').forEach(c=>c.onchange=()=>{c.checked?ADD.sel.add(c.value):ADD.sel.delete(c.value);cnt()});
+  if($('#adGo'))$('#adGo').onclick=e=>{
+    const names=[...ADD.sel],man=$('#adMan').value.trim();if(man)names.push(man);
+    if(!names.length)return toast('Tandakan sekurang-kurangnya seorang murid',true);
+    const rows=names.map(n=>({id:'r'+uid(),aid,kelas:ADD.kls,tahun:tahunOf(ADD.kls),nama:n.toUpperCase().replace(/\s+/g,' '),catatan:ADD.cat.trim().toUpperCase()}));
+    busy(e.currentTarget,async()=>{ADD.sel.clear();const j=await call('addPenerima',{rows},{quiet:true});toast(j.added===0?'Murid itu sudah ada dalam anugerah ini':`${j.added??rows.length} penerima ditambah`)});
+  };
 }
 function closeDrawer(){DRAWER=null;$('#drawer').classList.remove('on');$('#scrim').classList.remove('on')}
 $('#scrim').onclick=closeDrawer;
@@ -756,7 +798,7 @@ async function tryPin(pin){
 async function seedRemote(){
   try{for(const t of ['anugerah','ajk','tentatif','persiapan'])await call('saveTable',{table:t,rows:SEED[t]},{quiet:true});await call('saveSettings',{settings:SET_DEFAULT},{quiet:true});toast('Data permulaan dimuatkan')}catch(e){toast(e.message,true)}
 }
-function lockAdmin(){PIN='';INFO=null;store.del('pin',sessionStorage);$('#pinIn').value='';closeStage();refresh()}
+function lockAdmin(){PIN='';INFO=null;ROSTER=null;ROSTER_ERR='';store.del('pin',sessionStorage);$('#pinIn').value='';closeStage();refresh()}
 
 /* ---------- tetapan: panel ---------- */
 let SETTAB=store.get('settab','majlis',sessionStorage), IMPORT=null;

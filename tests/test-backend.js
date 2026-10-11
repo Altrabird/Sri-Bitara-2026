@@ -72,6 +72,30 @@ g.post({ action: 'replacePenerima', pin: PIN, anugerah: [{ id: 'a1', kat: 'K', n
 pub = g.get();
 assert.ok(pub.ok && pub.penerima.length === 1500, 'large payload');
 
+// roster: right tab by gid, header found below a title row, IC column never returned
+g = makeGAS();
+assert.match(g.get({ action: 'roster' }).error || '', /tidak dikenali/, 'roster not public via GET');
+assert.strictEqual(g.post({ action: 'roster', pin: 'x' }).error, 'PIN salah');
+r = g.post({ action: 'roster', pin: PIN });
+assert.ok(r.ok, r.error);
+assert.strictEqual(r.roster.length, 90);
+assert.deepStrictEqual(Object.keys(r.roster[0]).sort(), ['kelas', 'nama']);
+assert.deepStrictEqual(r.roster[0], { nama: 'MURID 1IN NOMBOR 1', kelas: '1 INOVATIF' });
+assert.match(makeGAS({ rosterAccess: false }).post({ action: 'roster', pin: PIN }).error, /Tiada akses/);
+assert.match(makeGAS({ roster: [['A', 'B']] }).post({ action: 'roster', pin: PIN }).error, /tidak dijumpai/);
+
+// add / delete single recipients (duplicates skipped, tahun from kelas)
+g.post({ action: 'saveTable', pin: PIN, table: 'anugerah', rows: [{ id: 'a1', kat: 'K', nama: 'Sains' }] });
+r = g.post({ action: 'addPenerima', pin: PIN, rows: [
+  { id: 'r1', aid: 'a1', kelas: '4 kreatif', nama: ' murid  satu ', catatan: '' },
+  { id: 'r2', aid: 'a1', kelas: '4 KREATIF', nama: 'MURID DUA' }] });
+assert.ok(r.ok && r.added === 2, r.error);
+assert.deepStrictEqual([r.data.penerima[0].nama, r.data.penerima[0].kelas, r.data.penerima[0].tahun], ['MURID SATU', '4 KREATIF', '4']);
+r = g.post({ action: 'addPenerima', pin: PIN, rows: [{ id: 'r3', aid: 'a1', kelas: '4 KREATIF', nama: 'MURID SATU' }] });
+assert.strictEqual(r.added, 0, 'duplicate skipped');
+r = g.post({ action: 'delPenerima', pin: PIN, ids: ['r1'] });
+assert.deepStrictEqual(r.data.penerima.map(p => p.id), ['r2']);
+
 // setup() creates sheets and removes default Sheet1
 makeGAS().ctx.setup();
 console.log('backend: all tests passed');
