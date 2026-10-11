@@ -7,3 +7,6 @@ mockup/
 *.csv
 __pycache__/
 node_modules/
+tools/.acemusic_key
+audio/_raw*
+audio/pilihan-*

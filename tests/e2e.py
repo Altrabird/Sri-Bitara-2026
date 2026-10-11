@@ -85,6 +85,11 @@ with sync_playwright() as p:
     pg = page_for(ctx, DEMO_URL)
     assert 'Mod demo' in pg.inner_text('#sync')
     assert pg.evaluate('D.anugerah.length') == 23
+    if (ROOT / 'audio' / 'muzik-latar.mp3').exists():
+        assert not pg.evaluate('bgm.paused'), 'music plays after the card is opened'
+        pg.click('#muteBtn')
+        pg.wait_for_function('bgm.paused')
+        pg.click('#muteBtn')
     common_flow(pg, 'demo')
     unlock(pg, '123456')
     shot(pg, 'demo-tetapan')

@@ -388,10 +388,13 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="m22 9-6 6M16 9l6 6"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
 </svg>
 
 <canvas id="dust" aria-hidden="true"></canvas>
+<audio id="bgm" src="audio/muzik-latar.mp3" preload="auto" loop></audio>
 
 <div id="invite">
   <button class="inv" id="invCard" aria-label="Buka kad undangan Majlis Anugerah Sri Bitara 2026">
@@ -433,6 +436,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <div class="topbar">
       <div><h1 id="vt">Dashboard</h1><p id="vs"></p></div>
       <div class="right">
+        <button class="chip" id="muteBtn" aria-pressed="false"></button>
         <span class="chip" id="sync" role="status"><span class="dot"></span><span>Memuatkan…</span></span>
         <button class="chip adm" onclick="lockAdmin()" title="Kunci mod admin"><svg class="i" style="width:15px"><use href="#i-lock"/></svg>Admin</button>
       </div>
@@ -1127,10 +1131,18 @@ function fillInvite(){
   $('#invDate').textContent=isNaN(d)?'':d.toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+s.masa;
   $('#invVenue').textContent=s.lokasi;
 }
+/* muzik latar: starts with the card tap (a user gesture, so browsers allow it) */
+const bgm=$('#bgm');let MUTE=store.get('mute',false),fadeR=0;
+function fadeTo(v,ms){cancelAnimationFrame(fadeR);const v0=bgm.volume,t0=performance.now();return new Promise(ok=>{(function f(t){const k=Math.min(1,(t-t0)/ms);bgm.volume=v0+(v-v0)*k;k<1?fadeR=requestAnimationFrame(f):ok()})(t0)})}
+function playBgm(v){if(MUTE)return;bgm.volume=0;bgm.play().then(()=>fadeTo(v,2500)).catch(()=>{})}
+function drawMute(){$('#muteBtn').innerHTML=`<svg class="i" style="width:16px"><use href="#${MUTE?'i-mute':'i-vol'}"/></svg>${MUTE?'Muzik: tutup':'Muzik'}`;$('#muteBtn').setAttribute('aria-pressed',String(!MUTE));$('#muteBtn').title=MUTE?'Hidupkan muzik latar':'Senyapkan muzik latar'}
+$('#muteBtn').onclick=()=>{MUTE=!MUTE;store.set('mute',MUTE);drawMute();if(MUTE)fadeTo(0,400).then(()=>bgm.pause());else playBgm(.3)};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgm.pause();else if(!MUTE&&bgm.currentTime>0)bgm.play().catch(()=>{})});
+drawMute();
 let invT;
 function enterApp(){
   clearTimeout(invT);const inv=$('#invite');if(!inv||inv.classList.contains('gone'))return;
-  inv.classList.add('gone');$('.app').inert=false;show(VIEW);
+  inv.classList.add('gone');$('.app').inert=false;show(VIEW);if(!bgm.paused)fadeTo(.3,3000);
   setTimeout(()=>inv.remove(),RM?0:700);
 }
 $('.app').inert=true;
@@ -1138,7 +1150,7 @@ $('#invCard').focus();
 $('#invCard').onclick=()=>{
   const inv=$('#invite');
   if(inv.classList.contains('open'))return enterApp(); // second tap skips the reveal
-  fillInvite();inv.classList.add('open');invT=setTimeout(enterApp,RM?600:2900);
+  fillInvite();inv.classList.add('open');playBgm(.6);invT=setTimeout(enterApp,RM?600:2900);
 };
 {const c=store.get('cache',null);if(c&&!DEMO)setData(c)}
 show(location.hash.slice(1)||'dashboard');
