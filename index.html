@@ -228,6 +228,9 @@ span.tg{display:inline-flex;align-items:center}
 .lead small{display:block;font-size:10.5px;letter-spacing:.16em;color:var(--gold)}
 .mem{display:flex;gap:10px;align-items:center;font-size:13px;padding:5px 2px;color:var(--cream)}
 .mem .av{width:28px;height:28px;font-size:11.5px}
+.tugas{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.tugas small{font-size:10.5px;letter-spacing:.16em;color:var(--gold);font-weight:700}
+.tugas ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;line-height:1.5;color:var(--muted)}
 mark{background:rgba(var(--gold-rgb),.35);color:inherit;border-radius:3px}
 
 /* tentatif */
@@ -342,6 +345,16 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
 #stage .ctrl{position:absolute;bottom:22px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px;z-index:2}
 #stage .ctrl button{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--gold2);background:var(--panel)}
 #confetti{position:absolute;inset:0;pointer-events:none}
+#stage.ajk .bar select,#stage.ajk .bar label{display:none}
+#stage .jt{font:700 clamp(26px,3.6vw,56px)/1.1 var(--hf);max-width:22em;margin-bottom:4vh}
+#stage .jgrid{display:grid;grid-template-columns:1fr 1.2fr;gap:4vw;width:100%;max-width:1400px;text-align:left;max-height:62vh;overflow:auto}
+#stage .jgrid.one{grid-template-columns:minmax(0,1100px);justify-content:center}
+#stage .jgrid h5{font:700 clamp(13px,1.2vw,18px) var(--hf);letter-spacing:.3em;color:var(--gold);margin-bottom:1.5vh}
+#stage .jgrid .lead,#stage .jgrid .mem{font-size:clamp(15px,1.45vw,24px)}
+#stage .jgrid .many{columns:2;column-gap:2vw}#stage .jgrid .many>div{break-inside:avoid}
+#stage .jgrid ol{margin:0;padding-left:1.3em;font-size:clamp(15px,1.4vw,23px);line-height:1.45;color:var(--cream)}
+#stage .jgrid li{margin-bottom:1vh}
+@media (max-width:760px){#stage .jgrid{grid-template-columns:1fr}#stage .jgrid .many{columns:1}}
 
 @media (max-width:980px){
   .app{grid-template-columns:1fr}
@@ -453,7 +466,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
       <div id="awList"></div>
     </section>
     <section class="view" id="v-ajk">
-      <div class="tools"><label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ajkQ" placeholder="Cari nama guru / jawatankuasa…" aria-label="Cari AJK"></label></div>
+      <div class="tools"><label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ajkQ" placeholder="Cari nama guru / jawatankuasa / tugas…" aria-label="Cari AJK"></label><button class="btn" onclick="openAjkStage()"><svg class="i"><use href="#i-stage"/></svg>Bentang AJK</button></div>
       <div class="org-top"><div class="card rise"><h3 style="margin:0">AHLI JAWATANKUASA PELAKSANA</h3><div class="serif-i" style="color:var(--cream);font-size:19px">dan Bidang Tugas</div></div></div>
       <div class="connector"></div>
       <div class="grid ajk" id="ajkGrid"></div>
@@ -525,32 +538,33 @@ const COL={K:'#F4D58D',H:'#E8907A',KO:'#7FC8A9'};
 const GKAT=['Majlis','Persiapan','Photo Booth','Lain-lain'];
 
 /* ---------- data permulaan (tiada data murid) ---------- */
-const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-20',masa:'07:30',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:''};
+const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:''};
 const SEED={
   anugerah:[['K','Anugerah Bahasa Melayu'],['K','Anugerah Bahasa Inggeris'],['K','Anugerah Pendidikan Agama Islam'],['K','Anugerah Pendidikan Moral'],['K','Anugerah Matematik'],['K','Anugerah Sains'],['K','Anugerah Sejarah'],['K','Anugerah NILAM'],['K','Anugerah Pengawas PSS'],['K','Anugerah Pemulihan Khas'],['K','Anugerah Cemerlang JQAF Tahun 6'],['K','Anugerah Lonjakan Akademik'],['H','Anugerah Pengawas'],['H','Anugerah Pembimbing Rakan Sebaya'],['H','Anugerah Duta Sahsiah'],['H','Anugerah Ketua Kelas & Pen. Ketua Kelas'],['H','Anugerah Kehadiran Penuh'],['KO','Cemerlang Kokurikulum Badan Beruniform'],['KO','Cemerlang Kokurikulum Sukan dan Permainan'],['KO','Cemerlang Kokurikulum Kelab dan Persatuan'],['KO','Pencapaian PAJSK Cemerlang Tahun 6'],['KO','Penglibatan Luar Aktif Kokurikulum'],['KO','Ikon Kokurikulum']].map(([kat,nama],i)=>({id:'a'+(i+1),kat,nama})),
-  ajk:[['JK Penyambut Tetamu','Guru Besar\nSemua Guru Penolong Kanan\nYDP PIBG dan Naib YDP PIBG'],
-['JK Penyelaras Majlis / Protokol','Pn Masindah Bt Batcho (K)\nEn Nasri Bin Lakuraisia'],
-['JK Pendaftaran','Pn Azizah Bt. Aziz (K)\nPn. Fatimah Bt Mame\nPn. Haidah Bt. Hj. Sahibe'],
-['JK Juru Acara','Pn Zanisa Bt Megat Zabidi (K)\nEn. Mohd. Riswan Bin Roslan'],
-['JK Penyelaras Pentas, Peralatan dan Persiapan Dewan','En Nordin Bin Mohamed (K)\nTuan Hj Yusoff Bin Hj Awang\nEn. Abdul Rahman Bin Madiah\nEn Anwar Bin Ahmad\nPekerja Pembersihan'],
-['JK Pemilihan Penerima Anugerah','Pn. Josephine Anak Lang (K)\nPn. Saridah Bt. Suaib\nTuan Hj. Ismail Bin Sila'],
-['JK Pengurus Penerima Anugerah','Pn. Hjh. Maslina Bt. Mariali (K)\nCik Fuzianah Bt Mapaita\nPn Bambina Bt. Kunsul\nPn Nur Khuzaimah Bt Mohammad\nPn Siti Noraidah Bt Saifuddin\nPn. Azlina Bt. Ahmad\nPn. Susilawati Bt. Sabudin\nPn Senabe Bt Haseng\nUstazah Siti Aisah Bt Mohamad Anuar\nPn Norsimah Bt Damrah'],
-['JK Hiasan Pentas','Pn Fajariah Bt Derise (K)\nPn Dianah Bt Ibnu Hassan\nPn. Hazma Bt Ambo\nPn. Norhayati'],
-['JK Buku Atur Cara & Banner','En Mohd Radzlee Bin Jamal (K)\nUstazah Siti Khairah Bt. Asgari'],
-['JK Hadiah & Cenderahati','Pn Hasna Bt Tamarudin (K)\nPn Martina Bt. Mahmudin\nCik Wan Nur Athirah Bt Wan Marzuki\nUstazah Auni Afifah Bt. Mat Rani\nCik Idrissiah Bt Idris\nUstazah Siti Nur Yumni\nPn Normah Bt. Madiah'],
-['JK Sijil','Pn Rafidah Bt Hj Misran (K)\nCik Suhartini Bt Johan Shah\nUstazah Hayati Bt Labunu\nUstazah Rabiatul Adawiyah Bt Azhan'],
-['JK LCD dan PA Sistem','Ustaz Abbas Bin Osman\nTn. Haji Ismail Bin Sila'],
-['JK Bacaan Doa','Ustaz Mohd Fawwaz Bin Mohd Sulhi'],
-['JK Persembahan','Pn Noor Liza Bt Waris (K)\nEn Sabirin Bin Yacho\nPn. Sarinah Binti Mohammad\nPn Riyanti Bt Abdu Rahman'],
-['JK "Photo Booth"','Pn Nursamsa Binti Abdul Latief (K)\nPn Sugizami Sugiarto Bt Stefanus'],
-['JK Penerima Anugerah (Slaid)','Pn Marlina Bt Mohamed (K)\nEn Hamirudin Bin Lasanipa'],
-['JK Tayangan Video','En Harsidi Bin Junick (K)\nUstaz Abbas Bin Osman'],
-['JK Jurugambar','Pn Siti Kalsum Bt Duraman (K)\nUstaz Mohd Fawwaz Bin Mohd Sulhi'],
-['JK Disiplin, Keselamatan & Kebersihan','En. Amirudin Bin Lanjti (K)\nEn Muhd Yuzaideen Bin Yahya\nPekerja Pembersihan Sekolah'],
-['JK Jamuan VIP dan Guru','Pn Erni Bt Abdul Manaf (K)\nPn Saberiah Bt Suarno'],
-['JK Jamuan Ibu Bapa dan Murid','Pn Rosminah Bt Arsad (K)\nPn Saodah Bt Abdul Haris\nPn. Marsiah Bt Surmin\nPn Sutinah Bt Dollah\nPn Hjh Misrah Bt Sirah\nPn. Maria Bt. Majid'],
-['JK Pemilihan Tokoh Kokum','Cik Norliah Bt Aminulla (K)\nPn. Sarinah Binti Mohammad'],
-['JK Ikrar Rukun Negara','Pn. Samsiah Bt Sundu (K)\nPn. Kalsom Bt Tang']].map(([jk,ahli],i)=>({id:'j'+(i+1),jk,ahli})),
+  ajk:[['Jawatankuasa Induk','En Abidin Bin Moen (Pengerusi, Guru Besar) (K)\nEn Juzaidy Bin Selamat (Timbalan Pengerusi, GPK Kokurikulum)\nEn Sulaiman Bin Abd Rahman (Naib Pengerusi, GPK Pentadbiran)\nPn Kalsom Bt Tang (Naib Pengerusi, GPK HEM)\nPn Samsiah Bt Sundu (Naib Pengerusi, GPK Petang)\nEn Harsidi Bin Junick (Penyelaras Program)\nEn Abdul Rahman Bin Madiah (Pen. Penyelaras Program)\nTuan Hj Yusoff Bin Hj Awang Yahya (Setiausaha)\nCik Dayang Anisah Binti Exie@Ahmad (Bendahari)',''],
+['JK Penyambut Tetamu','Guru Besar\nSemua Guru Penolong Kanan\nYDP PIBG dan Naib YDP PIBG','Menyambut kehadiran tetamu VIP'],
+['JK Penyelaras Majlis / Protokol','Pn Masindah Bt Batcho (K)\nEn Nasri Bin Lakuraisia','Mengetuai raptai\nMemberi taklimat sebelum hari majlis berjalan\nMemastikan perjalanan majlis lancar\nMenentukan tempat duduk tetamu perasmi, Guru Besar, Guru Penolong Kanan, guru-guru dan ibu bapa'],
+['JK Pendaftaran','Pn Azizah Bt. Aziz (K)\nPn. Fatimah Bt Mame\nPn. Nur Shazwani Binti Buse',''],
+['JK Juru Acara','Pn Zanisa Bt Megat Zabidi (K)\nEn. Mohd. Riswan Bin Roslan','Menyediakan skrip juruacara\nMendapatkan nama tetamu kehormat yang lengkap dengan gelaran\nMendapatkan aturcara majlis dan senarai nama penerima hadiah\nHadir semasa raptai'],
+['JK Penyelaras Pentas, Peralatan dan Persiapan Dewan','En Nordin Bin Mohamed (K)\nEn Anwar Bin Ahmad\nPekerja Pembersihan','Menanda kedudukan semasa naik, menerima dan turun pentas\nMengatur kedudukan pentas utama termasuk meja hadiah, restroom, meja pengacara dan laluan persembahan masuk/keluar\nMenyusun kerusi dan meja mengikut keperluan\nMenyediakan meja VIP\nMemastikan kelengkapan dewan telah siap sepenuhnya untuk kegunaan majlis\nMemastikan dewan bersih dan tersusun sebelum dan selepas majlis'],
+['JK Pemilihan Penerima Anugerah','Pn Hajah Habibiah Binti Awang (K)\nPn. Saridah Bt. Suaib\nTuan Hj. Ismail Bin Sila','Menyediakan senarai nama penerima hadiah mengikut kategori yang ditetapkan\nMemaklumkan murid yang menerima hadiah dan mengesahkan kehadiran mereka\nMenyerahkan senarai nama penerima anugerah kepada AJK Hadiah dan Sijil, AJK Pengurus Peserta, AJK Buku Aturcara dan AJK Juruacara'],
+['JK Pengurus Penerima Anugerah','Pn. Hjh. Maslina Bt. Mariali (K)\nCik Fuzianah Bt Mapaita\nPn Bambina Bt. Kunsul\nPn Nur Khuzaimah Bt Mohammad\nPn Siti Noraidah Bt Saifuddin\nPn. Azlina Bt. Ahmad\nPn. Susilawati Bt. Sabudin\nPn Senabe Bt Haseng\nUstazah Siti Aisah Bt Mohamad Anuar\nPn Norsimah Bt Damrah','Menyusun kedudukan penerima sebelum raptai supaya murid tahu kedudukan masing-masing\nMemberi taklimat kepada penerima hadiah mengenai disiplin, pakaian dan cara menerima hadiah\nMenyediakan wakil peserta yang tidak hadir\nMenyusun tempat duduk penerima hadiah\nMengawal disiplin peserta'],
+['JK Hiasan Pentas','Pn Fajariah Bt Derise (K)\nPn Dianah Bt Ibnu Hassan\nPn. Hazma Bt Ambo\nPn. Norhayati','Menyediakan hiasan yang sesuai di pentas\nMembersihkan pentas\nMengemas segala peralatan di atas pentas setelah majlis selesai'],
+['JK Buku Atur Cara & Banner','En Mohd Radzlee Bin Jamal (K)\nUstazah Siti Khairah Bt. Asgari','Mendapatkan maklumat senarai nama penerima hadiah, senarai AJK, aturcara program dan segala maklumat berkaitan\nMengedarkan buku program kepada tetamu dan tetamu kehormat\nMenempah banner untuk backdrop di dalam dan luar sekolah\nMemasang dan membuka banner'],
+['JK Hadiah & Cenderahati','Pn Hasna Bt Tamarudin (K)\nPn Martina Bt. Mahmudin\nCik Wan Nur Athirah Bt Wan Marzuki\nUstazah Auni Afifah Bt. Mat Rani\nCik Idrissiah Bt Idris\nUstazah Siti Nur Yumni\nPn. Normah Bt. Madiah','Menyediakan hadiah kepada pemenang\nMenyediakan cenderamata kepada perasmi\nMenyediakan dulang dan alas dulang\nHadir semasa raptai\nMenyimpan peralatan yang digunakan selepas selesai majlis'],
+['JK Sijil','Pn Rafidah Bt Hj Misran (K)\nCik Suhartini Bt Johan Shah\nUstazah Hayati Bt Labunu','Mendapatkan nama penerima daripada AJK Pemilihan Penerima\nMenyediakan sijil kepada pemenang'],
+['JK LCD dan PA Sistem','Ustaz Abbas Bin Osman\nTn. Haji Ismail Bin Sila','Memastikan dan menyediakan kelengkapan LCD dan PA sistem dapat berfungsi dengan baik\nHadir semasa raptai'],
+['JK Bacaan Doa','Ustaz Abbas Bin Osman','Menyediakan teks bacaan doa\nMengetuai pembacaan doa\nHadir semasa raptai'],
+['JK Persembahan','Pn Noor Liza Bt Waris (K)\nEn Sabrin Bin Yacho\nPn. Sarinah Binti Mohammad\nPn Riyanti Bt Abdu Rahman','Merancang persembahan yang sesuai\nMembuat latihan untuk persembahan\nMemastikan persembahan yang dirancang berjalan lancar'],
+['JK "Photo Booth"','Pn Nursamsa Binti Abdul Latief (K)\nPn Sugizami Sugiarto Bt Stefanus','Menyediakan landskap di depan dewan\nMengemas segala peralatan "Photo Booth" setelah majlis selesai'],
+['JK Penerima Anugerah (Slaid)','Pn Marlina Bt Mohamad (K)\nEn Hamirudin Bin Lasanipa','Menyediakan paparan slaid bagi penerima anugerah\nMemasang slaid semasa program berlangsung'],
+['JK Tayangan Video','Ustaz Mohd Fawwaz Bin Mohd Sulhi (K)\nUstaz Izzul','Menyediakan tayangan video'],
+['JK Jurugambar','Pn Siti Kalsum Bt Duraman (K)\nUstaz Mohd Fawwaz Bin Mohd Sulhi','Mengambil gambar semasa program berlangsung\nMemilih gambar yang sesuai untuk dokumentasi\nMenyediakan dokumentasi selepas Hari Penyampaian Hadiah secara hardcopy dan softcopy'],
+['JK Disiplin, Keselamatan & Kebersihan','En. Amirudin Bin Lantji (K)\nEn Muhd Yuzaideen Bin Yahya\nPekerja Pembersihan Sekolah','Mengawal disiplin murid sepanjang majlis\nSentiasa bersedia dengan sebarang kes kecemasan atau kecederaan\nMemastikan kebersihan dewan dan kawasan sekolah sebelum, semasa dan selepas majlis\nMenyediakan tong sampah di kawasan dewan'],
+['JK Jamuan VIP dan Guru','Pn Erni Bt Abdul Manaf (K)\nPn Saberiah Bt Suarno','Menyediakan menu yang sesuai mengikut perbincangan\nMembuat tempahan menu\nMenyediakan tempat jamuan\nMemastikan kebersihan tempat jamuan\nMenentukan bilangan VIP dan guru yang hadir'],
+['JK Jamuan Ibu Bapa dan Murid','Pn Rosminah Bt Arsad (K)\nPn Saodah Bt Abdul Haris\nPn. Marsiah Bt Surmin\nPn Sutinah Bt Dollah\nPn. Maria Bt. Majid','Menentukan bilangan ibu bapa dan murid yang hadir\nMembincangkan menu yang sesuai\nMembuat tempahan\nMenyediakan / mengagihkan makanan kepada ibu bapa dan murid'],
+['JK Pemilihan Tokoh Kokum','Cik Norliah Bt Aminulla (K)\nPn. Sarinah Binti Mohammad','Menyediakan senarai nama penerima hadiah mengikut kategori yang ditetapkan\nMemaklumkan murid yang menerima hadiah dan mengesahkan kehadiran mereka\nMenyerahkan senarai nama penerima anugerah kepada AJK Hadiah dan Sijil, AJK Pengurus Peserta, AJK Buku Aturcara dan AJK Juruacara'],
+['JK Ikrar Rukun Negara','Pn. Samsiah Bt Sundu (K)\nPn. Kalsom Bt Tang','Melatih murid untuk membaca Ikrar Rukun Negara']].map(([jk,ahli,tugas],i)=>({id:'j'+(i+1),jk,ahli,tugas})),
   tentatif:[['07:30','Ketibaan murid & ibu bapa · Pendaftaran','JK Pendaftaran'],['07:45','Ketibaan guru & AJK','JK Penyelaras Majlis / Protokol'],['08:00','Ketibaan tetamu kehormat','JK Penyambut Tetamu'],['08:05','Lagu Negaraku, Sabah Tanah Airku & Lagu Sekolah','JK LCD dan PA Sistem'],['08:15','Ikrar Rukun Negara','JK Ikrar Rukun Negara'],['08:20','Bacaan Doa','JK Bacaan Doa'],['08:25','Ucapan Aluan YDP PIBG','JK Juru Acara'],['08:35','Ucapan Perasmian Guru Besar','JK Juru Acara'],['08:50','Persembahan 1 · Action Song','JK Persembahan'],['09:00','Penyampaian Anugerah Kurikulum','JK Penerima Anugerah (Slaid)'],['09:45','Persembahan 2','JK Persembahan'],['09:55','Penyampaian Anugerah Hal Ehwal Murid','JK Penerima Anugerah (Slaid)'],['10:30','Penyampaian Anugerah Kokurikulum & Ikon Kokurikulum','JK Penerima Anugerah (Slaid)'],['10:50','Tayangan Video Kenangan','JK Tayangan Video'],['11:00','Sesi bergambar & Photo Booth','JK Jurugambar'],['11:15','Jamuan & bersurai','JK Jamuan Ibu Bapa dan Murid']].map(([masa,acara,pic],i)=>({id:'t'+(i+1),masa,acara,pic})),
   persiapan:['Sijil','Hadiah & Cenderahati','Slaid Penerima','Buku Atur Cara & Banner','Hiasan Pentas','Persembahan','Jamuan','Photo Booth'].map((nama,i)=>({id:'p'+(i+1),nama,peratus:'0'}))
 };
@@ -638,7 +652,8 @@ async function busy(btn,fn){const h=btn.innerHTML;btn.disabled=true;btn.textCont
 function countUp(el,to){const t0=performance.now(),d=RM?0:1400;(function f(t){const p=d?Math.min(1,(t-t0)/d):1;el.textContent=Math.round(to*(1-Math.pow(1-p,3))).toLocaleString('ms-MY');if(p<1)requestAnimationFrame(f)})(t0)}
 const initials=n=>n.replace(/\(K\)/i,'').replace(/^((Pn|En|Cik|Tuan|Tn|Ustazah|Ustaz|Hjh|Hj|Haji|Dr)\.?\s+)+/i,'').split(/\s+/).filter(w=>w&&!/^(bin|bt\.?|binti|anak|dan)$/i.test(w)).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'•';
 const hl=(s,q)=>{s=esc(s);return q?s.replace(new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'):s};
-const ahliList=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean).map(x=>({nama:x.replace(/\s*\(K\)\s*$/i,''),k:/\(K\)\s*$/i.test(x)}));
+const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
+const ahliList=t=>lines(t).map(x=>({nama:x.replace(/\s*\(K\)\s*$/i,''),k:/\(K\)\s*$/i.test(x)}));
 const imgURL=(g,w)=>g.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(g.fid)}&sz=w${w}`;
 const logoURL=()=>{const l=D.settings.logo;return !l?'':/^data:/.test(l)?l:`https://drive.google.com/thumbnail?id=${encodeURIComponent(l)}&sz=w400`};
 const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' ')[1]||''))-KLS.indexOf((b.kelas.split(' ')[1]||''))||a.kelas.localeCompare(b.kelas)||a.nama.localeCompare(b.nama);
@@ -854,11 +869,12 @@ $('#scrim').onclick=closeDrawer;
 
 /* ---------- AJK ---------- */
 $('#ajkQ').oninput=renderAjk;
+const ahliHTML=(t,q)=>ahliList(t).map(m=>m.k?`<div class="lead"><span class="av" aria-hidden="true">${esc(initials(m.nama))}</span><div><small>KETUA</small>${hl(m.nama,q)}</div></div>`:`<div class="mem"><span class="av" aria-hidden="true">${esc(initials(m.nama))}</span>${hl(m.nama,q)}</div>`).join('');
 function renderAjk(){
   const q=$('#ajkQ').value.trim(),ql=q.toLowerCase();
-  const list=D.ajk.map((j,i)=>[j,i]).filter(([j])=>!ql||j.jk.toLowerCase().includes(ql)||String(j.ahli).toLowerCase().includes(ql));
+  const list=D.ajk.map((j,i)=>[j,i]).filter(([j])=>!ql||[j.jk,j.ahli,j.tugas].some(x=>String(x||'').toLowerCase().includes(ql)));
   $('#ajkGrid').innerHTML=list.length?list.map(([j,i],n)=>`<div class="card jk rise" style="animation-delay:${Math.min(n,16)*.03}s"><span class="no" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><h4>${hl(j.jk,q)}</h4>
-    ${ahliList(j.ahli).map(m=>m.k?`<div class="lead"><span class="av" aria-hidden="true">${esc(initials(m.nama))}</span><div><small>KETUA</small>${hl(m.nama,q)}</div></div>`:`<div class="mem"><span class="av" aria-hidden="true">${esc(initials(m.nama))}</span>${hl(m.nama,q)}</div>`).join('')}</div>`).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-users"/></svg><p>Tiada padanan.</p></div>`;
+    ${ahliHTML(j.ahli,q)}${lines(j.tugas).length?`<div class="tugas"><small>BIDANG TUGAS</small><ul>${lines(j.tugas).map(t=>`<li>${hl(t,q)}</li>`).join('')}</ul></div>`:''}</div>`).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-users"/></svg><p>Tiada padanan.</p></div>`;
 }
 
 /* ---------- tentatif ---------- */
@@ -945,7 +961,7 @@ function renderSet(){
     <div class="set-row" style="margin-top:12px"><span><b>Muat turun senarai penerima</b><br><small class="muted">CSV untuk JK Sijil / JK Pengurus Penerima (dibuka dalam Excel).</small></span><button class="btn ghost sm" onclick="exportCSV()"><svg class="i"><use href="#i-dl"/></svg>CSV</button></div>
   </div>
   <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
-  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div id="reAjk"></div></div>
+  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
   <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div id="reTT"></div></div>
   <div class="setp card ${SETTAB==='persiapan'?'on':''}" data-p="persiapan"><h3>STATUS PERSIAPAN</h3><p class="hint">Peratus siap (0–100) dipaparkan di Dashboard.</p><div id="rePrep"></div></div>
   <div class="setp card ${SETTAB==='sistem'?'on':''}" data-p="sistem"><h3>SISTEM</h3>
@@ -961,7 +977,8 @@ function renderSet(){
   $('#reseed').onclick=()=>confirm('Gantikan kategori anugerah, AJK, tentatif dan persiapan dengan data permulaan?')&&seedRemote();
   if(IMPORT)drawImport();
   rowEditor($('#reAw'),'anugerah',[{k:'nama',label:'Nama anugerah',flex:3},{k:'kat',label:'Kategori',type:'select',opts:CAT,flex:1}],{id:'a'});
-  rowEditor($('#reAjk'),'ajk',[{k:'jk',label:'Jawatankuasa',flex:2},{k:'ahli',label:'Ahli (satu setiap baris)',type:'textarea',flex:3}],{id:'j'});
+  $('#ajkSeed').onclick=e=>confirm('Gantikan senarai AJK dengan data kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'ajk',rows:SEED.ajk}));
+  rowEditor($('#reAjk'),'ajk',[{k:'jk',label:'Jawatankuasa',flex:2},{k:'ahli',label:'Ahli (satu setiap baris)',type:'textarea',flex:3},{k:'tugas',label:'Bidang tugas (satu setiap baris)',type:'textarea',flex:3}],{id:'j'});
   rowEditor($('#reTT'),'tentatif',[{k:'masa',label:'Masa',type:'time',flex:1},{k:'acara',label:'Acara',flex:3},{k:'pic',label:'PIC / JK',flex:2}],{id:'t'});
   rowEditor($('#rePrep'),'persiapan',[{k:'nama',label:'Perkara',flex:3},{k:'peratus',label:'% siap',type:'number',flex:1}],{id:'p'});
 }
@@ -1052,7 +1069,7 @@ function downloadCSV(name,rows){
 }
 
 /* ---------- mod pentas ---------- */
-const SG={aid:'',th:'',i:0};
+const SG={aid:'',th:'',i:0,mode:'aw'};
 function stageOpts(){
   const aws=D.anugerah.filter(a=>counts(a).n);
   if(!aws.some(a=>a.id===SG.aid))SG.aid=aws[0]?.id||'';
@@ -1062,15 +1079,18 @@ function stageOpts(){
   $('#stTh').innerHTML=`<option value="">Semua tahun</option>`+ths.map(t=>`<option value="${esc(t)}" ${t===SG.th?'selected':''}>Tahun ${esc(t)}</option>`).join('');
 }
 function slides(){
+  if(SG.mode==='ajk')return D.ajk.length?[{intro:1},...D.ajk.map((j,i)=>({j,i}))]:[];
   const aw=D.anugerah.find(a=>a.id===SG.aid);if(!aw||!D.penerima)return [];
   const ps=D.penerima.filter(p=>p.aid===SG.aid&&(!SG.th||p.tahun===SG.th)).sort(byKelas);
   return [{aw,n:ps.length},...ps.map(p=>({aw,p}))];
 }
 function openStage(aid){
   if(!PIN){go('tetapan');return toast('Buka mod admin dahulu',true)}
-  if(aid)SG.aid=aid;SG.th='';SG.i=0;stageOpts();
-  $('#stage').classList.add('on');showSlide();
+  if(aid)SG.aid=aid;SG.th='';SG.i=0;SG.mode='aw';stageOpts();
+  $('#stage').classList.remove('ajk');$('#stage').classList.add('on');showSlide();
 }
+// AJK is public data, so presenting it at a meeting needs no admin PIN
+function openAjkStage(){SG.mode='ajk';SG.i=0;$('#stage').classList.add('on','ajk');showSlide()}
 function closeStage(){$('#stage').classList.remove('on');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}
 function toggleFull(){document.fullscreenElement?document.exitFullscreen().catch(()=>{}):document.documentElement.requestFullscreen?.().catch(()=>{})}
 $('#stAw').onchange=e=>{SG.aid=e.target.value;SG.th='';SG.i=0;stageOpts();showSlide()};
@@ -1083,10 +1103,15 @@ function stageGo(d){
 }
 function showSlide(){
   const S=slides(),el=$('#stSlide');
-  if(!S.length){el.innerHTML='<div class="title">Tiada penerima</div>';$('#stP').textContent='';return}
+  if(!S.length){el.innerHTML=`<div class="title">${SG.mode==='ajk'?'Tiada AJK':'Tiada penerima'}</div>`;$('#stP').textContent='';return}
   SG.i=Math.min(SG.i,S.length-1);const s=S[SG.i];
   $('#stage').classList.remove('shown');
-  if(!s.p){
+  if(SG.mode==='ajk'){
+    const n=D.ajk.length,pad=x=>String(x).padStart(2,'0');
+    if(s.intro)el.innerHTML=`<div class="label">${esc(D.settings.nama.toUpperCase())}</div>${logoURL()?`<div class="mono" style="width:120px;height:120px;margin-bottom:4vh"><img src="${esc(logoURL())}" alt=""></div>`:`<div class="ring"><svg class="i"><use href="#i-users"/></svg></div>`}<div class="title gold-text">Ahli Jawatankuasa</div><div class="count">${n} JAWATANKUASA · ${D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0)} AHLI</div>`;
+    else{const t=lines(s.j.tugas);
+      el.innerHTML=`<div class="label">AHLI JAWATANKUASA · ${pad(s.i+1)} / ${pad(n)}</div><div class="jt gold-text">${esc(s.j.jk)}</div><div class="jgrid ${t.length?'':'one'}"><div><h5>AHLI</h5><div class="${ahliList(s.j.ahli).length>6?'many':''}">${ahliHTML(s.j.ahli)}</div></div>${t.length?`<div><h5>BIDANG TUGAS</h5><ol>${t.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`:''}</div>`}
+  }else if(!s.p){
     el.innerHTML=`<div class="label">${esc((CAT[s.aw.kat]||'').toUpperCase())}${SG.th?' · TAHUN '+esc(SG.th):''}</div>${logoURL()?`<div class="mono" style="width:120px;height:120px;margin-bottom:4vh"><img src="${esc(logoURL())}" alt=""></div>`:`<div class="ring"><svg class="i"><use href="#${CATIC[s.aw.kat]||'i-award'}"/></svg></div>`}<div class="title gold-text">${esc(s.aw.nama)}</div><div class="count">${s.n} PENERIMA</div>`;
   }else{
     const words=s.p.nama.split(' ');let k=0;

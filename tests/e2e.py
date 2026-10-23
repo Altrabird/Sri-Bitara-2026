@@ -74,7 +74,7 @@ def common_flow(pg, tag):
         pg.click(f'.nav[data-v={v}]')
         pg.wait_for_timeout(700)
         shot(pg, f'{tag}-{v}')
-    assert pg.locator('#ajkGrid .jk').count() == 23 or pg.evaluate('D.ajk.length') == 23
+    assert pg.locator('#ajkGrid .jk').count() == 24 or pg.evaluate('D.ajk.length') == 24
 
 
 with sync_playwright() as p:
@@ -166,9 +166,9 @@ with sync_playwright() as p:
     pg.click('#admin .chip[data-t=ajk]')
     pg.click('#reAjk [data-a=add]')
     pg.locator('#reAjk .re-row[data-i]').last.locator('input').fill('JK Ujian')
-    pg.locator('#reAjk .re-row[data-i]').last.locator('textarea').fill('Cikgu Satu (K)\nCikgu Dua')
+    pg.locator('#reAjk .re-row[data-i]').last.locator('textarea').first.fill('Cikgu Satu (K)\nCikgu Dua')
     pg.click('#reAjk [data-a=save]')
-    pg.wait_for_function('D.ajk.length===24')
+    pg.wait_for_function('D.ajk.length===25')
     # settings: date + public names off by default → lock hides names
     pg.click('#admin .chip[data-t=majlis]')
     pg.fill('#sTarikh', '2026-12-01')
@@ -214,7 +214,7 @@ with sync_playwright() as p:
         pg.wait_for_timeout(600)
         pg.fill('#pinIn', '246810'); pg.press('#pinIn', 'Enter')
         expect(pg.locator('#admin')).to_be_visible(timeout=8000)
-        pg.wait_for_function('D.anugerah.length===23 && D.ajk.length===23', timeout=15000)  # seeded via confirm()
+        pg.wait_for_function('D.anugerah.length===23 && D.ajk.length===24', timeout=15000)  # seeded via confirm()
         # add recipients: pick class, tick pupils from the Hadir roster, plus one manual name
         pg.click('.nav[data-v=anugerah]')
         pg.locator('#awGrid .aw').nth(5).click()
