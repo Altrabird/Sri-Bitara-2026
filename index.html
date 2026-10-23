@@ -228,6 +228,7 @@ span.tg{display:inline-flex;align-items:center}
 .lead small{display:block;font-size:10.5px;letter-spacing:.16em;color:var(--gold)}
 .mem{display:flex;gap:10px;align-items:center;font-size:13px;padding:5px 2px;color:var(--cream)}
 .mem .av{width:28px;height:28px;font-size:11.5px}
+.lead>div,.mem{text-transform:uppercase}
 .tugas{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .tugas small{font-size:10.5px;letter-spacing:.16em;color:var(--gold);font-weight:700}
 .tugas ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;line-height:1.5;color:var(--muted)}
@@ -346,14 +347,16 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
 #stage .ctrl button{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--gold2);background:var(--panel)}
 #confetti{position:absolute;inset:0;pointer-events:none}
 #stage.ajk .bar select,#stage.ajk .bar label{display:none}
-#stage .jt{font:700 clamp(26px,3.6vw,56px)/1.1 var(--hf);max-width:22em;margin-bottom:4vh}
-#stage .jgrid{display:grid;grid-template-columns:1fr 1.2fr;gap:4vw;width:100%;max-width:1400px;text-align:left;max-height:62vh;overflow:auto}
-#stage .jgrid.one{grid-template-columns:minmax(0,1100px);justify-content:center}
-#stage .jgrid h5{font:700 clamp(13px,1.2vw,18px) var(--hf);letter-spacing:.3em;color:var(--gold);margin-bottom:1.5vh}
-#stage .jgrid .lead,#stage .jgrid .mem{font-size:clamp(15px,1.45vw,24px)}
-#stage .jgrid .many{columns:2;column-gap:2vw}#stage .jgrid .many>div{break-inside:avoid}
-#stage .jgrid ol{margin:0;padding-left:1.3em;font-size:clamp(15px,1.4vw,23px);line-height:1.45;color:var(--cream)}
-#stage .jgrid li{margin-bottom:1vh}
+#stage .jt{font:700 clamp(30px,4.4vw,80px)/1.1 var(--hf);max-width:22em;margin-bottom:3vh}
+#stage .jgrid{display:grid;grid-template-columns:1fr 1.15fr;gap:4vw;width:100%;max-width:1800px;text-align:left;font-size:clamp(20px,2.4vw,52px)}
+#stage .jgrid.one{grid-template-columns:minmax(0,1500px);justify-content:center}
+#stage .jgrid h5{font:700 .6em var(--hf);letter-spacing:.3em;color:var(--gold);margin-bottom:.6em}
+#stage .jgrid .lead,#stage .jgrid .mem{font-size:1em;line-height:1.25;gap:.5em}
+#stage .jgrid .lead small{font-size:.5em}
+#stage .jgrid .av{width:2.8em;height:2.8em;font-size:.6em}
+#stage .jgrid:not(.one):has(.many){grid-template-columns:1.6fr 1fr}#stage .jgrid .many{columns:2;column-gap:2vw}#stage .jgrid .many>div{break-inside:avoid}
+#stage .jgrid ol{margin:0;padding-left:1.3em;font-size:.95em;line-height:1.35;color:var(--cream)}
+#stage .jgrid li{margin-bottom:.35em}
 @media (max-width:760px){#stage .jgrid{grid-template-columns:1fr}#stage .jgrid .many{columns:1}}
 
 @media (max-width:980px){
@@ -1091,6 +1094,12 @@ function openStage(aid){
 }
 // AJK is public data, so presenting it at a meeting needs no admin PIN
 function openAjkStage(){SG.mode='ajk';SG.i=0;$('#stage').classList.add('on','ajk');showSlide()}
+// start big, shrink until the slide clears the top bar and bottom controls
+function fitAjk(){
+  const g=$('#stSlide .jgrid');if(!g)return;g.style.fontSize='';
+  for(let f=parseFloat(getComputedStyle(g).fontSize);f>14&&$('#stSlide').offsetHeight>innerHeight-170;f*=.95)g.style.fontSize=f+'px';
+}
+addEventListener('resize',()=>$('#stage').classList.contains('ajk')&&fitAjk());
 function closeStage(){$('#stage').classList.remove('on');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}
 function toggleFull(){document.fullscreenElement?document.exitFullscreen().catch(()=>{}):document.documentElement.requestFullscreen?.().catch(()=>{})}
 $('#stAw').onchange=e=>{SG.aid=e.target.value;SG.th='';SG.i=0;stageOpts();showSlide()};
@@ -1110,7 +1119,7 @@ function showSlide(){
     const n=D.ajk.length,pad=x=>String(x).padStart(2,'0');
     if(s.intro)el.innerHTML=`<div class="label">${esc(D.settings.nama.toUpperCase())}</div>${logoURL()?`<div class="mono" style="width:120px;height:120px;margin-bottom:4vh"><img src="${esc(logoURL())}" alt=""></div>`:`<div class="ring"><svg class="i"><use href="#i-users"/></svg></div>`}<div class="title gold-text">Ahli Jawatankuasa</div><div class="count">${n} JAWATANKUASA · ${D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0)} AHLI</div>`;
     else{const t=lines(s.j.tugas);
-      el.innerHTML=`<div class="label">AHLI JAWATANKUASA · ${pad(s.i+1)} / ${pad(n)}</div><div class="jt gold-text">${esc(s.j.jk)}</div><div class="jgrid ${t.length?'':'one'}"><div><h5>AHLI</h5><div class="${ahliList(s.j.ahli).length>6?'many':''}">${ahliHTML(s.j.ahli)}</div></div>${t.length?`<div><h5>BIDANG TUGAS</h5><ol>${t.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`:''}</div>`}
+      el.innerHTML=`<div class="label">AHLI JAWATANKUASA · ${pad(s.i+1)} / ${pad(n)}</div><div class="jt gold-text">${esc(s.j.jk)}</div><div class="jgrid ${t.length?'':'one'}"><div><h5>AHLI</h5><div class="${ahliList(s.j.ahli).length>6?'many':''}">${ahliHTML(s.j.ahli)}</div></div>${t.length?`<div><h5>BIDANG TUGAS</h5><ol>${t.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`:''}</div>`;fitAjk()}
   }else if(!s.p){
     el.innerHTML=`<div class="label">${esc((CAT[s.aw.kat]||'').toUpperCase())}${SG.th?' · TAHUN '+esc(SG.th):''}</div>${logoURL()?`<div class="mono" style="width:120px;height:120px;margin-bottom:4vh"><img src="${esc(logoURL())}" alt=""></div>`:`<div class="ring"><svg class="i"><use href="#${CATIC[s.aw.kat]||'i-award'}"/></svg></div>`}<div class="title gold-text">${esc(s.aw.nama)}</div><div class="count">${s.n} PENERIMA</div>`;
   }else{
