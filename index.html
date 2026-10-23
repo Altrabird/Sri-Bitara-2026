@@ -246,6 +246,8 @@ mark{background:rgba(var(--gold-rgb),.35);color:inherit;border-radius:3px}
 .ti b{display:block;font-size:14.5px}
 .ti small{color:var(--muted);font-size:12.5px}
 .ti .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.ti .chip{white-space:normal;text-align:center}
+.tday{font:700 15px var(--hf);letter-spacing:.18em;color:var(--gold);margin:30px 0 14px}.tday:first-child{margin-top:0}
 
 /* galeri */
 .masonry{columns:4 220px;column-gap:14px}
@@ -568,7 +570,7 @@ const SEED={
 ['JK Jamuan Ibu Bapa dan Murid','Pn Rosminah Bt Arsad (K)\nPn Saodah Bt Abdul Haris\nPn. Marsiah Bt Surmin\nPn Sutinah Bt Dollah\nPn. Maria Bt. Majid','Menentukan bilangan ibu bapa dan murid yang hadir\nMembincangkan menu yang sesuai\nMembuat tempahan\nMenyediakan / mengagihkan makanan kepada ibu bapa dan murid'],
 ['JK Pemilihan Tokoh Kokum','Cik Norliah Bt Aminulla (K)\nPn. Sarinah Binti Mohammad','Menyediakan senarai nama penerima hadiah mengikut kategori yang ditetapkan\nMemaklumkan murid yang menerima hadiah dan mengesahkan kehadiran mereka\nMenyerahkan senarai nama penerima anugerah kepada AJK Hadiah dan Sijil, AJK Pengurus Peserta, AJK Buku Aturcara dan AJK Juruacara'],
 ['JK Ikrar Rukun Negara','Pn. Samsiah Bt Sundu (K)\nPn. Kalsom Bt Tang','Melatih murid untuk membaca Ikrar Rukun Negara']].map(([jk,ahli,tugas],i)=>({id:'j'+(i+1),jk,ahli,tugas})),
-  tentatif:[['07:30','Ketibaan murid & ibu bapa · Pendaftaran','JK Pendaftaran'],['07:45','Ketibaan guru & AJK','JK Penyelaras Majlis / Protokol'],['08:00','Ketibaan tetamu kehormat','JK Penyambut Tetamu'],['08:05','Lagu Negaraku, Sabah Tanah Airku & Lagu Sekolah','JK LCD dan PA Sistem'],['08:15','Ikrar Rukun Negara','JK Ikrar Rukun Negara'],['08:20','Bacaan Doa','JK Bacaan Doa'],['08:25','Ucapan Aluan YDP PIBG','JK Juru Acara'],['08:35','Ucapan Perasmian Guru Besar','JK Juru Acara'],['08:50','Persembahan 1 · Action Song','JK Persembahan'],['09:00','Penyampaian Anugerah Kurikulum','JK Penerima Anugerah (Slaid)'],['09:45','Persembahan 2','JK Persembahan'],['09:55','Penyampaian Anugerah Hal Ehwal Murid','JK Penerima Anugerah (Slaid)'],['10:30','Penyampaian Anugerah Kokurikulum & Ikon Kokurikulum','JK Penerima Anugerah (Slaid)'],['10:50','Tayangan Video Kenangan','JK Tayangan Video'],['11:00','Sesi bergambar & Photo Booth','JK Jurugambar'],['11:15','Jamuan & bersurai','JK Jamuan Ibu Bapa dan Murid']].map(([masa,acara,pic],i)=>({id:'t'+(i+1),masa,acara,pic})),
+  tentatif:[['','HARI PERTAMA · JUMAAT, 27 NOVEMBER 2026',''],['07:00','Guru dan murid berkumpul di dalam dewan sekolah','AJK Program'],['07:30','Majlis bacaan Yasin & Hadis 40','GPI & GBA'],['08:00','Ketibaan Guru Besar dan Guru Penolong Kanan',''],['08:30','Nyanyian lagu Negaraku & Sabah Tanah Airku',''],['08:30','Ikrar Rukun Negara',''],['08:30','Bacaan doa oleh Ustaz Abbas Bin Osman',''],['08:30','Ucapan alu-aluan oleh En. Abidin Bin Moen, Guru Besar SK Bandar Tawau',''],['09:00','Penyampaian hadiah: semua hadiah untuk murid Tahun 6 kecuali Tokoh Murid','Juru Acara · AJK Hadiah · Pengurus Peserta · AJK Protokol'],['11:20','Majlis dijangka bersurai',''],['','HARI KEDUA · SABTU, 28 NOVEMBER 2026 · MAJLIS UTAMA',''],['07:00','Guru dan murid yang terlibat berkumpul di dalam dewan sekolah','AJK Program'],['08:00','Ketibaan YBhg. Datuk Hajah Hamisa Bt Samat, Pengerusi Alumni SRK Pekan & SK Bandar Tawau',''],['08:45','Nyanyian lagu Negaraku & Sabah Tanah Airku',''],['08:45','Lafaz Ikrar Rukun Negara',''],['08:45','Bacaan doa',''],['08:45','Ucapan alu-aluan oleh En. Abidin Bin Moen, Guru Besar SK Bandar Tawau',''],['08:45','Ucapan perasmian oleh YBhg. Datuk Hajah Hamisa Bt Samat, Pengerusi Alumni SRK Pekan & SK Bandar Tawau',''],['08:45','Persembahan Montaj',''],['09:30','Penyampaian hadiah mengikut kategori','Juru Acara · AJK Hadiah · Pengurus Peserta · AJK Protokol'],['09:30','Anugerah Duta Sahsiah',''],['09:30','Anugerah Murid Cemerlang Kokurikulum Badan Beruniform 2026',''],['09:30','Anugerah Murid Cemerlang Kokurikulum Sukan Permainan 2026',''],['09:30','Anugerah Murid Cemerlang Kelab dan Persatuan 2026',''],['09:30','Persembahan 1',''],['09:30','Anugerah Sumbangan Muzik Unggul 2026',''],['09:30','Anugerah Tokoh Harapan Kokurikulum 2026',''],['09:30','Anugerah Ikon Kokurikulum 2026',''],['09:30','Persembahan 2',''],['09:30','Anugerah Emas PBD (mata pelajaran terbaik)',''],['09:30','Persembahan 3',''],['09:30','Anugerah NILAM Tahun 1-6',''],['09:30','Anugerah Pemulihan Khas',''],['09:30','Anugerah Cemerlang j-QAF Tahun 6',''],['09:30','Penyampaian cenderamata kepada perasmi',''],['12:30','Majlis dijangka bersurai','']].map(([masa,acara,pic],i)=>({id:'t'+(i+1),masa,acara,pic})),
   persiapan:['Sijil','Hadiah & Cenderahati','Slaid Penerima','Buku Atur Cara & Banner','Hiasan Pentas','Persembahan','Jamuan','Photo Booth'].map((nama,i)=>({id:'p'+(i+1),nama,peratus:'0'}))
 };
 
@@ -656,6 +658,7 @@ function countUp(el,to){const t0=performance.now(),d=RM?0:1400;(function f(t){co
 const initials=n=>n.replace(/\(K\)/i,'').replace(/^((Pn|En|Cik|Tuan|Tn|Ustazah|Ustaz|Hjh|Hj|Haji|Dr)\.?\s+)+/i,'').split(/\s+/).filter(w=>w&&!/^(bin|bt\.?|binti|anak|dan)$/i.test(w)).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'•';
 const hl=(s,q)=>{s=esc(s);return q?s.replace(new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'):s};
 const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
+const isDay=t=>!t.masa; // tentatif row with no time = day heading
 const ahliList=t=>lines(t).map(x=>({nama:x.replace(/\s*\(K\)\s*$/i,''),k:/\(K\)\s*$/i.test(x)}));
 const imgURL=(g,w)=>g.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(g.fid)}&sz=w${w}`;
 const logoURL=()=>{const l=D.settings.logo;return !l?'':/^data:/.test(l)?l:`https://drive.google.com/thumbnail?id=${encodeURIComponent(l)}&sz=w400`};
@@ -698,7 +701,7 @@ function renderDash(nav){
   const ahli=D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0);
   const SUM=Object.keys(CAT).map(k=>[k,D.anugerah.filter(a=>a.kat===k).reduce((t,a)=>t+counts(a).n,0)]);
   const d=new Date(s.tarikh+'T'+(s.masa||'07:30'));
-  const cur=T[now], nxt=T[now+1];
+  const cur=T[now], nxt=T.slice(now+1).find(t=>!isDay(t));
   $('#v-dashboard').innerHTML=`
   <div class="card hero rise">
     <div>
@@ -717,7 +720,7 @@ function renderDash(nav){
     <div class="card kpi rise" style="animation-delay:.1s"><div class="ic"><svg class="i"><use href="#i-award"/></svg></div><div class="n" data-count="${D.anugerah.length}">0</div><div class="l">Kategori anugerah</div></div>
     <div class="card kpi rise" style="animation-delay:.18s"><div class="ic"><svg class="i"><use href="#i-spark"/></svg></div><div class="n" data-count="${total}">0</div><div class="l">Penerima${got?` · ${got} sudah menerima`:''}</div></div>
     <div class="card kpi rise" style="animation-delay:.26s"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div class="n" data-count="${D.ajk.length}">0</div><div class="l">Jawatankuasa · ${ahli} ahli</div></div>
-    <div class="card kpi rise" style="animation-delay:.34s"><div class="ic"><svg class="i"><use href="#i-cal"/></svg></div><div class="n" data-count="${T.length}">0</div><div class="l">Acara dalam tentatif</div></div>
+    <div class="card kpi rise" style="animation-delay:.34s"><div class="ic"><svg class="i"><use href="#i-cal"/></svg></div><div class="n" data-count="${T.filter(t=>!isDay(t)).length}">0</div><div class="l">Acara dalam tentatif</div></div>
   </div>
   <div class="grid dash2">
     <div class="card rise" style="animation-delay:.4s">
@@ -726,7 +729,7 @@ function renderDash(nav){
     </div>
     <div class="card rise" style="animation-delay:.48s">
       <h3>SEDANG BERLANGSUNG</h3>
-      ${cur?`<div class="now"><span class="pulse"></span><div><b>${esc(cur.acara)}</b><br><small class="muted">${esc(cur.masa)} · PIC: ${esc(cur.pic)}</small></div></div>`:`<div class="now idle"><div><b>${now>=T.length&&T.length?'Majlis telah selesai':'Majlis belum bermula'}</b><br><small class="muted">Ikuti tentatif untuk atur cara penuh</small></div></div>`}
+      ${cur?`<div class="now"><span class="pulse"></span><div><b>${esc(cur.acara)}</b><br><small class="muted">${esc(cur.masa)}${cur.pic?' · PIC: '+esc(cur.pic):''}</small></div></div>`:`<div class="now idle"><div><b>${now>=T.length&&T.length?'Majlis telah selesai':'Majlis belum bermula'}</b><br><small class="muted">Ikuti tentatif untuk atur cara penuh</small></div></div>`}
       ${nxt?`<p class="next">Seterusnya: <b style="color:var(--cream)">${esc(nxt.masa)} · ${esc(nxt.acara)}</b></p>`:''}
       <div class="live-ctrl adm"><button class="btn ghost" onclick="setNow(D.settings.now-1)"><svg class="i"><use href="#i-l"/></svg>Sebelum</button><button class="btn" onclick="setNow(D.settings.now+1)">Seterusnya<svg class="i"><use href="#i-r"/></svg></button></div>
       <h3>PECAHAN PENERIMA</h3>
@@ -744,7 +747,7 @@ function renderDash(nav){
     nav?requestAnimationFrame(()=>requestAnimationFrame(fill)):fill();
   }
 }
-async function setNow(i){i=Math.max(-1,Math.min(D.tentatif.length,i));try{await call('saveSettings',{settings:{now:i}},{quiet:true});toast(D.tentatif[i]?'Sekarang: '+D.tentatif[i].acara:'Dikemas kini')}catch(e){toast(e.message,true)}}
+async function setNow(i){const d=i<D.settings.now?-1:1;while(D.tentatif[i]&&isDay(D.tentatif[i]))i+=d;i=Math.max(-1,Math.min(D.tentatif.length,i));try{await call('saveSettings',{settings:{now:i}},{quiet:true});toast(D.tentatif[i]?'Sekarang: '+D.tentatif[i].acara:'Dikemas kini')}catch(e){toast(e.message,true)}}
 function tick(force){
   const box=$('#cdBox');if(!box)return;
   const s=D.settings, target=new Date(s.tarikh+'T'+(s.masa||'07:30'));
@@ -883,7 +886,8 @@ function renderAjk(){
 /* ---------- tentatif ---------- */
 function renderTT(){
   const now=D.settings.now;
-  $('#tl').innerHTML=D.tentatif.length?D.tentatif.map((t,i)=>`<div class="card ti rise ${i<now?'done':i===now?'live':''}" style="animation-delay:${Math.min(i,16)*.035}s"><time>${esc(t.masa)}</time><div><b>${esc(t.acara)}</b><small>${i===now?'● Sedang berlangsung':i<now?'Selesai':'Akan datang'}</small></div><div class="acts">${t.pic?`<span class="chip">${esc(t.pic)}</span>`:''}${i!==now?`<button class="btn sm ghost adm" onclick="setNow(${i})">Tandakan sekarang</button>`:''}</div></div>`).join(''):`<div class="empty"><svg class="i"><use href="#i-cal"/></svg><p>Tentatif belum ditetapkan.</p></div>`;
+  const T=D.tentatif;
+  $('#tl').innerHTML=T.length?T.map((t,i)=>isDay(t)?`<h3 class="tday">${esc(t.acara)}</h3>`:`<div class="card ti rise ${i<now?'done':i===now?'live':''}" style="animation-delay:${Math.min(i,16)*.035}s"><time>${T[i-1]?.masa===t.masa?'':esc(t.masa)}</time><div><b>${esc(t.acara)}</b><small>${i===now?'● Sedang berlangsung':i<now?'Selesai':'Akan datang'}</small></div><div class="acts">${t.pic?`<span class="chip">${esc(t.pic)}</span>`:''}${i!==now?`<button class="btn sm ghost adm" onclick="setNow(${i})">Tandakan sekarang</button>`:''}</div></div>`).join(''):`<div class="empty"><svg class="i"><use href="#i-cal"/></svg><p>Tentatif belum ditetapkan.</p></div>`;
 }
 
 /* ---------- galeri ---------- */
@@ -965,7 +969,7 @@ function renderSet(){
   </div>
   <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
   <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
-  <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div id="reTT"></div></div>
+  <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. Biarkan <b>Masa</b> kosong untuk baris tajuk hari. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div class="set-row"><span>Muat tentatif 2 hari daripada kertas kerja 2026<br><small class="muted">Menggantikan tentatif sahaja.</small></span><button class="btn ghost sm" id="ttSeed">Muat</button></div><div id="reTT"></div></div>
   <div class="setp card ${SETTAB==='persiapan'?'on':''}" data-p="persiapan"><h3>STATUS PERSIAPAN</h3><p class="hint">Peratus siap (0–100) dipaparkan di Dashboard.</p><div id="rePrep"></div></div>
   <div class="setp card ${SETTAB==='sistem'?'on':''}" data-p="sistem"><h3>SISTEM</h3>
     <div class="set-row"><span>Mod</span><span class="chip ${DEMO?'warn':'live'}">${DEMO?'Demo (localStorage pelayar ini)':'Google Apps Script'}</span></div>
@@ -982,6 +986,7 @@ function renderSet(){
   rowEditor($('#reAw'),'anugerah',[{k:'nama',label:'Nama anugerah',flex:3},{k:'kat',label:'Kategori',type:'select',opts:CAT,flex:1}],{id:'a'});
   $('#ajkSeed').onclick=e=>confirm('Gantikan senarai AJK dengan data kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'ajk',rows:SEED.ajk}));
   rowEditor($('#reAjk'),'ajk',[{k:'jk',label:'Jawatankuasa',flex:2},{k:'ahli',label:'Ahli (satu setiap baris)',type:'textarea',flex:3},{k:'tugas',label:'Bidang tugas (satu setiap baris)',type:'textarea',flex:3}],{id:'j'});
+  $('#ttSeed').onclick=e=>confirm('Gantikan tentatif dengan tentatif 2 hari daripada kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'tentatif',rows:SEED.tentatif}).then(()=>setNow(-1)));
   rowEditor($('#reTT'),'tentatif',[{k:'masa',label:'Masa',type:'time',flex:1},{k:'acara',label:'Acara',flex:3},{k:'pic',label:'PIC / JK',flex:2}],{id:'t'});
   rowEditor($('#rePrep'),'persiapan',[{k:'nama',label:'Perkara',flex:3},{k:'peratus',label:'% siap',type:'number',flex:1}],{id:'p'});
 }
@@ -1167,7 +1172,7 @@ function fillInvite(){
 }
 /* muzik latar: starts with the card tap (a user gesture, so browsers allow it) */
 const bgm=$('#bgm');let MUTE=store.get('mute',false),fadeR=0;
-function fadeTo(v,ms){cancelAnimationFrame(fadeR);const v0=bgm.volume,t0=performance.now();return new Promise(ok=>{(function f(t){const k=Math.min(1,(t-t0)/ms);bgm.volume=v0+(v-v0)*k;k<1?fadeR=requestAnimationFrame(f):ok()})(t0)})}
+function fadeTo(v,ms){cancelAnimationFrame(fadeR);const v0=bgm.volume,t0=performance.now();return new Promise(ok=>{(function f(t){const k=Math.min(1,Math.max(0,(t-t0)/ms));bgm.volume=v0+(v-v0)*k;k<1?fadeR=requestAnimationFrame(f):ok()})(t0)})}
 function playBgm(v){if(MUTE)return;bgm.volume=0;bgm.play().then(()=>fadeTo(v,2500)).catch(()=>{})}
 function drawMute(){$('#muteBtn').innerHTML=`<svg class="i" style="width:16px"><use href="#${MUTE?'i-mute':'i-vol'}"/></svg>${MUTE?'Muzik: tutup':'Muzik'}`;$('#muteBtn').setAttribute('aria-pressed',String(!MUTE));$('#muteBtn').title=MUTE?'Hidupkan muzik latar':'Senyapkan muzik latar'}
 $('#muteBtn').onclick=()=>{MUTE=!MUTE;store.set('mute',MUTE);drawMute();if(MUTE)fadeTo(0,400).then(()=>bgm.pause());else playBgm(.3)};

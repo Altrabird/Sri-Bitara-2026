@@ -150,7 +150,7 @@ with sync_playwright() as p:
     pg.click('.nav[data-v=tentatif]')
     pg.locator('#tl .ti').nth(2).locator('button').click()
     pg.wait_for_timeout(300)
-    assert pg.evaluate('D.settings.now') == 2
+    assert pg.evaluate('D.settings.now') == 3  # row 0 is the day heading
     expect(pg.locator('#tl .ti.live')).to_have_count(1)
     # gallery upload / lightbox / delete
     pg.click('.nav[data-v=galeri]')
