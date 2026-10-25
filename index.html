@@ -709,7 +709,7 @@ function render(fromPoll,nav){
 function renderDash(nav){
   const s=D.settings, now=s.now, T=D.tentatif;
   const total=D.anugerah.reduce((t,a)=>t+counts(a).n,0), got=D.anugerah.reduce((t,a)=>t+counts(a).d,0);
-  const ahli=D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0), sg=sasaranPct();
+  const sg=sasaranPct();
   const SUM=Object.keys(CAT).map(k=>[k,D.anugerah.filter(a=>a.kat===k).reduce((t,a)=>t+counts(a).n,0)]);
   const d=new Date(s.tarikh+'T'+(s.masa||'07:30'));
   const cur=T[now], nxt=T.slice(now+1).find(t=>!isDay(t));
@@ -730,7 +730,7 @@ function renderDash(nav){
   <div class="grid kpis">
     <div class="card kpi rise" style="animation-delay:.1s"><div class="ic"><svg class="i"><use href="#i-award"/></svg></div><div class="n" data-count="${D.anugerah.length}">0</div><div class="l">Kategori anugerah</div></div>
     <div class="card kpi rise" style="animation-delay:.18s"><div class="ic"><svg class="i"><use href="#i-spark"/></svg></div><div class="n" data-count="${total}">0</div><div class="l">Penerima${got?` · ${got} sudah menerima`:''}${sg==null?'':` · sasaran ${sg}%`}</div></div>
-    <div class="card kpi rise" style="animation-delay:.26s"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div class="n" data-count="${D.ajk.length}">0</div><div class="l">Jawatankuasa · ${ahli} ahli</div></div>
+    <div class="card kpi rise" style="animation-delay:.26s"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div class="n" data-count="${D.ajk.length}">0</div><div class="l">Jawatankuasa pelaksana</div></div>
     <div class="card kpi rise" style="animation-delay:.34s"><div class="ic"><svg class="i"><use href="#i-cal"/></svg></div><div class="n" data-count="${T.filter(t=>!isDay(t)).length}">0</div><div class="l">Acara dalam tentatif</div></div>
   </div>
   <div class="grid dash2">
@@ -1126,7 +1126,6 @@ function laporanHTML(){
   const murid=new Map();P.forEach(p=>murid.set(p.nama,(murid.get(p.nama)||0)+1));
   const multi=[...murid.values()].filter(n=>n>1).length;
   const th=[...new Set(P.map(p=>p.tahun).filter(Boolean))].sort();
-  const ahli=D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0);
   const induk=ahliList(D.ajk[0]?.ahli),who=re=>(induk.find(m=>re.test(m.nama))?.nama.replace(/\s*\(.*$/,'')||'').toUpperCase()||'..............................';
   const list=a=>a.slice(0,6).join('; ')+(a.length>6?` dan ${a.length-6} lagi`:'');
   const K=[],L=[],C=[];
@@ -1136,7 +1135,7 @@ function laporanHTML(){
   if(ev.length&&done===ev.length)K.push(`Semua ${ev.length} acara dalam tentatif dapat dilaksanakan mengikut atur cara.`);
   if(tT&&tF===tT)K.push(`Sasaran penerima bagi semua ${cap.length} anugerah bersasaran dicapai.`);
   if(pv>=90)K.push(`Persiapan jawatankuasa disiapkan dengan baik (purata ${pv}%).`);
-  if(ahli)K.push(`Kerjasama ${ahli} ahli dalam ${D.ajk.length} jawatankuasa pelaksana.`);
+  if(D.ajk.length)K.push(`Kerjasama semua ahli dalam ${D.ajk.length} jawatankuasa pelaksana.`);
   if(D.galeri.length)K.push(`Majlis didokumentasikan dengan ${D.galeri.length} foto dalam galeri.`);
   const miss=rows.filter(r=>r.d<r.n),under=cap.filter(r=>r.n<r.t),over=cap.filter(r=>r.n>r.t),lag=D.persiapan.filter(p=>(+p.peratus||0)<100);
   if(miss.length){L.push(`${tot-got} penerima tidak menerima anugerah di pentas (tidak hadir atau tidak ditanda "Diterima") bagi ${miss.length} anugerah: ${list(miss.map(r=>`${r.a.nama} (${r.n-r.d})`))}.`);C.push('Mengesahkan kehadiran penerima lebih awal dan menyediakan wakil bagi penerima yang tidak dapat hadir.')}
@@ -1162,7 +1161,7 @@ function laporanHTML(){
     <tr><th>TARIKH &amp; MASA PELAKSANAAN</th><td>${days.length?days.map(esc).join('<br>'):isNaN(d)?'—':esc(d.toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))}<br>${esc(s.masa)}${ev.length?' – '+esc(ev.at(-1).masa):''}</td></tr>
     <tr><th>TEMPAT</th><td>${esc(s.lokasi)}</td></tr>
     <tr><th>AKTIVITI YANG DIJALANKAN</th><td>${akt.length?ul(akt):'—'}</td></tr>
-    <tr><th>INDIVIDU / KUMPULAN YANG TERLIBAT</th><td>${ul([murid.size?`${murid.size} murid penerima anugerah${th.length?` (Tahun ${th[0]}${th.length>1?' – '+th.at(-1):''})`:''}`:'',ahli?`${ahli} ahli dalam ${D.ajk.length} jawatankuasa pelaksana`:'','Semua guru SK Bandar Tawau'].filter(Boolean))}</td></tr>
+    <tr><th>INDIVIDU / KUMPULAN YANG TERLIBAT</th><td>${ul([murid.size?`${murid.size} murid penerima anugerah${th.length?` (Tahun ${th[0]}${th.length>1?' – '+th.at(-1):''})`:''}`:'',D.ajk.length?`Ahli ${D.ajk.length} jawatankuasa pelaksana`:'','Semua guru SK Bandar Tawau'].filter(Boolean))}</td></tr>
     <tr><th>DAPAT DILAKSANAKAN</th><td>${selesai?'Ya ( / ) &nbsp; Tidak ( &nbsp; )':'Ya ( &nbsp; ) &nbsp; Tidak ( &nbsp; ) — majlis belum selesai'}</td></tr>
   </table>
   <h2>Keputusan / Pencapaian</h2>
@@ -1230,7 +1229,7 @@ function showSlide(){
   $('#stage').classList.remove('shown');
   if(SG.mode==='ajk'){
     const n=D.ajk.length,pad=x=>String(x).padStart(2,'0');
-    if(s.intro)el.innerHTML=`<div class="label">${esc(D.settings.nama.toUpperCase())}</div>${logoURL()?`<div class="mono" style="width:120px;height:120px;margin-bottom:4vh"><img src="${esc(logoURL())}" alt=""></div>`:`<div class="ring"><svg class="i"><use href="#i-users"/></svg></div>`}<div class="title gold-text">Ahli Jawatankuasa</div><div class="count">${n} JAWATANKUASA · ${D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0)} AHLI</div>`;
+    if(s.intro)el.innerHTML=`<div class="label">${esc(D.settings.nama.toUpperCase())}</div>${logoURL()?`<div class="mono" style="width:120px;height:120px;margin-bottom:4vh"><img src="${esc(logoURL())}" alt=""></div>`:`<div class="ring"><svg class="i"><use href="#i-users"/></svg></div>`}<div class="title gold-text">Ahli Jawatankuasa</div><div class="count">${n} JAWATANKUASA</div>`;
     else{const t=lines(s.j.tugas);
       el.innerHTML=`<div class="label">AHLI JAWATANKUASA · ${pad(s.i+1)} / ${pad(n)}</div><div class="jt gold-text">${esc(s.j.jk)}</div><div class="jgrid ${t.length?'':'one'}"><div><h5>AHLI</h5><div class="${ahliList(s.j.ahli).length>6?'many':''}">${ahliHTML(s.j.ahli)}</div></div>${t.length?`<div><h5>BIDANG TUGAS</h5><ol>${t.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`:''}</div>`;fitAjk()}
   }else if(!s.p){
