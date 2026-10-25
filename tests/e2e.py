@@ -234,6 +234,29 @@ with sync_playwright() as p:
         pg.locator('#drawer .del-p').first.click()
         expect(pg.locator('#drawer .rcp')).to_have_count(2, timeout=8000)
         pg.keyboard.press('Escape')
+        # bulk paste: comma / Excel tab / numbered lines; class anywhere; no class and no class chosen → skipped
+        got = pg.evaluate(r"""parseBulk('Ahmad bin Ali, 6 inovatif\n1\tSITI AISYAH BINTI OMAR\t5 KREATIF\n2. Lim Wei - 4 Kritis\nTIADA KELAS SAMA SEKALI\n\n6\tPATRIOTIK\tCHONG MEI LING','')""")
+        assert got == [{'nama': 'AHMAD BIN ALI', 'kelas': '6 INOVATIF'}, {'nama': 'SITI AISYAH BINTI OMAR', 'kelas': '5 KREATIF'},
+                       {'nama': 'LIM WEI', 'kelas': '4 KRITIS'}, {'nama': 'TIADA KELAS SAMA SEKALI', 'kelas': ''},
+                       {'nama': 'CHONG MEI LING', 'kelas': '6 PATRIOTIK'}], got
+        assert pg.evaluate("parseBulk('ALI BIN ABU','3 KREATIF')") == [{'nama': 'ALI BIN ABU', 'kelas': '3 KREATIF'}], 'default class'
+        pg.locator('#awGrid .aw').nth(6).click()
+        expect(pg.locator('#adKls')).to_be_visible(timeout=8000)
+        pg.select_option('#adKls', '')  # no default class, so the class-less line is skipped
+        pg.click('#addp .bulk summary')
+        pg.fill('#adBulk', 'Ahmad bin Ali, 6 inovatif\n1\tSITI AISYAH BINTI OMAR\t5 KREATIF\nTIADA KELAS SAMA SEKALI')
+        expect(pg.locator('#adBulkInfo')).to_contain_text('2 murid')
+        expect(pg.locator('#adBulkInfo')).to_contain_text('1 baris tiada kelas')
+        shot(pg, 'remote-bulk')
+        pg.click('#adBulkGo')
+        expect(pg.locator('#drawer .rcp')).to_have_count(2, timeout=8000)
+        assert pg.evaluate("D.penerima.filter(p=>p.aid===D.anugerah[6].id).map(p=>p.nama+'|'+p.kelas+'|'+p.tahun).sort().join()") == 'AHMAD BIN ALI|6 INOVATIF|6,SITI AISYAH BINTI OMAR|5 KREATIF|5'
+        expect(pg.locator('#adBulk')).to_have_value('')
+        pg.fill('#adBulk', 'AHMAD BIN ALI, 6 INOVATIF')  # already there → skipped, not duplicated
+        pg.click('#adBulkGo')
+        expect(pg.locator('#toast')).to_contain_text('sudah ada', timeout=8000)
+        expect(pg.locator('#drawer .rcp')).to_have_count(2)
+        pg.keyboard.press('Escape')
         # sasaran: target 5 on that award → card shows 2 / 5; others stay unlimited
         pg.click('.nav[data-v=tetapan]')
         pg.click('#admin .chip[data-t=anugerah]')

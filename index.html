@@ -210,6 +210,7 @@ span.tg{display:inline-flex;align-items:center}
 .addp{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(var(--gold-rgb),.05)}
 .addp h5{font:700 14px var(--hf);letter-spacing:.2em;color:var(--gold);margin-bottom:10px}
 .addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.addrow .fi{flex:1 1 160px;width:auto}
+.bulk{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.bulk summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--gold2);padding:6px 0}.bulk textarea{min-height:130px;font-size:13px}
 .studs{max-height:280px;overflow:auto;display:grid;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--panel)}
 .st{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:6px;font-size:13px;cursor:pointer;min-height:42px}
 .st:hover{background:var(--soft)}.st input{width:18px;height:18px;accent-color:var(--gold);flex:none}
@@ -596,7 +597,7 @@ const SEED={
 /* ---------- state ---------- */
 let D={settings:{...SET_DEFAULT},anugerah:[],penerima:null,ajk:[],tentatif:[],persiapan:[],galeri:[],fotoAjk:[]},FOTO=new Map();
 let PIN=store.get('pin','',sessionStorage), INFO=null, VIEW='dashboard', LAST=0;
-let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set()};
+let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set(),bulk:'',bulkOpen:false};
 
 /* ---------- backend: demo (localStorage) ---------- */
 function ldb(){let db=store.get('db',null);if(!db){db={settings:{...SET_DEFAULT},...structuredClone(SEED),penerima:[],galeri:[]};store.set('db',db)}return db}
@@ -856,7 +857,7 @@ function renderAw(){
 }
 function openAw(id){
   const a=D.anugerah.find(x=>x.id===id);if(!a)return closeDrawer();
-  if(DRAWER!==id)ADD.sel.clear();DRAWER=id;const c=counts(a);const sc=$('#drawer .body')?.scrollTop||0;
+  if(DRAWER!==id){ADD.sel.clear();ADD.bulk=''}DRAWER=id;const c=counts(a);const sc=$('#drawer .body')?.scrollTop||0;
   let body;
   if(canNames()){
     const ps=D.penerima.filter(p=>p.aid===id).sort(byKelas);
@@ -881,6 +882,15 @@ async function toggleGot(pid){
 const tahunOf=k=>(String(k).match(/^(\d)/)||[])[1]||'';
 const classSort=(a,b)=>(+tahunOf(a)||9)-(+tahunOf(b)||9)||KLS.indexOf(a.split(' ')[1])-KLS.indexOf(b.split(' ')[1])||a.localeCompare(b);
 async function loadRoster(){const j=DEMO?localCall({action:'roster',pin:PIN}):await remote({action:'roster',pin:PIN});ROSTER=j.roster;return ROSTER}
+// bulk paste: one pupil per line, class anywhere on the line ("AHMAD BIN ALI, 6 INOVATIF", Excel "1⇥AHMAD⇥6 inovatif")
+const KLS_RE=new RegExp('\\b([1-6])\\s*('+KLS.join('|')+')\\b','i');
+function parseBulk(text,defKls){
+  return lines(text).map(l=>{
+    const m=l.match(KLS_RE),kelas=m?m[1]+' '+m[2].toUpperCase():defKls||'';
+    const nama=(m?l.replace(m[0],' '):l).replace(/^\s*\d+[.)]?\s+/,'').replace(/[\t,;|]+/g,' ').replace(/\s+-(\s+|$)/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
+    return {nama,kelas};
+  }).filter(x=>x.nama);
+}
 async function drawAdd(aid){
   if(!ROSTER&&!ROSTER_ERR){$('#addp').innerHTML='<h5>TAMBAH PENERIMA</h5><p class="muted">Memuatkan senarai murid…</p>';try{await loadRoster()}catch(e){ROSTER_ERR=e.message}if(DRAWER!==aid)return}
   const box=$('#addp');if(!box)return;
@@ -890,8 +900,29 @@ async function drawAdd(aid){
   box.innerHTML=`<h5>TAMBAH PENERIMA</h5>${ROSTER_ERR?`<p class="warnmsg">${esc(ROSTER_ERR)} Anda masih boleh menaip nama secara manual.</p>`:''}
   <div class="addrow"><select class="fi" id="adKls" aria-label="Pilih kelas"><option value="">1. Pilih kelas…</option>${classes.map(k=>`<option ${k===ADD.kls?'selected':''}>${esc(k)}</option>`).join('')}</select><input class="fi" id="adCat" maxlength="40" placeholder="Catatan (pilihan)" value="${esc(ADD.cat)}" aria-label="Catatan"></div>
   ${ADD.kls?`${studs.length?`<p class="muted" style="font-size:12.5px;margin:10px 0 6px">2. Tandakan murid · ${studs.length} murid dalam ${esc(ADD.kls)}</p><div class="studs">${studs.map(r=>{const h=have.has(r.nama+'|'+r.kelas);return `<label class="st ${h?'have':''}"><input type="checkbox" value="${esc(r.nama)}" ${h?'checked disabled':ADD.sel.has(r.nama)?'checked':''}><span>${esc(r.nama)}</span>${h?'<small>SUDAH</small>':''}</label>`}).join('')}</div>`:ROSTER?'<p class="muted" style="margin-top:8px">Tiada murid dalam kelas ini.</p>':''}
-  <div class="addrow"><input class="fi" id="adMan" maxlength="80" placeholder="Nama lain (tiada dalam senarai)" aria-label="Nama manual"><button class="btn" id="adGo"><svg class="i"><use href="#i-plus"/></svg>Tambah<span id="adN"></span></button></div>`:''}`;
+  <div class="addrow"><input class="fi" id="adMan" maxlength="80" placeholder="Nama lain (tiada dalam senarai)" aria-label="Nama manual"><button class="btn" id="adGo"><svg class="i"><use href="#i-plus"/></svg>Tambah<span id="adN"></span></button></div>`:''}
+  <details class="bulk" ${ADD.bulkOpen?'open':''}><summary>Tambah pukal: tampal senarai nama &amp; kelas</summary>
+    <p class="muted" style="font-size:12.5px;margin:8px 0">Satu murid setiap baris, cth. <i>AHMAD BIN ALI, 6 INOVATIF</i>. Boleh salin terus dari Excel (lajur Nama dan Kelas). Baris tanpa kelas menggunakan kelas yang dipilih di atas. Catatan di atas dikenakan kepada semua.</p>
+    <textarea class="fi" id="adBulk" aria-label="Senarai nama dan kelas" placeholder="AHMAD BIN ALI, 6 INOVATIF&#10;SITI AISYAH BINTI OMAR&#9;5 KREATIF">${esc(ADD.bulk)}</textarea>
+    <div class="addrow" style="align-items:center"><span class="muted" id="adBulkInfo" style="flex:1 1 200px;font-size:12.5px"></span><button class="btn" id="adBulkGo"><svg class="i"><use href="#i-plus"/></svg>Tambah semua</button></div>
+  </details>`;
   const cnt=()=>$('#adN')&&($('#adN').textContent=ADD.sel.size?` (${ADD.sel.size})`:'');cnt();
+  const rk=ROSTER&&new Set(ROSTER.map(x=>x.nama+'|'+x.kelas));
+  const bulkInfo=()=>{
+    const rs=parseBulk(ADD.bulk,ADD.kls),ok=rs.filter(r=>r.kelas),no=rs.length-ok.length,miss=rk?ok.filter(r=>!rk.has(r.nama+'|'+r.kelas)).length:0;
+    $('#adBulkInfo').innerHTML=rs.length?`<b style="color:var(--cream)">${ok.length} murid</b> sedia ditambah${no?` · <span style="color:var(--warn)">${no} baris tiada kelas (diabaikan)</span>`:''}${miss?` · <span style="color:var(--warn)">${miss} tiada dalam senarai murid, semak ejaan</span>`:''}`:'';
+    return ok;
+  };
+  bulkInfo();
+  $('#adBulk').oninput=e=>{ADD.bulk=e.target.value;bulkInfo()};
+  $('#addp .bulk').ontoggle=e=>ADD.bulkOpen=e.target.open;
+  $('#adBulkGo').onclick=e=>{
+    const ok=bulkInfo();if(!ok.length)return toast('Tiada baris sah: tulis nama dan kelas, satu murid setiap baris',true);
+    const rows=ok.map(r=>({id:'r'+uid(),aid,kelas:r.kelas,tahun:tahunOf(r.kelas),nama:r.nama,catatan:ADD.cat.trim().toUpperCase()}));
+    busy(e.currentTarget,async()=>{const j=await call('addPenerima',{rows},{quiet:true}),n=j.added??rows.length;
+      ADD.bulk='';if($('#adBulk')){$('#adBulk').value='';bulkInfo()}
+      toast(n===rows.length?`${n} penerima ditambah`:`${n} penerima ditambah · ${rows.length-n} sudah ada dalam anugerah ini`)});
+  };
   $('#adKls').onchange=e=>{ADD.kls=e.target.value;ADD.sel.clear();drawAdd(aid)};
   $('#adCat').oninput=e=>ADD.cat=e.target.value;
   $$('#addp .studs input:not(:disabled)').forEach(c=>c.onchange=()=>{c.checked?ADD.sel.add(c.value):ADD.sel.delete(c.value);cnt()});
