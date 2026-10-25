@@ -62,9 +62,9 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 3. Gunakan **← →**, **Space** atau **klik pembentang** (*presenter clicker*). Slaid pertama ialah tajuk anugerah, diikuti setiap penerima dengan animasi nama dan konfeti.
 4. Jika *"Tanda Diterima bila seterusnya"* ditanda, setiap penerima ditanda **Diterima** secara automatik apabila anda ke slaid seterusnya.
 
-**Juru acara / urus setia**: di **Dashboard**, gunakan butang **Seterusnya ▶** untuk menggerakkan penanda *Sedang Berlangsung*. Semua telefon akan dikemas kini dalam masa ~25 saat.
+**Juru acara / urus setia**: di halaman **Tentatif**, klik **Tandakan sekarang** pada acara yang sedang berlangsung. Semua telefon akan dikemas kini dalam masa ~25 saat.
 
-**Selepas majlis**: tekan **Seterusnya ▶** sehingga *"Majlis telah selesai"*, kemudian buka **Tetapan → Laporan**. Laporan dijana automatik (skor kejayaan, jadual anugerah, kekuatan, kelemahan, cadangan, gambar lampiran). Klik **Cetak / Simpan PDF** atau **Muat turun Word** untuk menyunting.
+**Selepas majlis**: di halaman **Tentatif**, klik **Tandakan majlis selesai**, kemudian buka **Tetapan → Laporan**. Laporan dijana automatik (skor kejayaan, jadual anugerah, kekuatan, kelemahan, cadangan, gambar lampiran). Klik **Cetak / Simpan PDF** atau **Muat turun Word** untuk menyunting.
 
 **Ibu bapa / tetamu**: kongsi pautan `https://altrabird.github.io/Sri-Bitara-2026/` (boleh dijadikan kod QR).
 

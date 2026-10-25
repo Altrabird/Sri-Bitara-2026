@@ -152,6 +152,11 @@ with sync_playwright() as p:
     pg.wait_for_timeout(300)
     assert pg.evaluate('D.settings.now') == 3  # row 0 is the day heading
     expect(pg.locator('#tl .ti.live')).to_have_count(1)
+    pg.click('#ttDone')  # marks the majlis selesai (used by the Laporan)
+    pg.wait_for_function('D.settings.now===D.tentatif.length')
+    expect(pg.locator('#tl')).to_contain_text('Majlis telah ditanda selesai')
+    pg.locator('#tl button', has_text='Set semula').click()
+    pg.wait_for_function('D.settings.now===-1')
     # gallery upload / lightbox / delete
     pg.click('.nav[data-v=galeri]')
     pg.set_input_files('#uplFile', files=[IMG])
@@ -159,6 +164,14 @@ with sync_playwright() as p:
     pg.locator('#gal .open').first.click()
     expect(pg.locator('#lb')).to_have_class('lb on')
     pg.keyboard.press('Escape')
+    # dashboard Galeri Foto card shows it and opens the viewer
+    pg.click('.nav[data-v=dashboard]')
+    expect(pg.locator('#v-dashboard .dgal .open')).to_have_count(1)
+    shot(pg, 'demo-dashboard-galeri')
+    pg.locator('#v-dashboard .dgal .open').first.click()
+    expect(pg.locator('#lb')).to_have_class('lb on')
+    pg.keyboard.press('Escape')
+    pg.click('.nav[data-v=galeri]')
     pg.locator('#gal .del').first.click()
     expect(pg.locator('#gal .ph')).to_have_count(0)
     # row editor: add AJK and save

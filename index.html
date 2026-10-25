@@ -136,11 +136,10 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .kpi .l{color:var(--muted);font-size:12.5px}
 .kpi .ic{position:absolute;right:16px;top:16px;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:rgba(var(--gold-rgb),.12);color:var(--gold2)}
 .dash2{grid-template-columns:1.2fr 1fr}
-.now{display:flex;gap:14px;align-items:center;padding:14px;border-radius:10px;background:rgba(63,182,139,.08);border:1px solid rgba(63,182,139,.35);margin-bottom:10px}
-.now.idle{background:var(--soft);border-color:var(--line)}
-.pulse{width:12px;height:12px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(63,182,139,.6);animation:pulse 1.8s infinite;flex:none}
+.dgal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dgal button{aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--panel);cursor:zoom-in;padding:0}
+.dgal img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--ease)}.dgal button:hover img{transform:scale(1.06)}
 @keyframes pulse{70%{box-shadow:0 0 0 12px rgba(63,182,139,0)}100%{box-shadow:0 0 0 0 rgba(63,182,139,0)}}
-.next{font-size:13px;color:var(--muted);margin-bottom:14px}
 .bar{display:grid;grid-template-columns:150px 1fr 44px;gap:12px;align-items:center;font-size:13px;margin:10px 0}
 .bar i{display:block;height:8px;border-radius:9px;background:var(--soft);overflow:hidden}
 .bar i em{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--gold3),var(--gold2));transition:width 1.4s var(--ease)}
@@ -152,8 +151,6 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .legend div{display:flex;gap:8px;align-items:center;font-size:13px;margin:6px 0}
 .legend i{width:10px;height:10px;border-radius:3px}
 .legend b{margin-left:auto}
-.live-ctrl{display:flex;gap:8px;margin-bottom:14px}
-.live-ctrl .btn{flex:1;min-height:40px;padding:0 10px;font-size:13px}
 
 /* anugerah */
 .tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
@@ -727,12 +724,12 @@ function render(fromPoll,nav){
 
 /* ---------- dashboard ---------- */
 function renderDash(nav){
-  const s=D.settings, now=s.now, T=D.tentatif;
+  const s=D.settings, T=D.tentatif;
   const total=D.anugerah.reduce((t,a)=>t+counts(a).n,0), got=D.anugerah.reduce((t,a)=>t+counts(a).d,0);
   const sg=sasaranPct();
   const SUM=Object.keys(CAT).map(k=>[k,D.anugerah.filter(a=>a.kat===k).reduce((t,a)=>t+counts(a).n,0)]);
   const d=new Date(s.tarikh+'T'+(s.masa||'07:30'));
-  const cur=T[now], nxt=T.slice(now+1).find(t=>!isDay(t));
+  const G=D.galeri.slice(-6).reverse(); // latest 6 photos
   $('#v-dashboard').innerHTML=`
   <div class="card hero rise">
     <div>
@@ -759,15 +756,14 @@ function renderDash(nav){
       ${D.persiapan.length?D.persiapan.map(p=>{const v=Math.max(0,Math.min(100,+p.peratus||0));return `<div class="bar"><span>${esc(p.nama)}</span><i><em ${nav?`data-p="${v}"`:`style="width:${v}%"`}></em></i><span>${v}%</span></div>`}).join(''):'<p class="muted">Tiada data persiapan.</p>'}
     </div>
     <div class="card rise" style="animation-delay:.48s">
-      <h3>SEDANG BERLANGSUNG</h3>
-      ${cur?`<div class="now"><span class="pulse"></span><div><b>${esc(cur.acara)}</b><br><small class="muted">${esc(cur.masa)}${cur.pic?' · PIC: '+esc(cur.pic):''}</small></div></div>`:`<div class="now idle"><div><b>${now>=T.length&&T.length?'Majlis telah selesai':'Majlis belum bermula'}</b><br><small class="muted">Ikuti tentatif untuk atur cara penuh</small></div></div>`}
-      ${nxt?`<p class="next">Seterusnya: <b style="color:var(--cream)">${esc(nxt.masa)} · ${esc(nxt.acara)}</b></p>`:''}
-      <div class="live-ctrl adm"><button class="btn ghost" onclick="setNow(D.settings.now-1)"><svg class="i"><use href="#i-l"/></svg>Sebelum</button><button class="btn" onclick="setNow(D.settings.now+1)">Seterusnya<svg class="i"><use href="#i-r"/></svg></button></div>
+      <h3>GALERI FOTO</h3>
+      ${G.length?`<div class="dgal">${G.map((g,i)=>`<button class="open" data-i="${i}" aria-label="Buka foto ${esc(g.kapsyen||g.kat)}"><img src="${esc(imgURL(g,400))}" alt="${esc(g.kapsyen||g.kat)}" loading="lazy"></button>`).join('')}</div><button class="btn ghost sm" style="margin:12px 0 20px" onclick="go('galeri')"><svg class="i"><use href="#i-img"/></svg>Lihat semua ${D.galeri.length} foto</button>`:`<p class="muted" style="margin-bottom:20px">Belum ada foto. Foto majlis akan dikongsi di sini.</p>`}
       <h3>PECAHAN PENERIMA</h3>
       ${total?`<div class="donut"><svg viewBox="0 0 160 160" id="donut" aria-hidden="true"></svg><div class="legend">${SUM.map(([k,n])=>`<div><i style="background:${COL[k]}"></i>${CAT[k]}<b>${n}</b></div>`).join('')}</div></div>`:'<p class="muted">Senarai penerima belum dimuat naik.</p>'}
     </div>
   </div>`;
   tick(true);
+  $$('#v-dashboard .dgal .open').forEach(b=>b.onclick=()=>{LB=G;openLb(+b.dataset.i)});
   $$('#v-dashboard [data-count]').forEach(e=>nav?countUp(e,+e.dataset.count):e.textContent=(+e.dataset.count).toLocaleString('ms-MY'));
   const bars=$$('#v-dashboard .bar em[data-p]');$('#vs').textContent=s.nama;
   requestAnimationFrame(()=>requestAnimationFrame(()=>bars.forEach(e=>e.style.width=e.dataset.p+'%')));
@@ -996,6 +992,8 @@ function renderTT(){
   const now=D.settings.now;
   const T=D.tentatif;
   $('#tl').innerHTML=T.length?T.map((t,i)=>isDay(t)?`<h3 class="tday">${esc(t.acara)}</h3>`:`<div class="card ti rise ${i<now?'done':i===now?'live':''}" style="animation-delay:${Math.min(i,16)*.035}s"><time>${T[i-1]?.masa===t.masa?'':esc(t.masa)}</time><div><b>${esc(t.acara)}</b><small>${i===now?'● Sedang berlangsung':i<now?'Selesai':'Akan datang'}</small></div><div class="acts">${t.pic?`<span class="chip">${esc(t.pic)}</span>`:''}${i!==now?`<button class="btn sm ghost adm" onclick="setNow(${i})">Tandakan sekarang</button>`:''}</div></div>`).join(''):`<div class="empty"><svg class="i"><use href="#i-cal"/></svg><p>Tentatif belum ditetapkan.</p></div>`;
+  // the Laporan counts the majlis as done once it is marked selesai here
+  if(T.length)$('#tl').insertAdjacentHTML('beforeend',`<div class="adm" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px">${now>=T.length?`<span class="chip live"><svg class="i" style="width:15px"><use href="#i-check"/></svg>Majlis telah ditanda selesai</span><button class="btn sm ghost" onclick="setNow(-1)">Set semula</button>`:`<button class="btn" id="ttDone" onclick="setNow(D.tentatif.length)"><svg class="i"><use href="#i-check"/></svg>Tandakan majlis selesai</button>`}</div>`);
 }
 
 /* ---------- galeri ---------- */
