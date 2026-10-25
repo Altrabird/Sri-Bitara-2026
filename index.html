@@ -1110,7 +1110,7 @@ const LAP_CSS=`.lap{background:#fff;color:#111;font:13px/1.55 Arial,Helvetica,sa
 .lap table.gal td{text-align:center;font-size:11.5px}.lap table.gal img{max-width:100%;height:auto;border:1px solid #999}
 .lap .pb{break-before:page;page-break-before:always}
 .lap h3{font:700 12.5px Arial,Helvetica,sans-serif;letter-spacing:0;color:#111;margin:14px 0 4px}
-.lap.surat p,.lap.surat li,.lap.surat td{font-size:14.5px;line-height:1.45}.lap.surat p{margin:0 0 9px}
+.lap.surat p,.lap.surat li,.lap.surat td{font-size:11pt;line-height:1.35}.lap.surat p{margin:0 0 8pt}.lap table.lt td{border:0;padding:0;vertical-align:top}
 @media (max-width:600px){.lap{padding:16px}}`;
 // name from the AJK Induk line matching a role, e.g. who(/guru besar/i) → "EN ABIDIN BIN MOEN"
 const who=re=>(ahliList(D.ajk[0]?.ahli).find(m=>re.test(m.nama))?.nama.replace(/\s*\(.*$/,'')||'').toUpperCase()||'..............................';
@@ -1181,7 +1181,7 @@ function laporanHTML(){
   ${gal.length?`<div class="pb"></div><h2 style="text-align:center">Lampiran 1 · Gambar sepanjang majlis</h2><table class="gal">${gal.reduce((a,g,i)=>(i%2?a[a.length-1].push(g):a.push([g]),a),[]).map(pr=>`<tr>${pr.map(g=>`<td><img src="${esc(imgURL(g,800))}" width="320" alt=""><br>${esc(g.kapsyen||g.kat)}</td>`).join('')}</tr>`).join('')}</table>`:''}
   </div>`;
 }
-const docHTML=(title,body)=>`<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${LAP_CSS}@page{size:A4;margin:15mm}body{margin:0}.lap{padding:0;max-width:none;border-radius:0}</style></head><body>${body}</body></html>`;
+const docHTML=(title,body)=>`<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body,p,td,th,li{font-family:Arial,Helvetica,sans-serif;font-size:11pt}p{margin:0 0 8pt}${LAP_CSS}@page{size:A4;margin:15mm}body{margin:0}.lap{padding:0;max-width:none;border-radius:0}</style></head><body>${body}</body></html>`;
 const lapDoc=extra=>docHTML('Laporan '+D.settings.nama,laporanHTML()+(extra||''));
 const wordDoc=(name,title,body)=>saveBlob(name,new Blob(['﻿'+docHTML(title,body)],{type:'application/msword'}));
 /* ---------- senarai penerima (Word): satu kategori, atau keseluruhan ---------- */
@@ -1226,23 +1226,29 @@ function suratHTML(){
   const today=new Date().toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'}),list=suratList();
   // absolute URLs so the logos also load when the downloaded .doc is opened in Word
   const gb=who(/guru besar/i).replace(HONOR,''),img=f=>esc(new URL('img/'+f,location.href).href);
-  const row=(k,v)=>`<tr><td style="width:90px;padding:0">${k}</td><td style="width:auto;padding:0">: ${esc(v)}</td></tr>`;
+  // Word ignores most CSS: widths go in width attributes as well as inline styles, page breaks on a <p>
+  const td=(w,x,st='',at='')=>`<td width="${w}" ${at} style="width:${w};${st}">${x}</td>`;
+  const tbl=rows=>`<table class="lt" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse">${rows}</table>`;
+  const row=(k,v)=>`<tr>${td('16%',k)}${td('84%',': '+esc(v))}</tr>`;
   return {n:list.length,html:`<div class="lap surat">${list.map(({nama,kelas,items},i)=>{
     const aw=items.map(({a,p})=>esc(a.nama)+(p.catatan?` (${esc(p.catatan)})`:''));
-    return `<div class="${i?'pb':''}">
-    <table class="sig" style="margin:0"><tr><td style="width:100px;padding:0;vertical-align:middle"><img src="${img('jata.jpg')}" width="88" alt=""></td><td style="width:auto;padding:0 8px;vertical-align:middle"><b style="font-size:16px;line-height:1.3">SEKOLAH KEBANGSAAN BANDAR TAWAU<br>JABATAN PENDIDIKAN NEGERI SABAH<br>PETI SURAT 214<br>91007 TAWAU, SABAH</b></td><td style="width:100px;padding:0;text-align:right;vertical-align:middle"><img src="${img('logo-sekolah.jpg')}" width="78" alt=""></td></tr></table>
-    <table class="sig" style="margin:0;border-bottom:1.5px solid #111"><tr><td style="padding:0 0 6px"></td><td style="padding:0 0 6px">No. Tel: 089-772866<br>E-mel : xba3051@moe.edu.my</td></tr></table>
-    <table class="sig" style="margin:4px 0 14px"><tr><td style="padding:0"></td><td style="padding:0">Rujukan : SKBD.600-5/2/2( &nbsp; &nbsp; &nbsp; )<br>Tarikh &nbsp; &nbsp; : ${esc(today)}</td></tr></table>
+    return `${i?'<p class="pb" style="page-break-before:always;margin:0;font-size:1pt">&nbsp;</p>':''}
+    ${tbl(`<tr>${td('16%',`<img src="${img('jata.jpg')}" width="88" height="72" alt="">`,'vertical-align:middle','valign="middle"')}${td('64%','<b style="font-size:13pt">SEKOLAH KEBANGSAAN BANDAR TAWAU<br>JABATAN PENDIDIKAN NEGERI SABAH<br>PETI SURAT 214<br>91007 TAWAU, SABAH</b>','vertical-align:middle','valign="middle"')}${td('20%',`<img src="${img('logo-sekolah.jpg')}" width="78" height="80" alt="">`,'vertical-align:middle;text-align:right','valign="middle" align="right"')}</tr>`)}
+    ${tbl(`<tr>${td('55%','')}${td('45%','No. Tel: 089-772866<br>E-mel : xba3051@moe.edu.my','font-size:10pt')}</tr>`)}
+    <p style="border-bottom:1.5pt solid #000;margin:0 0 4pt;font-size:2pt;line-height:2pt">&nbsp;</p>
+    ${tbl(`<tr>${td('55%','')}${td('13%','Rujukan<br>Tarikh')}${td('32%',`: SKBD.600-5/2/2( &nbsp; &nbsp; &nbsp; )<br>: ${esc(today)}`)}</tr>`)}
+    <p>&nbsp;</p>
     <p><b>Ibu &amp; bapa / Penjaga Murid,<br>SK Bandar Tawau.</b></p>
     <p>Tuan/Puan,</p>
     <p><b>MAKLUMAN PENERIMAAN ANUGERAH MAJLIS APRESIASI MURID SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
     <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima ${aw.length>1?`<b>${aw.length}</b> anugerah berikut:</p><ol>${aw.map(x=>`<li><b>${x}</b></li>`).join('')}</ol><p style="text-align:justify">pada`:`anugerah <b>${aw[0]}</b> pada`} Majlis Anugerah Apresiasi Murid yang akan diadakan pada ketetapan berikut:</p>
-    <table class="sig" style="margin:0 0 12px;width:auto">${row('Tarikh',hari)}${row('Masa',masa)}${row('Tempat',s.lokasi)}${row('Pakaian','Pakaian Rasmi Sekolah')}</table>
+    ${tbl(row('Tarikh',hari)+row('Masa',masa)+row('Tempat',s.lokasi)+row('Pakaian','Pakaian Rasmi Sekolah'))}
+    <p>&nbsp;</p>
     <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, pihak sekolah amat berbesar hati menjemput tuan/puan hadir bersama anak bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.</p>
     <p style="text-align:justify">Keprihatinan dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>
     <p>Sekian.</p><p><b>“MALAYSIA MADANI”</b></p><p><b>“BERKHIDMAT UNTUK NEGARA”</b></p>
-    <p>Saya yang menjalankan amanah,<br><br><br>${esc(gb)}<br>Guru Besar<br>SK. Bandar Tawau.</p><p>sk : Fail</p></div>`}).join('')}</div>`};
+    <p>Saya yang menjalankan amanah,<br><br><br>${esc(gb)}<br>Guru Besar<br>SK. Bandar Tawau.</p><p>sk : Fail</p>`}).join('')}</div>`};
 }
 function wordSurat(){
   if(!D.penerima?.length)return toast('Tiada penerima untuk dijana surat',true);
