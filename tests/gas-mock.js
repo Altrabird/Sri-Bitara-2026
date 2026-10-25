@@ -68,9 +68,13 @@ function makeGAS({ sharingBlocked = false, roster = DEFAULT_ROSTER, rosterAccess
       Access: { ANYONE_WITH_LINK: 'ANYONE_WITH_LINK' }, Permission: { VIEW: 'VIEW' },
       createFolder: name => {
         const id = 'fo' + ++nid;
-        return (folders[id] = { getId: () => id, getUrl: () => 'https://drive.google.com/drive/folders/' + id, createFile: blob => {
+        const mine = [];
+        return (folders[id] = { getId: () => id, getUrl: () => 'https://drive.google.com/drive/folders/' + id,
+          getFiles: () => { let i = 0; return { hasNext: () => i < mine.length, next: () => files[mine[i++]] }; },
+          createFile: blob => {
           const fid = 'fi' + ++nid;
-          return (files[fid] = { blob, trashed: false, shared: false, getId: () => fid,
+          mine.push(fid);
+          return (files[fid] = { blob, trashed: false, shared: false, getId: () => fid, getName: () => blob.name, getMimeType: () => blob.mime,
             setSharing() { if (sharingBlocked) throw new Error('Sharing blocked by domain'); this.shared = true; },
             setTrashed(t) { this.trashed = t; } });
         } });

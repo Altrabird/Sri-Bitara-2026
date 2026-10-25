@@ -96,6 +96,21 @@ assert.strictEqual(r.added, 0, 'duplicate skipped');
 r = g.post({ action: 'delPenerima', pin: PIN, ids: ['r1'] });
 assert.deepStrictEqual(r.data.penerima.map(p => p.id), ['r2']);
 
+// anugerah sasaran round-trips to the public payload; blank = unlimited
+g = makeGAS();
+g.post({ action: 'saveTable', pin: PIN, table: 'anugerah', rows: [{ id: 'a1', kat: 'K', nama: 'Sains', sasaran: '12' }, { id: 'a2', kat: 'K', nama: 'NILAM' }] });
+assert.deepStrictEqual(g.get().anugerah.map(a => a.sasaran), ['12', ''], 'sasaran');
+
+// foto AJK: images in the chosen folder are listed by name; a bad folder just gives none
+assert.deepStrictEqual(g.get().fotoAjk, [], 'no folder set');
+const fo = g.ctx.DriveApp.createFolder('Foto AJK');
+fo.createFile({ name: 'Harsidi Bin Junick.jpg', mime: 'image/jpeg' });
+fo.createFile({ name: 'nota.pdf', mime: 'application/pdf' });
+g.post({ action: 'saveSettings', pin: PIN, settings: { fotoFolder: fo.getId() } });
+assert.deepStrictEqual(g.get().fotoAjk.map(f => f.n), ['Harsidi Bin Junick'], 'foto listed, non-image skipped');
+g.post({ action: 'saveSettings', pin: PIN, settings: { fotoFolder: 'tiada' } });
+assert.deepStrictEqual(g.get().fotoAjk, [], 'missing folder → initials');
+
 // setup() creates sheets and removes default Sheet1
 makeGAS().ctx.setup();
 console.log('backend: all tests passed');

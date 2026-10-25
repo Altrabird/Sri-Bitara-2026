@@ -170,6 +170,7 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .aw .row b{font:700 26px var(--hf);color:var(--text)}
 .aw .prog{height:4px;border-radius:4px;background:var(--soft);margin-top:12px;overflow:hidden}
 .aw .prog i{display:block;height:100%;background:var(--ok)}
+.aw .prog.t{margin-top:8px}.aw .prog.t i{background:linear-gradient(90deg,var(--gold3),var(--gold2))}.aw .prog.t.over i{background:var(--warn)}
 .aw::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(var(--gold2-rgb),.13),transparent);transform:skewX(-18deg);transition:left .7s var(--ease)}
 .aw:hover::after{left:130%}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
@@ -224,6 +225,7 @@ span.tg{display:inline-flex;align-items:center}
 .jk h4{font:700 16px/1.3 var(--hf);color:var(--gold2);letter-spacing:.06em;padding-right:44px;margin-bottom:12px}
 .lead{display:flex;gap:10px;align-items:center;padding:10px;border-radius:8px;background:rgba(var(--gold-rgb),.09);border:1px solid rgba(var(--gold-rgb),.3);margin-bottom:8px}
 .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--hf);flex:none;background:linear-gradient(135deg,var(--royal),var(--navy));border:1px solid var(--line);color:var(--gold2)}
+.av{overflow:hidden}.av img{width:100%;height:100%;object-fit:cover}
 .lead .av{background:var(--medal);color:var(--on-gold);border:0}
 .lead small{display:block;font-size:10.5px;letter-spacing:.16em;color:var(--gold)}
 .mem{display:flex;gap:10px;align-items:center;font-size:13px;padding:5px 2px;color:var(--cream)}
@@ -543,7 +545,7 @@ const COL={K:'#F4D58D',H:'#E8907A',KO:'#7FC8A9'};
 const GKAT=['Majlis','Persiapan','Photo Booth','Lain-lain'];
 
 /* ---------- data permulaan (tiada data murid) ---------- */
-const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:''};
+const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:'',fotoFolder:''};
 const SEED={
   anugerah:[['K','Anugerah Bahasa Melayu'],['K','Anugerah Bahasa Inggeris'],['K','Anugerah Pendidikan Agama Islam'],['K','Anugerah Pendidikan Moral'],['K','Anugerah Matematik'],['K','Anugerah Sains'],['K','Anugerah Sejarah'],['K','Anugerah NILAM'],['K','Anugerah Pengawas PSS'],['K','Anugerah Pemulihan Khas'],['K','Anugerah Cemerlang JQAF Tahun 6'],['K','Anugerah Lonjakan Akademik'],['H','Anugerah Pengawas'],['H','Anugerah Pembimbing Rakan Sebaya'],['H','Anugerah Duta Sahsiah'],['H','Anugerah Ketua Kelas & Pen. Ketua Kelas'],['H','Anugerah Kehadiran Penuh'],['KO','Cemerlang Kokurikulum Badan Beruniform'],['KO','Cemerlang Kokurikulum Sukan dan Permainan'],['KO','Cemerlang Kokurikulum Kelab dan Persatuan'],['KO','Pencapaian PAJSK Cemerlang Tahun 6'],['KO','Penglibatan Luar Aktif Kokurikulum'],['KO','Ikon Kokurikulum']].map(([kat,nama],i)=>({id:'a'+(i+1),kat,nama})),
   ajk:[['Jawatankuasa Induk','En Abidin Bin Moen (Pengerusi, Guru Besar) (K)\nEn Juzaidy Bin Selamat (Timbalan Pengerusi, GPK Kokurikulum)\nEn Sulaiman Bin Abd Rahman (Naib Pengerusi, GPK Pentadbiran)\nPn Kalsom Bt Tang (Naib Pengerusi, GPK HEM)\nPn Samsiah Bt Sundu (Naib Pengerusi, GPK Petang)\nEn Harsidi Bin Junick (Penyelaras Program)\nEn Abdul Rahman Bin Madiah (Pen. Penyelaras Program)\nTuan Hj Yusoff Bin Hj Awang Yahya (Setiausaha)\nCik Dayang Anisah Binti Exie@Ahmad (Bendahari)',''],
@@ -575,7 +577,7 @@ const SEED={
 };
 
 /* ---------- state ---------- */
-let D={settings:{...SET_DEFAULT},anugerah:[],penerima:null,ajk:[],tentatif:[],persiapan:[],galeri:[]};
+let D={settings:{...SET_DEFAULT},anugerah:[],penerima:null,ajk:[],tentatif:[],persiapan:[],galeri:[],fotoAjk:[]},FOTO=new Map();
 let PIN=store.get('pin','',sessionStorage), INFO=null, VIEW='dashboard', LAST=0;
 let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set()};
 
@@ -634,11 +636,14 @@ async function refresh(fromPoll){
   render(fromPoll);
 }
 function setData(d){
-  D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[]};
+  D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[],fotoAjk:d.fotoAjk||[]};
+  FOTO=new Map(D.fotoAjk.map(f=>[nameKey(f.n),f.fid]));
   D.settings.showNames=D.settings.showNames===true||D.settings.showNames==='true';
   D.settings.now=+D.settings.now;
   if(D.penerima){const ids=new Set(D.anugerah.map(a=>a.id));D.penerima=D.penerima.filter(p=>ids.has(p.aid))}
 }
+// share of capped awards' targets filled (unlimited awards don't count); null when no targets set
+function sasaranPct(){let f=0,t=0;D.anugerah.forEach(a=>{const s=+a.sasaran||0;if(s){t+=s;f+=Math.min(counts(a).n,s)}});return t?Math.round(f/t*100):null}
 function counts(a){
   if(!D.penerima)return {n:+a.n||0,d:+a.d||0};
   let n=0,d=0;D.penerima.forEach(p=>{if(p.aid===a.id){n++;if(p.status==='Diterima')d++}});return {n,d};
@@ -655,7 +660,13 @@ let toastT;
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className='on'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className=err?'err':'',err?4500:2200)}
 async function busy(btn,fn){const h=btn.innerHTML;btn.disabled=true;btn.textContent='Menyimpan…';try{return await fn()}catch(e){toast(e.message,true)}finally{btn.disabled=false;btn.innerHTML=h}}
 function countUp(el,to){const t0=performance.now(),d=RM?0:1400;(function f(t){const p=d?Math.min(1,(t-t0)/d):1;el.textContent=Math.round(to*(1-Math.pow(1-p,3))).toLocaleString('ms-MY');if(p<1)requestAnimationFrame(f)})(t0)}
-const initials=n=>n.replace(/\(K\)/i,'').replace(/^((Pn|En|Cik|Tuan|Tn|Ustazah|Ustaz|Hjh|Hj|Haji|Dr)\.?\s+)+/i,'').split(/\s+/).filter(w=>w&&!/^(bin|bt\.?|binti|anak|dan)$/i.test(w)).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'•';
+const HONOR=/^((Pn|En|Cik|Tuan|Tn|Ustazah|Ustaz|Hjh|Hj|Haji|Dr)\.?\s+)+/i;
+const initials=n=>n.replace(/\(K\)/i,'').replace(HONOR,'').split(/\s+/).filter(w=>w&&!/^(bin|bt\.?|binti|anak|dan)$/i.test(w)).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'•';
+// match key for AJK photos: "Pn. Kalsom Bt Tang" and file "Kalsom Binti Tang.jpg" give the same key
+const nameKey=n=>String(n).replace(/\(.*?\)/g,'').trim().replace(HONOR,'').toUpperCase().replace(/\b(BT|BTE|BINTI)\b/g,'BINTI').replace(/[^A-Z]/g,'');
+// photo from the Drive folder when one matches, else initials (also if the photo fails to load, e.g. folder not shared)
+const av=n=>{const f=FOTO.get(nameKey(n)),i=esc(initials(n));return `<span class="av" aria-hidden="true">${f?`<img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(f)}&sz=w200" alt="" loading="lazy" data-i="${i}" onerror="this.replaceWith(this.dataset.i)">`:i}</span>`};
+const ajkFotoHits=()=>new Set(D.ajk.flatMap(j=>ahliList(j.ahli).map(m=>nameKey(m.nama))).filter(k=>FOTO.has(k))).size;
 const hl=(s,q)=>{s=esc(s);return q?s.replace(new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'):s};
 const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
 const isDay=t=>!t.masa; // tentatif row with no time = day heading
@@ -698,7 +709,7 @@ function render(fromPoll,nav){
 function renderDash(nav){
   const s=D.settings, now=s.now, T=D.tentatif;
   const total=D.anugerah.reduce((t,a)=>t+counts(a).n,0), got=D.anugerah.reduce((t,a)=>t+counts(a).d,0);
-  const ahli=D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0);
+  const ahli=D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0), sg=sasaranPct();
   const SUM=Object.keys(CAT).map(k=>[k,D.anugerah.filter(a=>a.kat===k).reduce((t,a)=>t+counts(a).n,0)]);
   const d=new Date(s.tarikh+'T'+(s.masa||'07:30'));
   const cur=T[now], nxt=T.slice(now+1).find(t=>!isDay(t));
@@ -718,7 +729,7 @@ function renderDash(nav){
   </div>
   <div class="grid kpis">
     <div class="card kpi rise" style="animation-delay:.1s"><div class="ic"><svg class="i"><use href="#i-award"/></svg></div><div class="n" data-count="${D.anugerah.length}">0</div><div class="l">Kategori anugerah</div></div>
-    <div class="card kpi rise" style="animation-delay:.18s"><div class="ic"><svg class="i"><use href="#i-spark"/></svg></div><div class="n" data-count="${total}">0</div><div class="l">Penerima${got?` · ${got} sudah menerima`:''}</div></div>
+    <div class="card kpi rise" style="animation-delay:.18s"><div class="ic"><svg class="i"><use href="#i-spark"/></svg></div><div class="n" data-count="${total}">0</div><div class="l">Penerima${got?` · ${got} sudah menerima`:''}${sg==null?'':` · sasaran ${sg}%`}</div></div>
     <div class="card kpi rise" style="animation-delay:.26s"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div class="n" data-count="${D.ajk.length}">0</div><div class="l">Jawatankuasa · ${ahli} ahli</div></div>
     <div class="card kpi rise" style="animation-delay:.34s"><div class="ic"><svg class="i"><use href="#i-cal"/></svg></div><div class="n" data-count="${T.filter(t=>!isDay(t)).length}">0</div><div class="l">Acara dalam tentatif</div></div>
   </div>
@@ -819,7 +830,7 @@ function renderAw(){
   if(AWMODE==='murid')return renderAwList();
   const q=$('#awQ').value.toLowerCase();
   const list=D.anugerah.filter(a=>(awCat==='ALL'||a.kat===awCat)&&a.nama.toLowerCase().includes(q));
-  $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a);return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}</div><h4>${esc(a.nama)}</h4><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b> penerima</span></div>${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
+  $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a),t=+a.sasaran||0;return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}</div><h4>${esc(a.nama)}</h4><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b>${t?` / ${t}`:''} penerima</span></div>${t?`<div class="prog t ${c.n>t?'over':''}" title="Sasaran ${t} penerima"><i style="width:${Math.min(100,c.n/t*100)}%"></i></div>`:''}${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
   $$('#awGrid .aw').forEach(b=>b.onclick=()=>openAw(b.dataset.id));
 }
 function openAw(id){
@@ -831,7 +842,7 @@ function openAw(id){
     const groups={};ps.forEach(p=>(groups[p.tahun||'-']=groups[p.tahun||'-']||[]).push(p));
     body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span>${PIN?`<span class="rcp-act"><button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button></span>`:(p.status==='Diterima'?'<span class="tg ok">✓ Diterima</span>':'<span></span>')}</div>`).join('')}</div>`).join(''):'<div class="empty"><p>Tiada penerima untuk anugerah ini.</p></div>';
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
-  $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n} penerima${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
+  $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n}${+a.sasaran?` / ${+a.sasaran}`:''} penerima${+a.sasaran&&c.n>+a.sasaran?' (melebihi sasaran)':''}${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
   <div class="body">${PIN&&c.n?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}${PIN?'<div class="addp" id="addp"></div>':''}${body}</div>`;
   $('#drawer .x').onclick=closeDrawer;
   $('#toStage')&&($('#toStage').onclick=()=>{closeDrawer();openStage(id)});
@@ -875,7 +886,7 @@ $('#scrim').onclick=closeDrawer;
 
 /* ---------- AJK ---------- */
 $('#ajkQ').oninput=renderAjk;
-const ahliHTML=(t,q)=>ahliList(t).map(m=>m.k?`<div class="lead"><span class="av" aria-hidden="true">${esc(initials(m.nama))}</span><div><small>KETUA</small>${hl(m.nama,q)}</div></div>`:`<div class="mem"><span class="av" aria-hidden="true">${esc(initials(m.nama))}</span>${hl(m.nama,q)}</div>`).join('');
+const ahliHTML=(t,q)=>ahliList(t).map(m=>m.k?`<div class="lead">${av(m.nama)}<div><small>KETUA</small>${hl(m.nama,q)}</div></div>`:`<div class="mem">${av(m.nama)}${hl(m.nama,q)}</div>`).join('');
 function renderAjk(){
   const q=$('#ajkQ').value.trim(),ql=q.toLowerCase();
   const list=D.ajk.map((j,i)=>[j,i]).filter(([j])=>!ql||[j.jk,j.ahli,j.tugas].some(x=>String(x||'').toLowerCase().includes(ql)));
@@ -945,7 +956,7 @@ let SETTAB=store.get('settab','majlis',sessionStorage), IMPORT=null;
 function renderSet(){
   $('#gate').style.display=PIN?'none':'';$('#admin').style.display=PIN?'':'none';
   if(!PIN)return;
-  const s=D.settings, tabs={majlis:'Maklumat Majlis',import:'Import Penerima',anugerah:'Anugerah',ajk:'AJK',tentatif:'Tentatif',persiapan:'Persiapan',sistem:'Sistem'};
+  const s=D.settings, tabs={majlis:'Maklumat Majlis',import:'Import Penerima',anugerah:'Anugerah',ajk:'AJK',tentatif:'Tentatif',persiapan:'Persiapan',laporan:'Laporan',sistem:'Sistem'};
   $('#admin').innerHTML=`<div class="set-tabs">${Object.entries(tabs).map(([k,n])=>`<button class="chip ${k===SETTAB?'on':''}" data-t="${k}">${n}</button>`).join('')}</div>
   <div class="setp card ${SETTAB==='majlis'?'on':''}" data-p="majlis">
     <h3>MAKLUMAT MAJLIS</h3>
@@ -967,28 +978,30 @@ function renderSet(){
     <div id="impOut"></div>
     <div class="set-row" style="margin-top:12px"><span><b>Muat turun senarai penerima</b><br><small class="muted">CSV untuk JK Sijil / JK Pengurus Penerima (dibuka dalam Excel).</small></span><button class="btn ghost sm" onclick="exportCSV()"><svg class="i"><use href="#i-dl"/></svg>CSV</button></div>
   </div>
-  <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
-  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
+  <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. <b>Sasaran</b> = bilangan penerima dirancang, untuk mengukur kemajuan; biarkan kosong untuk tiada had. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
+  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span style="flex:1 1 320px"><b>Folder foto AJK (Google Drive)</b><br><small class="muted">Namakan setiap fail mengikut nama guru, cth. <i>Harsidi Bin Junick.jpg</i> (gelaran Pn/En/Cik tidak perlu). Kongsi folder: <i>Sesiapa yang ada pautan boleh lihat</i>. Tanpa foto, inisial nama dipaparkan.${s.fotoFolder?` <b>${D.fotoAjk.length} foto dijumpai · ${ajkFotoHits()} sepadan dengan nama AJK.</b>`:''}</small></span><span style="display:flex;gap:8px;flex:1 1 280px"><input class="fi" id="sFoto" placeholder="Tampal pautan folder Google Drive" value="${esc(s.fotoFolder)}" aria-label="Pautan folder foto AJK"><button class="btn ghost sm" id="sFotoSave">Simpan</button></span></div><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
   <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. Biarkan <b>Masa</b> kosong untuk baris tajuk hari. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div class="set-row"><span>Muat tentatif 2 hari daripada kertas kerja 2026<br><small class="muted">Menggantikan tentatif sahaja.</small></span><button class="btn ghost sm" id="ttSeed">Muat</button></div><div id="reTT"></div></div>
   <div class="setp card ${SETTAB==='persiapan'?'on':''}" data-p="persiapan"><h3>STATUS PERSIAPAN</h3><p class="hint">Peratus siap (0–100) dipaparkan di Dashboard.</p><div id="rePrep"></div></div>
+  <div class="setp card ${SETTAB==='laporan'?'on':''}" data-p="laporan"><h3>LAPORAN MAJLIS</h3><p class="hint">Dijana automatik daripada data sistem: penerima, status "Diterima", sasaran, tentatif, persiapan, AJK dan galeri. Jana selepas majlis tamat untuk laporan muktamad.</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="printLaporan()"><svg class="i"><use href="#i-dl"/></svg>Cetak / Simpan PDF</button><button class="btn ghost" onclick="wordLaporan()"><svg class="i"><use href="#i-dl"/></svg>Muat turun Word</button></div><div style="overflow:auto"><style>${LAP_CSS}</style>${SETTAB==='laporan'?laporanHTML():''}</div></div>
   <div class="setp card ${SETTAB==='sistem'?'on':''}" data-p="sistem"><h3>SISTEM</h3>
     <div class="set-row"><span>Mod</span><span class="chip ${DEMO?'warn':'live'}">${DEMO?'Demo (localStorage pelayar ini)':'Google Apps Script'}</span></div>
     ${INFO?`<div class="set-row"><span>Pangkalan data Google Sheet</span><a class="btn ghost sm" href="${esc(INFO.sheetUrl)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg>Buka Sheet</a></div><div class="set-row"><span>Folder galeri Google Drive</span><a class="btn ghost sm" href="${esc(INFO.folderUrl)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg>Buka Folder</a></div>`:''}
     <div class="set-row"><span>Isi semula data permulaan (kategori, AJK, tentatif, persiapan)<br><small class="muted">Menggantikan jadual tersebut. Penerima & foto tidak terjejas.</small></span><button class="btn danger sm" id="reseed">Isi semula</button></div>
     <div class="set-row"><span>Kunci mod admin pada peranti ini</span><button class="btn ghost sm" onclick="lockAdmin()"><svg class="i"><use href="#i-lock"/></svg>Kunci</button></div>
   </div>`;
-  $$('#admin .set-tabs .chip').forEach(b=>b.onclick=()=>{SETTAB=b.dataset.t;store.set('settab',SETTAB,sessionStorage);$$('#admin .set-tabs .chip').forEach(x=>x.classList.toggle('on',x===b));$$('#admin .setp').forEach(p=>p.classList.toggle('on',p.dataset.p===SETTAB))});
+  $$('#admin .set-tabs .chip').forEach(b=>b.onclick=()=>{SETTAB=b.dataset.t;store.set('settab',SETTAB,sessionStorage);if(SETTAB==='laporan')return renderSet();$$('#admin .set-tabs .chip').forEach(x=>x.classList.toggle('on',x===b));$$('#admin .setp').forEach(p=>p.classList.toggle('on',p.dataset.p===SETTAB))});
   $('#sSave').onclick=e=>busy(e.currentTarget,()=>call('saveSettings',{settings:{nama:$('#sNama').value.trim(),tagline:$('#sTag').value.trim(),tarikh:$('#sTarikh').value,masa:$('#sMasa').value,lokasi:$('#sLokasi').value.trim(),showNames:$('#sShow').checked}}));
   $('#sLogo').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Memuat naik logo…');const data=await compress(f,400,'image/png');await call('upload',{name:'logo.png',mime:'image/png',data,purpose:'logo'})}catch(err){toast(err.message,true)}};
   $('#xlsx').onchange=e=>e.target.files[0]&&readXlsx(e.target.files[0]);
   $('#reseed').onclick=()=>confirm('Gantikan kategori anugerah, AJK, tentatif dan persiapan dengan data permulaan?')&&seedRemote();
   if(IMPORT)drawImport();
-  rowEditor($('#reAw'),'anugerah',[{k:'nama',label:'Nama anugerah',flex:3},{k:'kat',label:'Kategori',type:'select',opts:CAT,flex:1}],{id:'a'});
+  rowEditor($('#reAw'),'anugerah',[{k:'nama',label:'Nama anugerah',flex:3},{k:'kat',label:'Kategori',type:'select',opts:CAT,flex:1},{k:'sasaran',label:'Sasaran (kosong = tiada had)',type:'number',flex:1}],{id:'a'});
   $('#ajkSeed').onclick=e=>confirm('Gantikan senarai AJK dengan data kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'ajk',rows:SEED.ajk}));
+  $('#sFotoSave').onclick=e=>{const v=$('#sFoto').value.trim();busy(e.currentTarget,()=>call('saveSettings',{settings:{fotoFolder:(v.match(/folders\/([\w-]+)/)||v.match(/[?&]id=([\w-]+)/)||[0,v])[1]}}))};
   rowEditor($('#reAjk'),'ajk',[{k:'jk',label:'Jawatankuasa',flex:2},{k:'ahli',label:'Ahli (satu setiap baris)',type:'textarea',flex:3},{k:'tugas',label:'Bidang tugas (satu setiap baris)',type:'textarea',flex:3}],{id:'j'});
   $('#ttSeed').onclick=e=>confirm('Gantikan tentatif dengan tentatif 2 hari daripada kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'tentatif',rows:SEED.tentatif}).then(()=>setNow(-1)));
   rowEditor($('#reTT'),'tentatif',[{k:'masa',label:'Masa',type:'time',flex:1},{k:'acara',label:'Acara',flex:3},{k:'pic',label:'PIC / JK',flex:2}],{id:'t'});
-  rowEditor($('#rePrep'),'persiapan',[{k:'nama',label:'Perkara',flex:3},{k:'peratus',label:'% siap',type:'number',flex:1}],{id:'p'});
+  rowEditor($('#rePrep'),'persiapan',[{k:'nama',label:'Perkara',flex:3},{k:'peratus',label:'% siap',type:'number',max:100,flex:1}],{id:'p'});
 }
 function rowEditor(el,table,fields,{id}){
   let rows=structuredClone(D[table]);
@@ -996,7 +1009,7 @@ function rowEditor(el,table,fields,{id}){
   const field=(f,v,i)=>{const a=`class="fi" data-k="${f.k}" aria-label="${esc(f.label)} ${i+1}"`;
     if(f.type==='select')return `<select ${a}>${Object.entries(f.opts).map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${n}</option>`).join('')}</select>`;
     if(f.type==='textarea')return `<textarea ${a}>${esc(v)}</textarea>`;
-    return `<input ${a} type="${f.type||'text'}" ${f.type==='number'?'min="0" max="100"':''} value="${esc(v)}">`};
+    return `<input ${a} type="${f.type||'text'}" ${f.type==='number'?`min="0" ${f.max?`max="${f.max}"`:''}`:''} value="${esc(v)}">`};
   const draw=()=>{el.innerHTML=`<div class="re-row" style="grid-template-columns:${cols};background:none;padding:0 10px;margin:0">${fields.map(f=>`<small class="muted" style="font-weight:700">${esc(f.label)}</small>`).join('')}<span></span></div>${rows.map((r,i)=>`<div class="re-row" data-i="${i}" style="grid-template-columns:${cols}">${fields.map(f=>field(f,r[f.k]??'',i)).join('')}<div class="re-act"><button data-a="up" aria-label="Naik"><svg class="i"><use href="#i-uparrow"/></svg></button><button data-a="down" aria-label="Turun"><svg class="i"><use href="#i-downarrow"/></svg></button><button data-a="del" aria-label="Padam"><svg class="i"><use href="#i-trash"/></svg></button></div></div>`).join('')}<div class="re-foot"><button class="btn ghost" data-a="add"><svg class="i"><use href="#i-plus"/></svg>Tambah</button><button class="btn" data-a="save"><svg class="i"><use href="#i-check"/></svg>Simpan ${rows.length} baris</button></div>`};
   el.oninput=e=>{const r=e.target.closest('.re-row[data-i]');if(r&&e.target.dataset.k)rows[r.dataset.i][e.target.dataset.k]=e.target.value};
   el.onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const r=b.closest('.re-row[data-i]'),i=r?+r.dataset.i:-1,a=b.dataset.a;
@@ -1059,8 +1072,8 @@ function drawImport(){
   $('#impCancel').onclick=()=>{IMPORT=null;$('#impOut').innerHTML=''};
   $('#impSave').onclick=e=>{
     if(!confirm('Ini akan MENGGANTIKAN semua anugerah dan penerima sedia ada (status "Diterima" akan ditetapkan semula). Teruskan?'))return;
-    const old=new Map(D.anugerah.map(a=>[a.nama.toLowerCase(),a.id]));
-    const anugerah=IMPORT.map(a=>({id:old.get(a.nama.toLowerCase())||'a'+uid(),kat:a.kat,nama:a.nama}));
+    const old=new Map(D.anugerah.map(a=>[a.nama.toLowerCase(),a]));
+    const anugerah=IMPORT.map(a=>{const o=old.get(a.nama.toLowerCase());return {id:o?.id||'a'+uid(),kat:a.kat,nama:a.nama,sasaran:o?.sasaran||''}});
     const penerima=IMPORT.flatMap((a,i)=>a.recs.map(r=>({id:'r'+uid(),aid:anugerah[i].id,tahun:r.tahun,kelas:r.kelas,nama:r.nama,catatan:r.catatan,status:''})));
     busy(e.currentTarget,async()=>{await call('replacePenerima',{anugerah,penerima});IMPORT=null;$('#impOut').innerHTML=''});
   };
@@ -1072,9 +1085,104 @@ function exportCSV(){
 }
 function downloadCSV(name,rows){
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  saveBlob(name,new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+}
+function saveBlob(name,blob){
+  const url=URL.createObjectURL(blob);
   const a=Object.assign(document.createElement('a'),{href:url,download:name});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+
+/* ---------- laporan (dijana automatik, format laporan sekolah 2025) ---------- */
+const LAP_CSS=`.lap{background:#fff;color:#111;font:13px/1.55 Arial,Helvetica,sans-serif;padding:36px;border-radius:8px;max-width:900px;margin:0 auto}
+.lap h1,.lap h2{font-family:Arial,Helvetica,sans-serif;letter-spacing:0;color:#111}
+.lap h1{font-size:16px;text-align:center;margin:0}.lap .sub{text-align:center;font-weight:700;margin-bottom:16px}
+.lap h2{font-size:13px;margin:18px 0 6px;text-transform:uppercase}
+.lap p{margin:6px 0}
+.lap table{width:100%;border-collapse:collapse;margin:6px 0}
+.lap th,.lap td{border:1px solid #555;padding:5px 8px;text-align:left;vertical-align:top;color:#111;background:none;position:static;letter-spacing:0;font-size:12.5px;font-weight:400}
+.lap th{background:#eee;font-weight:700}.lap td.n{text-align:right}.lap tr.tot td{font-weight:700;background:#f4f4f4}
+.lap ul{margin:2px 0;padding-left:20px}
+.lap .warn{border:1px solid #c80;background:#fff6e0;padding:8px 12px;margin-bottom:14px}
+.lap table.sig td,.lap table.gal td{border:0;width:50%;padding:8px;vertical-align:top}.lap table.sig{margin-top:40px}
+.lap table.gal td{text-align:center;font-size:11.5px}.lap table.gal img{max-width:100%;height:auto;border:1px solid #999}
+.lap .pb{break-before:page;page-break-before:always}
+@media (max-width:600px){.lap{padding:16px}}`;
+function laporanHTML(){
+  const s=D.settings,T=D.tentatif,P=D.penerima||[],ev=T.filter(t=>!isDay(t));
+  const selesai=T.length>0&&s.now>=T.length; // "Seterusnya" past the last item = majlis telah selesai
+  const done=T.filter((t,i)=>!isDay(t)&&i<=s.now).length;
+  const rows=D.anugerah.map(a=>({a,...counts(a),t:+a.sasaran||0}));
+  const tot=rows.reduce((x,r)=>x+r.n,0),got=rows.reduce((x,r)=>x+r.d,0);
+  const cap=rows.filter(r=>r.t),tT=cap.reduce((x,r)=>x+r.t,0),tF=cap.reduce((x,r)=>x+Math.min(r.n,r.t),0);
+  const prep=D.persiapan.map(p=>Math.max(0,Math.min(100,+p.peratus||0)));
+  const pct=(a,b)=>b?Math.round(a/b*100):null;
+  // success indicators; one with no data (e.g. no targets set) is left out of the score
+  const M=[['Kehadiran penerima (anugerah diterima di pentas)',pct(got,tot),`${got} / ${tot} penerima`],
+    ['Pencapaian sasaran penerima',pct(tF,tT),`${tF} / ${tT} (${cap.length} anugerah bersasaran)`],
+    ['Atur cara tentatif dilaksanakan',pct(done,ev.length),`${done} / ${ev.length} acara`],
+    ['Persiapan jawatankuasa',prep.length?Math.round(prep.reduce((a,b)=>a+b,0)/prep.length):null,`purata ${prep.length} perkara`]].filter(m=>m[1]!=null);
+  const score=M.length?Math.round(M.reduce((a,m)=>a+m[1],0)/M.length):null;
+  const tahap=score==null?'—':score>=90?'CEMERLANG':score>=75?'BAIK':score>=50?'SEDERHANA':'PERLU PENAMBAHBAIKAN';
+  const murid=new Map();P.forEach(p=>murid.set(p.nama,(murid.get(p.nama)||0)+1));
+  const multi=[...murid.values()].filter(n=>n>1).length;
+  const th=[...new Set(P.map(p=>p.tahun).filter(Boolean))].sort();
+  const ahli=D.ajk.reduce((t,j)=>t+ahliList(j.ahli).length,0);
+  const induk=ahliList(D.ajk[0]?.ahli),who=re=>(induk.find(m=>re.test(m.nama))?.nama.replace(/\s*\(.*$/,'')||'').toUpperCase()||'..............................';
+  const list=a=>a.slice(0,6).join('; ')+(a.length>6?` dan ${a.length-6} lagi`:'');
+  const K=[],L=[],C=[];
+  const kh=pct(got,tot),given=rows.filter(r=>r.n),full=given.filter(r=>r.d===r.n).length,pv=M.find(m=>m[0].startsWith('Persiapan'))?.[1];
+  if(kh!=null&&kh>=90)K.push(`Kadar kehadiran penerima yang tinggi: ${got} daripada ${tot} penerima (${kh}%) menerima anugerah di pentas.`);
+  if(full)K.push(`${full} daripada ${given.length} anugerah disampaikan kepada semua penerima yang disenaraikan.`);
+  if(ev.length&&done===ev.length)K.push(`Semua ${ev.length} acara dalam tentatif dapat dilaksanakan mengikut atur cara.`);
+  if(tT&&tF===tT)K.push(`Sasaran penerima bagi semua ${cap.length} anugerah bersasaran dicapai.`);
+  if(pv>=90)K.push(`Persiapan jawatankuasa disiapkan dengan baik (purata ${pv}%).`);
+  if(ahli)K.push(`Kerjasama ${ahli} ahli dalam ${D.ajk.length} jawatankuasa pelaksana.`);
+  if(D.galeri.length)K.push(`Majlis didokumentasikan dengan ${D.galeri.length} foto dalam galeri.`);
+  const miss=rows.filter(r=>r.d<r.n),under=cap.filter(r=>r.n<r.t),over=cap.filter(r=>r.n>r.t),lag=D.persiapan.filter(p=>(+p.peratus||0)<100);
+  if(miss.length){L.push(`${tot-got} penerima tidak menerima anugerah di pentas (tidak hadir atau tidak ditanda "Diterima") bagi ${miss.length} anugerah: ${list(miss.map(r=>`${r.a.nama} (${r.n-r.d})`))}.`);C.push('Mengesahkan kehadiran penerima lebih awal dan menyediakan wakil bagi penerima yang tidak dapat hadir.')}
+  if(under.length){L.push(`${under.length} anugerah tidak mencapai sasaran penerima: ${list(under.map(r=>`${r.a.nama} (${r.n}/${r.t})`))}.`);C.push('Menyemak semula kriteria dan sasaran penerima bersama jawatankuasa pemilihan lebih awal.')}
+  if(over.length){L.push(`${over.length} anugerah melebihi sasaran penerima: ${list(over.map(r=>`${r.a.nama} (${r.n}/${r.t})`))}.`);C.push('Menyelaraskan bilangan penerima dengan peruntukan hadiah dan sijil sebelum majlis.')}
+  if(lag.length){L.push(`Persiapan belum siap sepenuhnya: ${list(lag.map(p=>`${p.nama} (${+p.peratus||0}%)`))}.`);C.push('Menetapkan tarikh akhir persiapan setiap jawatankuasa dan memantau kemajuan secara berkala.')}
+  if(ev.length&&done<ev.length){L.push(`${ev.length-done} acara dalam tentatif belum atau tidak dilaksanakan.`);C.push('Memperketat pengurusan masa supaya semua acara dalam atur cara dapat dilaksanakan.')}
+  if(!K.length)K.push('—');
+  if(!L.length)L.push('Tiada kelemahan ketara dikesan daripada data sistem.');
+  if(!C.length)C.push('Mengekalkan amalan baik dan kerjasama semua pihak bagi majlis akan datang.');
+  const ul=a=>`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+  const d=new Date(s.tarikh+'T'+(s.masa||'07:00')),days=T.filter(isDay).map(t=>t.acara);
+  const akt=[...new Set(ev.map(t=>t.acara).filter(a=>!/^Anugerah\b/i.test(a)))];
+  const ord=Object.keys(CAT),sorted=rows.slice().sort((x,y)=>ord.indexOf(x.a.kat)-ord.indexOf(y.a.kat));
+  const gal=[...D.galeri.filter(g=>g.kat==='Majlis'),...D.galeri.filter(g=>g.kat!=='Majlis')].slice(0,12); // lampiran: majlis photos first, 12 max
+  const sum=`${s.nama} ${selesai?'telah berjaya dilaksanakan':'sedang dilaksanakan'} di ${s.lokasi}. Sebanyak ${rows.length} kategori anugerah disediakan dengan ${tot} penerima melibatkan ${murid.size} orang murid${multi?`, termasuk ${multi} murid yang menerima lebih daripada satu anugerah`:''}.${score==null?'':` Skor kejayaan keseluruhan majlis ialah ${score}% (tahap ${tahap.toLowerCase()}).`}`;
+  return `<div class="lap">
+  ${selesai?'':'<p class="warn"><b>Laporan sementara:</b> majlis belum ditanda selesai dalam tentatif. Angka dikemas kini secara langsung sehingga majlis tamat.</p>'}
+  <h1>LAPORAN ${esc(s.nama.toUpperCase())}</h1><div class="sub">SEKOLAH KEBANGSAAN BANDAR TAWAU</div>
+  <table>
+    <tr><th style="width:32%">TAJUK PROGRAM</th><td>${esc(s.nama)}</td></tr>
+    <tr><th>PENGELOLA</th><td>Guru Sekolah Kebangsaan Bandar Tawau</td></tr>
+    <tr><th>TARIKH &amp; MASA PELAKSANAAN</th><td>${days.length?days.map(esc).join('<br>'):isNaN(d)?'—':esc(d.toLocaleDateString('ms-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))}<br>${esc(s.masa)}${ev.length?' – '+esc(ev.at(-1).masa):''}</td></tr>
+    <tr><th>TEMPAT</th><td>${esc(s.lokasi)}</td></tr>
+    <tr><th>AKTIVITI YANG DIJALANKAN</th><td>${akt.length?ul(akt):'—'}</td></tr>
+    <tr><th>INDIVIDU / KUMPULAN YANG TERLIBAT</th><td>${ul([murid.size?`${murid.size} murid penerima anugerah${th.length?` (Tahun ${th[0]}${th.length>1?' – '+th.at(-1):''})`:''}`:'',ahli?`${ahli} ahli dalam ${D.ajk.length} jawatankuasa pelaksana`:'','Semua guru SK Bandar Tawau'].filter(Boolean))}</td></tr>
+    <tr><th>DAPAT DILAKSANAKAN</th><td>${selesai?'Ya ( / ) &nbsp; Tidak ( &nbsp; )':'Ya ( &nbsp; ) &nbsp; Tidak ( &nbsp; ) — majlis belum selesai'}</td></tr>
+  </table>
+  <h2>Keputusan / Pencapaian</h2>
+  <p>${esc(sum)}</p>
+  <table><tr><th>Petunjuk kejayaan</th><th>Data</th><th style="width:70px">%</th></tr>${M.map(m=>`<tr><td>${esc(m[0])}</td><td>${esc(m[2])}</td><td class="n">${m[1]}%</td></tr>`).join('')}<tr class="tot"><td colspan="2">SKOR KEJAYAAN KESELURUHAN · TAHAP ${tahap}</td><td class="n">${score==null?'—':score+'%'}</td></tr></table>
+  <table><tr><th>Bil</th><th>Anugerah</th><th>Kategori</th><th>Sasaran</th><th>Penerima</th><th>Diterima</th></tr>${sorted.map((r,i)=>`<tr><td class="n">${i+1}</td><td>${esc(r.a.nama)}</td><td>${esc(CAT[r.a.kat]||'')}</td><td class="n">${r.t||'Tiada had'}</td><td class="n">${r.n}</td><td class="n">${r.d}</td></tr>`).join('')}<tr class="tot"><td colspan="3">JUMLAH</td><td class="n">${tT||'—'}</td><td class="n">${tot}</td><td class="n">${got}</td></tr></table>
+  <h2>Kekuatan</h2>${ul(K)}
+  <h2>Kelemahan</h2>${ul(L)}
+  <h2>Cadangan untuk penambahbaikan</h2>${ul(C)}
+  <table class="sig"><tr><td>Disediakan oleh:<br><br><br>..............................<br><b>${esc(who(/setiausaha/i))}</b><br>Setiausaha ${esc(s.nama)}<br>SK Bandar Tawau</td><td>Disahkan oleh:<br><br><br>..............................<br><b>${esc(who(/guru besar/i))}</b><br>Guru Besar<br>SK Bandar Tawau</td></tr></table>
+  ${gal.length?`<div class="pb"></div><h2 style="text-align:center">Lampiran 1 · Gambar sepanjang majlis</h2><table class="gal">${gal.reduce((a,g,i)=>(i%2?a[a.length-1].push(g):a.push([g]),a),[]).map(pr=>`<tr>${pr.map(g=>`<td><img src="${esc(imgURL(g,800))}" width="320" alt=""><br>${esc(g.kapsyen||g.kat)}</td>`).join('')}</tr>`).join('')}</table>`:''}
+  </div>`;
+}
+const lapDoc=extra=>`<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>Laporan ${esc(D.settings.nama)}</title><style>${LAP_CSS}@page{size:A4;margin:15mm}body{margin:0}.lap{padding:0;max-width:none;border-radius:0}</style></head><body>${laporanHTML()}${extra||''}</body></html>`;
+function printLaporan(){
+  const w=open('','_blank');if(!w)return toast('Benarkan tetingkap pop-up untuk mencetak',true);
+  w.document.write(lapDoc('<script>onload=()=>print()<\/script>'));w.document.close();
+}
+// Word opens an HTML file saved as .doc, so the report stays editable there
+function wordLaporan(){saveBlob('Laporan-Sri-Bitara-2026.doc',new Blob(['﻿'+lapDoc()],{type:'application/msword'}))}
 
 /* ---------- mod pentas ---------- */
 const SG={aid:'',th:'',i:0,mode:'aw'};

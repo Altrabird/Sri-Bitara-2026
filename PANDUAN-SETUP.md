@@ -64,9 +64,16 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 
 **Juru acara / urus setia**: di **Dashboard**, gunakan butang **Seterusnya ▶** untuk menggerakkan penanda *Sedang Berlangsung*. Semua telefon akan dikemas kini dalam masa ~25 saat.
 
+**Selepas majlis**: tekan **Seterusnya ▶** sehingga *"Majlis telah selesai"*, kemudian buka **Tetapan → Laporan**. Laporan dijana automatik (skor kejayaan, jadual anugerah, kekuatan, kelemahan, cadangan, gambar lampiran). Klik **Cetak / Simpan PDF** atau **Muat turun Word** untuk menyunting.
+
 **Ibu bapa / tetamu**: kongsi pautan `https://altrabird.github.io/Sri-Bitara-2026/` (boleh dijadikan kod QR).
 
 ---
+
+## Sasaran anugerah & foto AJK
+
+- **Sasaran penerima:** **Tetapan → Anugerah**, isi lajur *Sasaran* (cth. 12). Biarkan kosong untuk tiada had. Kad anugerah memaparkan `penerima / sasaran` dan bar kemajuan.
+- **Foto AJK:** buat satu folder Google Drive, masukkan foto guru dan namakan setiap fail mengikut nama guru (cth. `Harsidi Bin Junick.jpg`, tanpa Pn/En/Cik). Kongsi folder: **Sesiapa yang ada pautan → Pelihat**. Tampal pautan folder di **Tetapan → AJK → Folder foto AJK**. Foto baharu muncul dalam masa ~5 minit. Guru tanpa foto dipaparkan dengan inisial (cth. HJ).
 
 ## Nota
 

@@ -17,17 +17,17 @@ const ROSTER_ID = '1CiS8GhmhsDtOxZP0L3ZDmQDiA3DTbc1R0mQRQOfe1qY';
 const ROSTER_GID = 237821847;
 
 const TABLES = {
-  anugerah:  ['id', 'kat', 'nama'],
+  anugerah:  ['id', 'kat', 'nama', 'sasaran'],   // sasaran kosong = tiada had penerima
   penerima:  ['id', 'aid', 'tahun', 'kelas', 'nama', 'catatan', 'status'],
-  ajk:       ['id', 'jk', 'ahli'],
+  ajk:       ['id', 'jk', 'ahli', 'tugas'],
   tentatif:  ['id', 'masa', 'acara', 'pic'],
   persiapan: ['id', 'nama', 'peratus'],
   galeri:    ['id', 'fid', 'kat', 'kapsyen', 'masa']
 };
 const SET_DEFAULT = {
   nama: 'Majlis Anugerah Sri Bitara 2026', tagline: 'Meraikan kecemerlangan warga SK Bandar Tawau',
-  tarikh: '2026-11-20', masa: '07:30', lokasi: 'Dewan SK Bandar Tawau',
-  showNames: false, now: -1, logo: ''
+  tarikh: '2026-11-27', masa: '07:00', lokasi: 'Dewan SK Bandar Tawau',
+  showNames: false, now: -1, logo: '', fotoFolder: ''
 };
 
 /* ---------- HTTP ---------- */
@@ -133,9 +133,9 @@ function publicPayload_() {
   });
   const pub = {
     ok: true, t: Date.now(), settings: d.settings,
-    anugerah: d.anugerah.map(function (a) { const k = cnt[a.id] || { n: 0, d: 0 }; return { id: a.id, kat: a.kat, nama: a.nama, n: k.n, d: k.d }; }),
+    anugerah: d.anugerah.map(function (a) { const k = cnt[a.id] || { n: 0, d: 0 }; return { id: a.id, kat: a.kat, nama: a.nama, sasaran: a.sasaran, n: k.n, d: k.d }; }),
     penerima: d.settings.showNames ? d.penerima : null,
-    ajk: d.ajk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri
+    ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri
   };
   try { c.put('pub', JSON.stringify(pub), 15); } catch (_) { /* >100KB: skip cache */ }
   return pub;
@@ -144,7 +144,27 @@ function publicPayload_() {
 function allData_() {
   const d = { settings: getSettings_() };
   Object.keys(TABLES).forEach(function (t) { d[t] = readTable_(t); });
+  d.fotoAjk = fotoAjk_(d.settings.fotoFolder);
   return d;
+}
+
+/* Foto AJK: setiap fail dalam folder dinamakan mengikut nama guru (cth. "Harsidi Bin Junick.jpg").
+   Folder mesti dikongsi "Sesiapa yang ada pautan boleh lihat". Dicache 5 minit. */
+function fotoAjk_(id) {
+  if (!id) return [];
+  const c = CacheService.getScriptCache(), key = 'foto|' + id;
+  const hit = c.get(key);
+  if (hit) return JSON.parse(hit);
+  const out = [];
+  try {
+    const it = DriveApp.getFolderById(id).getFiles();
+    while (it.hasNext()) {
+      const f = it.next();
+      if (/^image\//.test(f.getMimeType())) out.push({ n: f.getName().replace(/\.\w+$/, ''), fid: f.getId() });
+    }
+  } catch (_) { /* folder missing or no access: show initials */ }
+  try { c.put(key, JSON.stringify(out), 300); } catch (_) { /* too big to cache */ }
+  return out;
 }
 
 function info_() {
