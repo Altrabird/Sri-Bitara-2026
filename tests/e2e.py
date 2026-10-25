@@ -253,6 +253,44 @@ with sync_playwright() as p:
         expect(lap).to_contain_text('2 / 5 (1 anugerah bersasaran)')
         expect(lap).to_contain_text('TUAN HJ YUSOFF BIN HJ AWANG YAHYA')  # setiausaha from AJK Induk
         shot(pg, 'remote-laporan')
+        # surat jemputan: a pupil with awards in two categories gets ONE letter listing both
+        pg.evaluate("call('addPenerima',{rows:[{id:'rx1',aid:D.anugerah[12].id,kelas:'4 KREATIF',tahun:'4',nama:'MURID BAHARU',catatan:''}]},{quiet:true})")
+        pg.wait_for_function("D.penerima.filter(p=>p.nama==='MURID BAHARU').length===2", timeout=8000)
+        names = pg.evaluate('new Set(D.penerima.map(p=>p.nama)).size')
+        surat = pg.evaluate('suratHTML()')
+        assert surat['n'] == names, (surat['n'], names)
+        aw5, aw12 = pg.evaluate('[D.anugerah[5].nama, D.anugerah[12].nama]')
+        letter = [x for x in surat['html'].split('class="pb"') if '<b>MURID BAHARU</b>' in x]
+        assert len(letter) == 1 and aw5 in letter[0] and aw12 in letter[0] and '<b>2</b> anugerah' in letter[0], 'one letter, both awards'
+        # downloads: per kategori, keseluruhan, surat
+        pg.click('.nav[data-v=anugerah]')
+        with pg.expect_download() as dl:
+            pg.click('#awDl')
+        assert dl.value.suggested_filename == 'Senarai-Penerima-Keseluruhan.doc'
+        pg.click('#awCats .chip[data-c=K]')
+        with pg.expect_download() as dl:
+            pg.click('#awDl')
+        assert dl.value.suggested_filename == 'Senarai-Penerima-Kurikulum.doc'
+        assert aw5 in open(dl.value.path(), encoding='utf-8-sig').read()
+        pg.click('#awCats .chip[data-c=ALL]')
+        with pg.expect_download() as dl:
+            pg.locator('#v-anugerah button', has_text='Surat jemputan').click()
+        assert dl.value.suggested_filename == 'Surat-Jemputan-Penerima-Anugerah.doc'
+        # same downloads as Excel / CSV
+        pg.select_option('#dlFmt', 'xlsx')
+        with pg.expect_download() as dl:
+            pg.click('#awDl')
+        assert dl.value.suggested_filename == 'Senarai-Penerima-Keseluruhan.xlsx'
+        assert open(dl.value.path(), 'rb').read(2) == b'PK', 'real xlsx'
+        pg.select_option('#dlFmt', 'csv')
+        with pg.expect_download() as dl:
+            pg.locator('#v-anugerah button', has_text='Surat jemputan').click()
+        assert dl.value.suggested_filename == 'Surat-Jemputan-Senarai-Mail-Merge.csv'
+        merge = open(dl.value.path(), encoding='utf-8-sig').read()
+        row = [l for l in merge.splitlines() if '"MURID BAHARU"' in l]
+        assert len(row) == 1 and aw5 in row[0] and aw12 in row[0] and '"2"' in row[0], 'one merge row, both awards'
+        pg.select_option('#dlFmt', 'doc')
+        pg.click('.nav[data-v=tetapan]')
         # foto AJK: names match files despite titles / Bt vs Binti; a photo that fails to load falls back to initials
         assert pg.evaluate("nameKey('En Harsidi Bin Junick (Penyelaras Program)')===nameKey('Harsidi Bin Junick') && nameKey('Pn. Kalsom Bt Tang')===nameKey('Kalsom Binti Tang')")
         pg.click('#admin .chip[data-t=ajk]')
