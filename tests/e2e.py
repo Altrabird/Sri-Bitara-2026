@@ -301,6 +301,20 @@ with sync_playwright() as p:
         pg.evaluate("FOTO=new Map([[nameKey('Harsidi Bin Junick'),'tiada']])")
         pg.click('.nav[data-v=ajk]')
         expect(pg.locator('#ajkGrid .mem', has_text='Harsidi').locator('.av')).to_have_text('HJ', timeout=8000)
+        # click the initials → pick a picture → drag a box → saved to Drive as "Harsidi Bin Junick.jpg"
+        pg.locator('#ajkGrid .mem', has_text='Harsidi').locator('.av').click()
+        expect(pg.locator('#snip')).to_have_class('lb on')
+        expect(pg.locator('#snipT')).to_have_text('Harsidi Bin Junick')
+        pg.set_input_files('#snipFile', files=[{'name': 'kumpulan.png', 'mimeType': 'image/png', 'buffer': _png(200, 160)}])
+        expect(pg.locator('#snipSel')).to_be_visible()
+        box = pg.locator('#snipImg').bounding_box()
+        pg.mouse.move(box['x'] + 20, box['y'] + 20); pg.mouse.down(); pg.mouse.move(box['x'] + 120, box['y'] + 90, steps=8); pg.mouse.up()
+        assert pg.evaluate('Math.round(SNIP.sel.s)') == 100, pg.evaluate('SNIP.sel')
+        pg.click('#snipOk')
+        pg.wait_for_function("D.fotoAjk.some(f=>f.n==='Harsidi Bin Junick') && !document.querySelector('#snip.on')", timeout=8000)
+        assert pg.evaluate("D.settings.fotoFolder!=='tiada-folder'"), 'Foto AJK folder created when the set one is missing'
+        assert 'drive.google.com/thumbnail' in pg.locator('#ajkGrid .mem', has_text='Harsidi').locator('.av img').get_attribute('src')
+        shot(pg, 'remote-foto-ajk')
         if XLSX:
             import_xlsx(pg)
             n = pg.evaluate('D.penerima.length')

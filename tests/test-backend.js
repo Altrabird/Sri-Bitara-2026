@@ -111,6 +111,20 @@ assert.deepStrictEqual(g.get().fotoAjk.map(f => f.n), ['Harsidi Bin Junick'], 'f
 g.post({ action: 'saveSettings', pin: PIN, settings: { fotoFolder: 'tiada' } });
 assert.deepStrictEqual(g.get().fotoAjk, [], 'missing folder → initials');
 
+// foto AJK from the app's cropper: folder made on first upload, named after the teacher, old photo replaced
+g = makeGAS();
+r = g.post({ action: 'upload', pin: PIN, purpose: 'foto', nama: 'Harsidi Bin Junick', mime: 'image/jpeg', data: jpg });
+assert.ok(r.ok, r.error);
+const fotoDir = g.get().settings.fotoFolder;
+assert.ok(fotoDir, 'Foto AJK folder created and saved in settings');
+assert.deepStrictEqual(g.get().fotoAjk.map(f => f.n), ['Harsidi Bin Junick']);
+assert.ok(g.files[r.item.fid].shared, 'photo shared by link');
+const old = r.item.fid;
+r = g.post({ action: 'upload', pin: PIN, purpose: 'foto', nama: 'Harsidi Bin Junick', mime: 'image/jpeg', data: jpg });
+assert.ok(g.files[old].trashed && g.get().fotoAjk.length === 1 && g.get().fotoAjk[0].fid === r.item.fid, 'old photo replaced');
+assert.strictEqual(g.get().settings.fotoFolder, fotoDir, 'same folder reused');
+assert.match(g.post({ action: 'upload', pin: PIN, purpose: 'foto', nama: ' / ', mime: 'image/jpeg', data: jpg }).error, /Nama AJK/);
+
 // setup() creates sheets and removes default Sheet1
 makeGAS().ctx.setup();
 console.log('backend: all tests passed');

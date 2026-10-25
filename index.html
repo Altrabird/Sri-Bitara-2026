@@ -271,6 +271,14 @@ mark{background:rgba(var(--gold-rgb),.35);color:inherit;border-radius:3px}
 .lb .nv{position:absolute;top:50%;margin-top:-24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--gold2);background:var(--panel)}
 .lb .nv.p{left:16px}.lb .nv.n{right:16px}
 .lb .x{position:absolute;top:16px;right:16px}
+/* foto AJK: pilih & potong */
+.snip-box{width:min(720px,94vw);max-height:94vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:12px;background:linear-gradient(180deg,#3a0f18,#1f080c);border:1px solid var(--gold)}
+.snip-box header{display:flex;gap:12px;align-items:start}.snip-box h3{color:var(--gold2);font-size:19px;line-height:1.25}.snip-box .x{position:static}
+.snip-stage{position:relative;align-self:center;overflow:hidden;touch-action:none;user-select:none;cursor:crosshair;border-radius:6px;min-height:160px;min-width:min(300px,100%);display:grid;place-items:center;border:2px dashed var(--line);color:var(--muted);font-size:13px;text-align:center;padding:0}
+.snip-stage.has{border:0;display:block;min-width:0;min-height:0}.snip-stage img{display:block;max-width:100%;max-height:58vh;border:0;border-radius:0}.snip-stage img[hidden]{display:none}
+#snipSel{position:absolute;border:2px solid var(--gold2);border-radius:50%;box-shadow:0 0 0 9999px rgba(5,2,3,.6);pointer-events:none}
+.snip-act{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+body.admin #ajkGrid .av{cursor:pointer}body.admin #ajkGrid .av:hover{outline:2px solid var(--gold2);outline-offset:2px}
 
 /* forms & tetapan */
 .gate{max-width:420px;margin:6vh auto;text-align:center}
@@ -511,6 +519,14 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   <figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
   <button class="nv n" data-a="next" aria-label="Foto seterusnya"><svg class="i"><use href="#i-r"/></svg></button>
 </div>
+<div class="lb" id="snip" role="dialog" aria-modal="true" aria-labelledby="snipT">
+  <div class="snip-box">
+    <header><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">FOTO PROFIL AJK</small><h3 id="snipT"></h3></div><button class="x" id="snipX" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="snip-stage" id="snipStage"><span id="snipHint">Pilih gambar, atau tekan <b>Ctrl+V</b> untuk tampal tangkapan skrin<br>(Snipping Tool: Win+Shift+S)</span><img id="snipImg" alt="" draggable="false" hidden><div id="snipSel" hidden></div></div>
+    <p class="muted" style="font-size:12.5px;margin:0">Seret pada gambar untuk memilih wajah. Foto disimpan dalam folder <b>Foto AJK</b> di Google Drive mengikut nama guru.</p>
+    <div class="snip-act"><label class="btn ghost" style="cursor:pointer"><svg class="i"><use href="#i-img"/></svg>Pilih gambar<input type="file" id="snipFile" accept="image/*" class="sr"></label><button class="btn" id="snipOk" disabled><svg class="i"><use href="#i-check"/></svg>Simpan foto</button></div>
+  </div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <div id="stage" role="dialog" aria-modal="true" aria-label="Mod Pentas">
@@ -587,7 +603,7 @@ function ldb(){let db=store.get('db',null);if(!db){db={settings:{...SET_DEFAULT}
 function lsave(db){try{localStorage.setItem('sbt.db',JSON.stringify(db))}catch{throw Error('Storan pelayar penuh — padam beberapa foto demo')}}
 function publicView(db){
   const cnt={};db.penerima.forEach(p=>{const k=cnt[p.aid]||(cnt[p.aid]={n:0,d:0});k.n++;if(p.status==='Diterima')k.d++});
-  return {ok:true,t:Date.now(),settings:db.settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,ajk:db.ajk,tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
+  return {ok:true,t:Date.now(),settings:db.settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
 }
 function localCall(r){
   const db=ldb();
@@ -604,7 +620,7 @@ function localCall(r){
     case 'addPenerima':{const have=new Set(db.penerima.map(p=>p.aid+'|'+p.nama+'|'+p.kelas));const add=r.rows.filter(x=>!have.has(x.aid+'|'+x.nama+'|'+x.kelas)).map(x=>({...x,status:''}));db.penerima.push(...add);out.added=add.length;break}
     case 'delPenerima':db.penerima=db.penerima.filter(p=>!r.ids.includes(p.id));break;
     case 'setStatus':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.status=r.status==='Diterima'?'Diterima':''});break;
-    case 'upload':if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
+    case 'upload':if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='foto'){db.fotoAjk=(db.fotoAjk||[]).filter(f=>nameKey(f.n)!==nameKey(r.nama)).concat({n:r.nama,fid:'',src:'data:'+r.mime+';base64,'+r.data})}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
     case 'deletePhoto':db.galeri=db.galeri.filter(g=>g.id!==r.id);break;
     default:throw Error('Tindakan tidak dikenali');
   }
@@ -638,7 +654,7 @@ async function refresh(fromPoll){
 }
 function setData(d){
   D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[],fotoAjk:d.fotoAjk||[]};
-  FOTO=new Map(D.fotoAjk.map(f=>[nameKey(f.n),f.fid]));
+  FOTO=new Map(D.fotoAjk.map(f=>[nameKey(f.n),f.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(f.fid)}&sz=w200`]));
   D.settings.showNames=D.settings.showNames===true||D.settings.showNames==='true';
   D.settings.now=+D.settings.now;
   if(D.penerima){const ids=new Set(D.anugerah.map(a=>a.id));D.penerima=D.penerima.filter(p=>ids.has(p.aid))}
@@ -666,7 +682,9 @@ const initials=n=>n.replace(/\(K\)/i,'').replace(HONOR,'').split(/\s+/).filter(w
 // match key for AJK photos: "Pn. Kalsom Bt Tang" and file "Kalsom Binti Tang.jpg" give the same key
 const nameKey=n=>String(n).replace(/\(.*?\)/g,'').trim().replace(HONOR,'').toUpperCase().replace(/\b(BT|BTE|BINTI)\b/g,'BINTI').replace(/[^A-Z]/g,'');
 // photo from the Drive folder when one matches, else initials (also if the photo fails to load, e.g. folder not shared)
-const av=n=>{const f=FOTO.get(nameKey(n)),i=esc(initials(n));return `<span class="av" aria-hidden="true">${f?`<img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(f)}&sz=w200" alt="" loading="lazy" data-i="${i}" onerror="this.replaceWith(this.dataset.i)">`:i}</span>`};
+const av=n=>{const u=FOTO.get(nameKey(n)),i=esc(initials(n));return `<span class="av" aria-hidden="true" data-n="${esc(n)}">${u?`<img src="${esc(u)}" alt="" loading="lazy" data-i="${i}" onerror="this.replaceWith(this.dataset.i)">`:i}</span>`};
+// file name for a teacher's photo: "En. Harsidi Bin Junick (Penyelaras)" → "Harsidi Bin Junick" (same nameKey)
+const fotoName=n=>String(n).replace(/\(.*?\)/g,'').trim().replace(HONOR,'').trim();
 const ajkFotoHits=()=>new Set(D.ajk.flatMap(j=>ahliList(j.ahli).map(m=>nameKey(m.nama))).filter(k=>FOTO.has(k))).size;
 const hl=(s,q)=>{s=esc(s);return q?s.replace(new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'):s};
 const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -895,7 +913,47 @@ function renderAjk(){
   const list=D.ajk.map((j,i)=>[j,i]).filter(([j])=>!ql||[j.jk,j.ahli,j.tugas].some(x=>String(x||'').toLowerCase().includes(ql)));
   $('#ajkGrid').innerHTML=list.length?list.map(([j,i],n)=>`<div class="card jk rise" style="animation-delay:${Math.min(n,16)*.03}s"><span class="no" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><h4>${hl(j.jk,q)}</h4>
     ${ahliHTML(j.ahli,q)}${lines(j.tugas).length?`<div class="tugas"><small>BIDANG TUGAS</small><ul>${lines(j.tugas).map(t=>`<li>${hl(t,q)}</li>`).join('')}</ul></div>`:''}</div>`).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-users"/></svg><p>Tiada padanan.</p></div>`;
+  // admin: click an avatar to choose and crop that teacher's photo
+  if(PIN)$$('#ajkGrid .av').forEach(a=>{Object.assign(a,{tabIndex:0,role:'button',onclick:()=>pickFoto(a.dataset.n),onkeydown:e=>(e.key==='Enter'||e.key===' ')&&(e.preventDefault(),pickFoto(a.dataset.n))});a.removeAttribute('aria-hidden');a.setAttribute('aria-label','Tukar foto '+fotoName(a.dataset.n))});
 }
+
+/* ---------- foto AJK: pilih / tampal gambar, seret untuk memotong (macam snipping tool) ---------- */
+const SNIP={n:'',sel:null};
+function pickFoto(n){
+  SNIP.n=n;SNIP.sel=null;$('#snipT').textContent=fotoName(n);
+  $('#snipImg').hidden=$('#snipSel').hidden=true;$('#snipHint').hidden=false;$('#snipStage').classList.remove('has');$('#snipOk').disabled=true;$('#snipFile').value='';
+  $('#snip').classList.add('on');$('#snipX').focus();
+}
+function closeSnip(){$('#snip').classList.remove('on');URL.revokeObjectURL($('#snipImg').src)}
+function snipLoad(f){
+  if(!f||!f.type.startsWith('image/'))return toast('Bukan fail gambar',true);
+  const img=$('#snipImg');URL.revokeObjectURL(img.src);
+  img.onload=()=>{$('#snipHint').hidden=true;img.hidden=false;$('#snipStage').classList.add('has');const w=img.clientWidth,h=img.clientHeight,s=Math.min(w,h)*.6;setSel((w-s)/2,(h-s)/2,s);$('#snipOk').disabled=false};
+  img.src=URL.createObjectURL(f);
+}
+// x,y,s are in displayed-image pixels; the box is placed relative to the picture
+function setSel(x,y,s){const img=$('#snipImg');SNIP.sel={x,y,s};Object.assign($('#snipSel').style,{left:img.offsetLeft+x+'px',top:img.offsetTop+y+'px',width:s+'px',height:s+'px'});$('#snipSel').hidden=false}
+$('#snipFile').onchange=e=>snipLoad(e.target.files[0]);
+$('#snipX').onclick=closeSnip;
+$('#snip').onclick=e=>{if(e.target===$('#snip'))closeSnip()};
+addEventListener('paste',e=>{if(!$('#snip').classList.contains('on'))return;const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();snipLoad(f)}});
+// drag draws a square selection, kept inside the picture
+$('#snipStage').onpointerdown=e=>{
+  const img=$('#snipImg');if(img.hidden)return;
+  const st=e.currentTarget,r=img.getBoundingClientRect(),x0=Math.min(Math.max(0,e.clientX-r.left),r.width),y0=Math.min(Math.max(0,e.clientY-r.top),r.height),prev=SNIP.sel;
+  e.preventDefault();st.setPointerCapture(e.pointerId);
+  st.onpointermove=ev=>{const dx=ev.clientX-r.left-x0,dy=ev.clientY-r.top-y0;
+    const s=Math.min(Math.max(Math.abs(dx),Math.abs(dy)),dx<0?x0:r.width-x0,dy<0?y0:r.height-y0);
+    setSel(dx<0?x0-s:x0,dy<0?y0-s:y0,s)};
+  st.onpointerup=()=>{st.onpointermove=st.onpointerup=null;if(SNIP.sel.s<12&&prev)setSel(prev.x,prev.y,prev.s)}; // a plain click keeps the old box
+};
+$('#snipOk').onclick=e=>{
+  const img=$('#snipImg'),{x,y,s}=SNIP.sel||{};if(!(s>=12))return toast('Seret pada gambar untuk memilih wajah',true);
+  const k=img.naturalWidth/img.clientWidth,c=document.createElement('canvas');c.width=c.height=320;
+  c.getContext('2d').drawImage(img,x*k,y*k,s*k,s*k,0,0,320,320);
+  const nama=fotoName(SNIP.n),data=c.toDataURL('image/jpeg',.88).split(',')[1];
+  busy(e.currentTarget,async()=>{await call('upload',{purpose:'foto',nama,replace:D.fotoAjk.find(f=>nameKey(f.n)===nameKey(nama))?.fid||'',mime:'image/jpeg',data},{quiet:true});closeSnip();toast('Foto '+nama+' disimpan')});
+};
 
 /* ---------- tentatif ---------- */
 function renderTT(){
@@ -982,7 +1040,7 @@ function renderSet(){
     <div class="set-row" style="margin-top:12px"><span><b>Muat turun senarai penerima</b><br><small class="muted">CSV untuk JK Sijil / JK Pengurus Penerima (dibuka dalam Excel).</small></span><button class="btn ghost sm" onclick="exportCSV()"><svg class="i"><use href="#i-dl"/></svg>CSV</button></div>
   </div>
   <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. <b>Sasaran</b> = bilangan penerima dirancang, untuk mengukur kemajuan; biarkan kosong untuk tiada had. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
-  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span style="flex:1 1 320px"><b>Folder foto AJK (Google Drive)</b><br><small class="muted">Namakan setiap fail mengikut nama guru, cth. <i>Harsidi Bin Junick.jpg</i> (gelaran Pn/En/Cik tidak perlu). Kongsi folder: <i>Sesiapa yang ada pautan boleh lihat</i>. Tanpa foto, inisial nama dipaparkan.${s.fotoFolder?` <b>${D.fotoAjk.length} foto dijumpai · ${ajkFotoHits()} sepadan dengan nama AJK.</b>`:''}</small></span><span style="display:flex;gap:8px;flex:1 1 280px"><input class="fi" id="sFoto" placeholder="Tampal pautan folder Google Drive" value="${esc(s.fotoFolder)}" aria-label="Pautan folder foto AJK"><button class="btn ghost sm" id="sFotoSave">Simpan</button></span></div><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
+  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span style="flex:1 1 320px"><b>Folder foto AJK (Google Drive)</b><br><small class="muted">Namakan setiap fail mengikut nama guru, cth. <i>Harsidi Bin Junick.jpg</i> (gelaran Pn/En/Cik tidak perlu). Kongsi folder: <i>Sesiapa yang ada pautan boleh lihat</i>. Tanpa foto, inisial nama dipaparkan. <b>Cara mudah:</b> klik inisial / foto guru di halaman AJK untuk memilih dan memotong foto; folder <i>Foto AJK</i> dicipta automatik.${s.fotoFolder?` <b>${D.fotoAjk.length} foto dijumpai · ${ajkFotoHits()} sepadan dengan nama AJK.</b>`:''}</small></span><span style="display:flex;gap:8px;flex:1 1 280px"><input class="fi" id="sFoto" placeholder="Tampal pautan folder Google Drive" value="${esc(s.fotoFolder)}" aria-label="Pautan folder foto AJK"><button class="btn ghost sm" id="sFotoSave">Simpan</button></span></div><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
   <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. Biarkan <b>Masa</b> kosong untuk baris tajuk hari. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div class="set-row"><span>Muat tentatif 2 hari daripada kertas kerja 2026<br><small class="muted">Menggantikan tentatif sahaja.</small></span><button class="btn ghost sm" id="ttSeed">Muat</button></div><div id="reTT"></div></div>
   <div class="setp card ${SETTAB==='persiapan'?'on':''}" data-p="persiapan"><h3>STATUS PERSIAPAN</h3><p class="hint">Peratus siap (0–100) dipaparkan di Dashboard.</p><div id="rePrep"></div></div>
   <div class="setp card ${SETTAB==='laporan'?'on':''}" data-p="laporan"><h3>LAPORAN MAJLIS</h3><p class="hint">Dijana automatik daripada data sistem: penerima, status "Diterima", sasaran, tentatif, persiapan, AJK dan galeri. Jana selepas majlis tamat untuk laporan muktamad.</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="printLaporan()"><svg class="i"><use href="#i-dl"/></svg>Cetak / Simpan PDF</button><button class="btn ghost" onclick="wordLaporan()"><svg class="i"><use href="#i-dl"/></svg>Muat turun Word</button></div><div style="overflow:auto"><style>${LAP_CSS}</style>${SETTAB==='laporan'?laporanHTML():''}</div></div>
@@ -1332,6 +1390,7 @@ addEventListener('keydown',e=>{
     else if(e.key.toLowerCase()==='f')toggleFull();
     return;
   }
+  if($('#snip').classList.contains('on')){if(e.key==='Escape')closeSnip();return}
   if($('#lb').classList.contains('on')){if(e.key==='ArrowRight')openLb(lbI+1);if(e.key==='ArrowLeft')openLb(lbI-1);if(e.key==='Escape')$('#lb').classList.remove('on');return}
   if(e.key==='Escape')closeDrawer();
 });

@@ -73,7 +73,8 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 ## Sasaran anugerah & foto AJK
 
 - **Sasaran penerima:** **Tetapan → Anugerah**, isi lajur *Sasaran* (cth. 12). Biarkan kosong untuk tiada had. Kad anugerah memaparkan `penerima / sasaran` dan bar kemajuan.
-- **Foto AJK:** buat satu folder Google Drive, masukkan foto guru dan namakan setiap fail mengikut nama guru (cth. `Harsidi Bin Junick.jpg`, tanpa Pn/En/Cik). Kongsi folder: **Sesiapa yang ada pautan → Pelihat**. Tampal pautan folder di **Tetapan → AJK → Folder foto AJK**. Foto baharu muncul dalam masa ~5 minit. Guru tanpa foto dipaparkan dengan inisial (cth. HJ).
+- **Foto AJK (cara mudah):** buka mod admin, pergi ke halaman **AJK** dan klik inisial / foto seorang guru. Pilih gambar (boleh gambar berkumpulan) atau tekan **Ctrl+V** untuk tampal tangkapan skrin (Win+Shift+S), seret kotak pada wajah, kemudian **Simpan foto**. Foto disimpan dalam folder **Foto AJK** (dicipta automatik dalam folder Drive projek) dengan nama guru, dan menggantikan foto lama.
+- **Foto AJK (manual):** buat satu folder Google Drive, masukkan foto guru dan namakan setiap fail mengikut nama guru (cth. `Harsidi Bin Junick.jpg`, tanpa Pn/En/Cik). Kongsi folder: **Sesiapa yang ada pautan → Pelihat**. Tampal pautan folder di **Tetapan → AJK → Folder foto AJK**. Foto baharu muncul dalam masa ~5 minit. Guru tanpa foto dipaparkan dengan inisial (cth. HJ).
 
 ## Nota
 

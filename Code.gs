@@ -160,11 +160,20 @@ function fotoAjk_(id) {
     const it = DriveApp.getFolderById(id).getFiles();
     while (it.hasNext()) {
       const f = it.next();
-      if (/^image\//.test(f.getMimeType())) out.push({ n: f.getName().replace(/\.\w+$/, ''), fid: f.getId() });
+      if (!f.isTrashed() && /^image\//.test(f.getMimeType())) out.push({ n: f.getName().replace(/\.\w+$/, ''), fid: f.getId() });
     }
   } catch (_) { /* folder missing or no access: show initials */ }
   try { c.put(key, JSON.stringify(out), 300); } catch (_) { /* too big to cache */ }
   return out;
+}
+
+// the folder set in Tetapan, else a "Foto AJK" folder created inside the project's Drive folder
+function fotoFolder_() {
+  const s = getSettings_();
+  if (s.fotoFolder) { try { return DriveApp.getFolderById(s.fotoFolder); } catch (_) { /* gone: recreate */ } }
+  const f = folder_().createFolder('Foto AJK');
+  s.fotoFolder = f.getId(); writeSettings_(s);
+  return f;
 }
 
 function info_() {
@@ -285,7 +294,12 @@ function upload_(r) {
   if (!/^image\/(jpeg|png|webp)$/.test(r.mime || '')) throw new Error('Hanya fail gambar JPEG/PNG/WebP');
   const bytes = Utilities.base64Decode(r.data || '');
   if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new Error('Saiz gambar tidak sah (maks 8MB)');
-  const file = folder_().createFile(Utilities.newBlob(bytes, r.mime, String(r.name || 'foto').slice(0, 80)));
+  const foto = r.purpose === 'foto';
+  // foto AJK is named after the teacher so the web app can match it, e.g. "Harsidi Bin Junick.jpg"
+  const nama = foto ? String(r.nama || '').replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 80) : '';
+  if (foto && !nama) throw new Error('Nama AJK tidak sah');
+  const dest = foto ? fotoFolder_() : folder_();
+  const file = dest.createFile(Utilities.newBlob(bytes, r.mime, foto ? nama + '.jpg' : String(r.name || 'foto').slice(0, 80)));
   try {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   } catch (err) {
@@ -295,6 +309,16 @@ function upload_(r) {
   if (r.purpose === 'logo') {
     const s = getSettings_(); s.logo = file.getId(); writeSettings_(s);
     return { fid: file.getId() };
+  }
+  if (foto) {
+    // replace the teacher's old photo: same file name, or the file the app matched (r.replace)
+    const it = dest.getFiles();
+    while (it.hasNext()) {
+      const f = it.next();
+      if (f.getId() !== file.getId() && (f.getName().replace(/\.\w+$/, '') === nama || f.getId() === r.replace)) f.setTrashed(true);
+    }
+    CacheService.getScriptCache().remove('foto|' + dest.getId());
+    return { fid: file.getId(), n: nama };
   }
   const item = { id: 'g' + Date.now().toString(36), fid: file.getId(), kat: String(r.kat || 'Majlis'), kapsyen: String(r.kapsyen || ''), masa: new Date().toISOString() };
   writeTable_('galeri', readTable_('galeri').concat([item]));
