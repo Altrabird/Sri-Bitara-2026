@@ -26,11 +26,17 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgA
   assert.strictEqual(j.data.anugerah[0].sasaran, '3');
 
   await call({ action: 'setStatus', ids: ['p1'], status: 'Diterima' });
+  j = await call({ action: 'setHadir', nama: ['SITI AMINAH'], hadir: true });
+  assert(j.data.penerima.find((p) => p.id === 'p2').hadir && !j.data.penerima.find((p) => p.id === 'p1').hadir, 'only that pupil marked hadir');
+  j = await call({ action: 'setHadir', nama: ['SITI AMINAH'], hadir: false });
+  assert.strictEqual(j.data.penerima.find((p) => p.id === 'p2').hadir, '');
+  await call({ action: 'setHadir', nama: ['ALI'], hadir: true });
   await call({ action: 'delPenerima', ids: ['p2'] });
   await call({ action: 'saveSettings', settings: { showNames: true, now: 1, bukan: 'x' } });
   let p = await pub();
   assert.deepStrictEqual([p.anugerah[0].n, p.anugerah[0].d], [1, 1]);
   assert.strictEqual(p.penerima.length, 1);
+  assert(!('hadir' in p.penerima[0]), 'attendance hidden from public');
   assert.strictEqual(p.settings.now, 1);
   assert(!('bukan' in p.settings), 'unknown setting ignored');
   await call({ action: 'saveSettings', settings: { showNames: false } });

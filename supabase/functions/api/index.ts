@@ -14,7 +14,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwh54z1yrC5Z5KKIleEUGjM
 
 const TABLES: Record<string, string[]> = {
   anugerah:  ['id', 'kat', 'nama', 'sasaran'],
-  penerima:  ['id', 'aid', 'tahun', 'kelas', 'nama', 'catatan', 'status'],
+  penerima:  ['id', 'aid', 'tahun', 'kelas', 'nama', 'catatan', 'status', 'hadir'],
   ajk:       ['id', 'jk', 'ahli', 'tugas'],
   tentatif:  ['id', 'masa', 'acara', 'pic'],
   persiapan: ['id', 'nama', 'peratus'],
@@ -85,6 +85,9 @@ async function handle(r: any) {
     case 'setStatus':
       await q(db.from('penerima').update({ status: r.status === 'Diterima' ? 'Diterima' : '' }).in('id', (r.ids || []).map(String)));
       break;
+    case 'setHadir': // one pupil can hold several awards: mark every row with that name
+      await q(db.from('penerima').update({ hadir: r.hadir ? new Date().toISOString() : '' }).in('nama', (r.nama || []).map(String)));
+      break;
     case 'upload':
       extra.item = await upload(r);
       break;
@@ -136,7 +139,7 @@ async function publicPayload() {
   return {
     ok: true, t: Date.now(), settings: d.settings,
     anugerah: d.anugerah.map((a: any) => ({ ...a, ...(cnt[a.id] || { n: 0, d: 0 }) })),
-    penerima: d.settings.showNames ? d.penerima : null,
+    penerima: d.settings.showNames ? d.penerima.map(({ hadir: _, ...p }: any) => p) : null, // attendance stays admin-only
     ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri
   };
 }

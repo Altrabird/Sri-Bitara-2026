@@ -184,6 +184,23 @@ with sync_playwright() as p:
     assert pg.locator('#reAjk .re-row[data-i]').last.locator('input').input_value() == 'JK Ujian', 'poll reset unsaved AJK edits'
     pg.click('#reAjk [data-a=save]')
     pg.wait_for_function('D.ajk.length===25')
+    # kehadiran: pick a class → each pupil once with all their awards → tick present
+    pg.evaluate("call('addPenerima',{rows:[{id:'h1',aid:D.anugerah[0].id,kelas:'4 KREATIF',nama:'MURID HADIR'},{id:'h2',aid:D.anugerah[1].id,kelas:'4 KREATIF',nama:'MURID HADIR'},{id:'h3',aid:D.anugerah[0].id,kelas:'4 KREATIF',nama:'MURID LAIN'}]},{quiet:true})")
+    pg.click('.nav[data-v=kehadiran]')
+    expect(pg.locator('#hd .empty')).to_contain_text('Pilih kelas')
+    pg.select_option('#hdKls', '4 KREATIF')
+    row = pg.locator('#hd .ms.hd', has_text='MURID HADIR')
+    expect(row.locator('.b')).to_have_count(2)
+    row.click()
+    expect(row.locator('.ms-n small')).to_contain_text('✓ HADIR')
+    assert pg.evaluate("D.penerima.filter(p=>p.nama==='MURID HADIR').every(p=>p.hadir)"), 'every award row of the pupil marked'
+    assert not pg.evaluate("D.penerima.find(p=>p.nama==='MURID LAIN').hadir")
+    pg.evaluate('refresh(true)'); pg.wait_for_timeout(300)
+    expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('input')).to_be_checked()
+    shot(pg, 'demo-kehadiran')
+    pg.locator('#hd .ms.hd', has_text='MURID HADIR').click()
+    expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_have_text('BELUM HADIR')
+    pg.click('.nav[data-v=tetapan]')
     # settings: date + public names off by default → lock hides names
     pg.click('#admin .chip[data-t=majlis]')
     pg.fill('#sTarikh', '2026-12-01')
@@ -193,6 +210,7 @@ with sync_playwright() as p:
     pg.locator('#admin .setp.on button', has_text='Kunci').click()
     pg.wait_for_timeout(500)
     assert not pg.evaluate('document.body.classList.contains("admin")')
+    expect(pg.locator('.nav[data-v=kehadiran]')).to_be_hidden()
     if XLSX:
         pg.click('.nav[data-v=anugerah]')
         pg.locator('#awGrid .aw').first.click()

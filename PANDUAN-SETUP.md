@@ -76,6 +76,8 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 3. Gunakan **← →**, **Space** atau **klik pembentang** (*presenter clicker*). Slaid pertama ialah tajuk anugerah, diikuti setiap penerima dengan animasi nama dan konfeti.
 4. Jika *"Tanda Diterima bila seterusnya"* ditanda, setiap penerima ditanda **Diterima** secara automatik apabila anda ke slaid seterusnya.
 
+**AJK Pendaftaran (Kehadiran)**: buka aplikasi di telefon, masukkan PIN di Tetapan, kemudian pilih **Kehadiran** di menu (hanya kelihatan dalam mod admin). Pilih **kelas**; setiap murid penerima dipaparkan sekali bersama semua anugerahnya. Ketik nama murid untuk menanda **Hadir** (masa direkod); ketik sekali lagi untuk membatalkan. Bilangan hadir keseluruhan dan setiap kelas dipaparkan di atas, dan senarai kelas menunjukkan *hadir/jumlah*.
+
 **Juru acara / urus setia**: di halaman **Tentatif**, klik **Tandakan sekarang** pada acara yang sedang berlangsung. Semua telefon akan dikemas kini dalam masa ~25 saat.
 
 **Selepas majlis**: di halaman **Tentatif**, klik **Tandakan majlis selesai**, kemudian buka **Tetapan → Laporan**. Laporan dijana automatik (skor kejayaan, jadual anugerah, kekuatan, kelemahan, cadangan, gambar lampiran). Klik **Cetak / Simpan PDF** atau **Muat turun Word** untuk menyunting.

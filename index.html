@@ -181,6 +181,8 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .ms-aw{display:flex;flex-wrap:wrap;gap:6px}
 .b{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:600;color:var(--cream);min-height:32px;text-align:left}
 .b:hover{border-color:var(--gold)}.b i{width:8px;height:8px;border-radius:50%;flex:none}.b.ok{border-color:rgba(63,182,139,.55)}
+.ms.hd{grid-template-columns:auto minmax(200px,1.1fr) 2.6fr;cursor:pointer}.ms.hd input{width:24px;height:24px;accent-color:var(--gold);flex:none}
+.ms.hd.on{border-color:rgba(63,182,139,.55);background:rgba(63,182,139,.08)}.ms.hd.on .ms-n small{color:var(--ok-text)}
 .ms-c{text-align:center}.ms-c b{font:700 30px/1 var(--hf);color:var(--gold2);display:block}.ms-c small{font-size:10.5px;color:var(--muted)}
 .lg{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}.lg i{width:9px;height:9px;border-radius:50%}
 
@@ -380,7 +382,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   .ti .acts{grid-column:1/-1;justify-content:flex-start}
   .bar{grid-template-columns:110px 1fr 40px}
   .rcp{grid-template-columns:1fr auto}.rcp .k{grid-column:1/-1}
-  .ms{grid-template-columns:1fr auto;gap:8px 12px}.ms-aw{grid-column:1/-1;order:3}.ms-kpi .n{font-size:26px}
+  .ms{grid-template-columns:1fr auto;gap:8px 12px}.ms.hd{grid-template-columns:auto 1fr}.ms-aw{grid-column:1/-1;order:3}.ms-kpi .n{font-size:26px}
   #stage .bar select{max-width:100%}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}#invite.open .door{opacity:0}.anim .rise,#stage .name .w>span{opacity:1;transform:none;filter:none}}
@@ -451,6 +453,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <div class="brand"><div class="mono js-logo">SB</div><div><b>SRI BITARA</b><small>SK BANDAR TAWAU</small></div></div>
     <button class="nav" data-v="dashboard"><svg class="i"><use href="#i-dash"/></svg>Dashboard</button>
     <button class="nav" data-v="anugerah"><svg class="i"><use href="#i-award"/></svg>Anugerah</button>
+    <button class="nav adm" data-v="kehadiran"><svg class="i"><use href="#i-check"/></svg>Kehadiran</button>
     <button class="nav" data-v="ajk"><svg class="i"><use href="#i-users"/></svg>AJK</button>
     <button class="nav" data-v="tentatif"><svg class="i"><use href="#i-cal"/></svg>Tentatif</button>
     <button class="nav" data-v="galeri"><svg class="i"><use href="#i-img"/></svg>Galeri</button>
@@ -479,6 +482,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
       <div class="grid awards" id="awGrid"></div>
       <div id="awList"></div>
     </section>
+    <section class="view" id="v-kehadiran"><div id="hd"></div></section>
     <section class="view" id="v-ajk">
       <div class="tools"><label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ajkQ" placeholder="Cari nama guru / jawatankuasa / tugas…" aria-label="Cari AJK"></label><button class="btn" onclick="openAjkStage()"><svg class="i"><use href="#i-stage"/></svg>Bentang AJK</button></div>
       <div class="org-top"><div class="card rise"><h3 style="margin:0">AHLI JAWATANKUASA PELAKSANA</h3><div class="serif-i" style="color:var(--cream);font-size:19px">dan Bidang Tugas</div></div></div>
@@ -617,6 +621,7 @@ function localCall(r){
     case 'roster':return {ok:true,roster:['1','2','3','4','5','6'].flatMap(t=>KLS.flatMap(k=>[1,2,3,4].map(n=>({nama:`MURID CONTOH ${t}${k.slice(0,3)} ${n}`,kelas:t+' '+k}))))};
     case 'addPenerima':{const have=new Set(db.penerima.map(p=>p.aid+'|'+p.nama+'|'+p.kelas));const add=r.rows.filter(x=>!have.has(x.aid+'|'+x.nama+'|'+x.kelas)).map(x=>({...x,status:''}));db.penerima.push(...add);out.added=add.length;break}
     case 'delPenerima':db.penerima=db.penerima.filter(p=>!r.ids.includes(p.id));break;
+    case 'setHadir':db.penerima.forEach(p=>{if(r.nama.includes(p.nama))p.hadir=r.hadir?new Date().toISOString():''});break;
     case 'setStatus':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.status=r.status==='Diterima'?'Diterima':''});break;
     case 'upload':if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='foto'){db.fotoAjk=(db.fotoAjk||[]).filter(f=>nameKey(f.n)!==nameKey(r.nama)).concat({n:r.nama,fid:'',src:'data:'+r.mime+';base64,'+r.data})}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
     case 'deletePhoto':db.galeri=db.galeri.filter(g=>g.id!==r.id);break;
@@ -695,7 +700,7 @@ const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' '
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
 /* ---------- navigasi ---------- */
-const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
+const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],kehadiran:['Kehadiran','Pendaftaran murid penerima pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
 function go(v){if(!TITLES[v])v='dashboard';if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);show(v)}
 function show(v){
   VIEW=v;
@@ -715,6 +720,7 @@ function render(fromPoll,nav){
   $$('.js-logo').forEach(el=>{const u=logoURL();el.innerHTML=u?`<img src="${esc(u)}" alt="Logo sekolah">`:'SB'});
   if(VIEW==='dashboard')renderDash(nav);
   if(VIEW==='anugerah')renderAw();
+  if(VIEW==='kehadiran')renderHadir();
   if(VIEW==='ajk')renderAjk();
   if(VIEW==='tentatif')renderTT();
   if(VIEW==='galeri')renderGal();
@@ -851,6 +857,32 @@ function renderAw(){
   const list=D.anugerah.filter(a=>(awCat==='ALL'||a.kat===awCat)&&a.nama.toLowerCase().includes(q));
   $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a),t=+a.sasaran||0;return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}</div><h4>${esc(a.nama)}</h4><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b>${t?` / ${t}`:''} penerima</span></div>${t?`<div class="prog t ${c.n>t?'over':''}" title="Sasaran ${t} penerima"><i style="width:${Math.min(100,c.n/t*100)}%"></i></div>`:''}${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
   $$('#awGrid .aw').forEach(b=>b.onclick=()=>openAw(b.dataset.id));
+}
+/* ---------- kehadiran (AJK Pendaftaran) ---------- */
+let HDKLS=store.get('hdkls','',sessionStorage);
+const hadirAt=s=>s.items.map(i=>i.p.hadir||'').sort().pop();
+function renderHadir(){
+  const box=$('#hd');
+  if(!PIN){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Log masuk admin di Tetapan untuk merekod kehadiran.</p></div>`;return}
+  const all=studentMap('ALL'),inK=(s,k)=>s.kelas===k||s.conf?.includes(k);
+  const classes=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort);
+  if(HDKLS&&!classes.includes(HDKLS))HDKLS='';
+  const list=HDKLS?all.filter(s=>inK(s,HDKLS)).sort((a,b)=>a.nama.localeCompare(b.nama)):[];
+  const n=a=>a.filter(hadirAt).length,tot=n(all);
+  const time=t=>new Date(t).toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'});
+  box.innerHTML=`<div class="grid ms-kpi">
+    <div class="card"><div class="n">${tot} / ${all.length}</div><div class="l">Murid penerima hadir</div></div>
+    <div class="card"><div class="n">${HDKLS?`${n(list)} / ${list.length}`:'—'}</div><div class="l">Hadir dalam ${HDKLS?esc(HDKLS):'kelas dipilih'}</div></div>
+    <div class="card"><div class="n">${all.length-tot}</div><div class="l">Belum hadir</div></div>
+  </div>
+  <div class="tools"><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
+  ${!all.length?'<div class="empty"><p>Tiada penerima. Masukkan penerima ke dalam anugerah dahulu.</p></div>'
+   :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid penerima dan anugerah mereka.</p></div>`
+   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
+  $('#hdKls').onchange=e=>{HDKLS=e.target.value;store.set('hdkls',HDKLS,sessionStorage);renderHadir()};
+  $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,on=c.checked;
+    D.penerima.forEach(p=>{if(p.nama===nama)p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
+    try{await call('setHadir',{nama:[nama],hadir:on},{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
 }
 function openAw(id){
   const a=D.anugerah.find(x=>x.id===id);if(!a)return closeDrawer();
