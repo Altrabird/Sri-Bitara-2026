@@ -341,29 +341,43 @@ with sync_playwright() as p:
         aw5, aw12 = pg.evaluate('[D.anugerah[5].nama, D.anugerah[12].nama]')
         letter = [x for x in surat['html'].split('class="pb"') if '<b>MURID BAHARU</b>' in x]
         assert len(letter) == 1 and aw5 in letter[0] and aw12 in letter[0] and '<b>2</b> anugerah' in letter[0], 'one letter, both awards'
-        # downloads: per kategori, keseluruhan, surat
+        # downloads: per kategori, keseluruhan, surat (each shows a preview first; Muat turun saves)
+        def download(open_):
+            open_()
+            expect(pg.locator('#pv')).to_have_class('lb on')
+            with pg.expect_download() as dl:
+                pg.click('#pvOk')
+            expect(pg.locator('#pv')).not_to_have_class('lb on')
+            return dl.value
         pg.click('.nav[data-v=anugerah]')
-        with pg.expect_download() as dl:
-            pg.click('#awDl')
-        assert dl.value.suggested_filename == 'Senarai-Penerima-Keseluruhan.doc'
+        pg.click('#awDl')
+        expect(pg.frame_locator('#pvF').locator('body')).to_contain_text(aw5)
+        shot(pg, 'remote-preview')
+        pg.click('#pvC')
+        expect(pg.locator('#pv')).not_to_have_class('lb on')
+        assert download(lambda: pg.click('#awDl')).suggested_filename == 'Senarai-Penerima-Keseluruhan.doc'
         pg.click('#awCats .chip[data-c=K]')
-        with pg.expect_download() as dl:
-            pg.click('#awDl')
-        assert dl.value.suggested_filename == 'Senarai-Penerima-Kurikulum.doc'
-        assert aw5 in open(dl.value.path(), encoding='utf-8-sig').read()
+        d = download(lambda: pg.click('#awDl'))
+        assert d.suggested_filename == 'Senarai-Penerima-Kurikulum.doc'
+        assert aw5 in open(d.path(), encoding='utf-8-sig').read()
         pg.click('#awCats .chip[data-c=ALL]')
-        with pg.expect_download() as dl:
-            pg.locator('#v-anugerah button', has_text='Surat jemputan').click()
-        assert dl.value.suggested_filename == 'Surat-Jemputan-Penerima-Anugerah.doc'
+        surat_btn = lambda: pg.locator('#v-anugerah button', has_text='Surat jemputan').click()
+        surat_btn()
+        expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('MURID BAHARU')
+        pg.keyboard.press('Escape')
+        expect(pg.locator('#pv')).not_to_have_class('lb on')
+        assert download(surat_btn).suggested_filename == 'Surat-Jemputan-Penerima-Anugerah.doc'
         # same downloads as Excel / CSV
         pg.select_option('#dlFmt', 'xlsx')
-        with pg.expect_download() as dl:
-            pg.click('#awDl')
-        assert dl.value.suggested_filename == 'Senarai-Penerima-Keseluruhan.xlsx'
-        assert open(dl.value.path(), 'rb').read(2) == b'PK', 'real xlsx'
+        d = download(lambda: pg.click('#awDl'))
+        assert d.suggested_filename == 'Senarai-Penerima-Keseluruhan.xlsx'
+        assert open(d.path(), 'rb').read(2) == b'PK', 'real xlsx'
         pg.select_option('#dlFmt', 'csv')
+        surat_btn()
+        expect(pg.locator('#pvS')).to_contain_text('CSV')
+        expect(pg.frame_locator('#pvF').locator('table')).to_contain_text('MURID BAHARU')
         with pg.expect_download() as dl:
-            pg.locator('#v-anugerah button', has_text='Surat jemputan').click()
+            pg.click('#pvOk')
         assert dl.value.suggested_filename == 'Surat-Jemputan-Senarai-Mail-Merge.csv'
         merge = open(dl.value.path(), encoding='utf-8-sig').read()
         row = [l for l in merge.splitlines() if '"MURID BAHARU"' in l]

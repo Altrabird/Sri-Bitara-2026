@@ -278,6 +278,7 @@ mark{background:rgba(var(--gold-rgb),.35);color:inherit;border-radius:3px}
 .snip-stage.has{border:0;display:block;min-width:0;min-height:0}.snip-stage img{display:block;max-width:100%;height:auto;border:0;border-radius:0}.snip-stage img[hidden]{display:none}
 #snipSel{position:absolute;border:2px solid var(--gold2);border-radius:50%;box-shadow:0 0 0 9999px rgba(5,2,3,.6);pointer-events:none}
 .snip-act{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.pv-box{width:min(1000px,96vw);height:94vh;overflow:hidden}.pv-box iframe{flex:1;min-height:0;width:100%;border:0;border-radius:6px;background:#fff}
 body.admin #ajkGrid .av{cursor:pointer}body.admin #ajkGrid .av:hover{outline:2px solid var(--gold2);outline-offset:2px}
 
 /* forms & tetapan */
@@ -527,6 +528,13 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <div class="snip-stage" id="snipStage"><span id="snipHint">Pilih gambar, atau tekan <b>Ctrl+V</b> untuk tampal tangkapan skrin<br>(Snipping Tool: Win+Shift+S)</span><img id="snipImg" alt="" draggable="false" hidden><div id="snipSel" hidden></div></div>
     <p class="muted" style="font-size:12.5px;margin:0">Seret pada gambar untuk memilih wajah. Foto disimpan dalam folder <b>Foto AJK</b> di Google Drive mengikut nama guru.</p>
     <div class="snip-act"><label class="btn ghost" style="cursor:pointer"><svg class="i"><use href="#i-img"/></svg>Pilih gambar<input type="file" id="snipFile" accept="image/*" class="sr"></label><button class="btn" id="snipOk" disabled><svg class="i"><use href="#i-check"/></svg>Simpan foto</button></div>
+  </div>
+</div>
+<div class="lb" id="pv" role="dialog" aria-modal="true" aria-labelledby="pvT">
+  <div class="snip-box pv-box">
+    <header><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">PRATONTON</small><h3 id="pvT"></h3><small class="muted" id="pvS"></small></div><button class="x" id="pvX" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <iframe id="pvF" title="Pratonton dokumen"></iframe>
+    <div class="snip-act"><button class="btn ghost" id="pvC">Tutup</button><button class="btn" id="pvOk"><svg class="i"><use href="#i-dl"/></svg>Muat turun</button></div>
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1317,6 +1325,18 @@ function laporanHTML(){
 }
 const docHTML=(title,body)=>`<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body,p,td,th,li{font-family:Arial,Helvetica,sans-serif;font-size:11pt}p{margin:0 0 8pt}${LAP_CSS}@page{size:A4;margin:15mm}body{margin:0}.lap{padding:0;max-width:none;border-radius:0}</style></head><body>${body}</body></html>`;
 const lapDoc=extra=>docHTML('Laporan '+D.settings.nama,laporanHTML()+(extra||''));
+// show the document first; save() runs only when the teacher presses Muat turun
+function preview(title,sub,body,save){
+  $('#pvT').textContent=title;$('#pvS').textContent=sub;
+  $('#pvF').srcdoc=docHTML(title,'<style>body{padding:20px}.pb{border-top:1px dashed #999;padding-top:16px;margin-top:24px}</style>'+body);
+  $('#pvOk').onclick=()=>{closePv();save()};$('#pv').classList.add('on');$('#pvOk').focus();
+}
+function closePv(){$('#pv').classList.remove('on');$('#pvF').srcdoc=''}
+$('#pvX').onclick=$('#pvC').onclick=closePv;
+// phones: lay the page out at A4 width and scale it down, like a PDF viewer, instead of squeezing the letter
+$('#pvF').onload=e=>{const d=e.target.contentDocument?.documentElement,w=e.target.clientWidth;if(d&&w<800){d.style.minWidth='800px';d.style.zoom=w/800}};
+const rowsHTML=rows=>`<div class="lap"><table><tr>${rows[0].map(h=>`<th>${esc(h)}</th>`).join('')}</tr>${rows.slice(1).map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const fmtName=()=>$('#dlFmt').selectedOptions[0].text;
 const wordDoc=(name,title,body)=>saveBlob(name,new Blob(['﻿'+docHTML(title,body)],{type:'application/msword'}));
 /* ---------- senarai penerima (Word): satu kategori, atau keseluruhan ---------- */
 // Excel (.xlsx via the SheetJS loader the importer already uses) or CSV from the same rows
@@ -1330,12 +1350,13 @@ async function saveRows(base,rows){
 function wordSenarai(cat){
   if(!D.penerima?.length)return toast('Tiada penerima untuk dimuat turun',true);
   const cats=cat==='ALL'?Object.keys(CAT):[cat],tajuk=cat==='ALL'?'Keseluruhan':CAT[cat],base=`Senarai-Penerima-${tajuk.replace(/\s+/g,'-')}`;
-  if($('#dlFmt').value!=='doc')return saveRows(base,[['Bil','Anugerah','Kategori','Nama','Kelas','Tahun','Catatan','Status']].concat(cats.flatMap(k=>D.anugerah.filter(a=>a.kat===k).flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map((p,i)=>[i+1,a.nama,CAT[k],p.nama,p.kelas,p.tahun,p.catatan,p.status])))));
+  if($('#dlFmt').value!=='doc'){const rows=[['Bil','Anugerah','Kategori','Nama','Kelas','Tahun','Catatan','Status']].concat(cats.flatMap(k=>D.anugerah.filter(a=>a.kat===k).flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map((p,i)=>[i+1,a.nama,CAT[k],p.nama,p.kelas,p.tahun,p.catatan,p.status]))));
+    return preview('Senarai Penerima '+tajuk,`${fmtName()} · ${rows.length-1} penerima`,rowsHTML(rows),()=>saveRows(base,rows))}
   const body=`<div class="lap"><h1>SENARAI PENERIMA ANUGERAH · ${esc(tajuk.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU</div>${cats.map((k,ci)=>{
     const aws=D.anugerah.filter(a=>a.kat===k);if(!aws.length)return '';
     return `${cat==='ALL'?`<h2 class="${ci?'pb':''}">${esc(CAT[k])}</h2>`:''}${aws.map(a=>{const ps=D.penerima.filter(p=>p.aid===a.id).sort(byKelas);
       return `<h3>${esc(a.nama)} (${ps.length} penerima)</h3><table><tr><th style="width:40px">Bil</th><th>Nama</th><th style="width:130px">Kelas</th><th style="width:160px">Catatan</th></tr>${ps.map((p,i)=>`<tr><td class="n">${i+1}</td><td>${esc(p.nama)}</td><td>${esc(p.kelas)}</td><td>${esc(p.catatan)}</td></tr>`).join('')||'<tr><td colspan="4">Tiada penerima</td></tr>'}</table>`}).join('')}`}).join('')}</div>`;
-  wordDoc(base+'.doc','Senarai Penerima '+tajuk,body);
+  preview('Senarai Penerima '+tajuk,`Word · ${D.penerima.filter(p=>cats.includes(D.anugerah.find(a=>a.id===p.aid)?.kat)).length} penerima`,body,()=>wordDoc(base+'.doc','Senarai Penerima '+tajuk,body));
 }
 function printLaporan(){
   const w=open('','_blank');if(!w)return toast('Benarkan tetingkap pop-up untuk mencetak',true);
@@ -1389,12 +1410,12 @@ function wordSurat(){
   if($('#dlFmt').value!=='doc'){
     // mail-merge list: one row per pupil, every award in its own column
     const list=suratList(),max=Math.max(...list.map(m=>m.items.length));
-    return saveRows('Surat-Jemputan-Senarai-Mail-Merge',[['Bil','Nama','Kelas','Bil. Anugerah','Senarai Anugerah',...Array.from({length:max},(_,i)=>'Anugerah '+(i+1))]]
-      .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:''));return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),...aw]})));
+    const rows=[['Bil','Nama','Kelas','Bil. Anugerah','Senarai Anugerah',...Array.from({length:max},(_,i)=>'Anugerah '+(i+1))]]
+      .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:''));return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),...aw]}));
+    return preview('Surat Jemputan · Senarai Mail Merge',`${fmtName()} · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Surat-Jemputan-Senarai-Mail-Merge',rows));
   }
   const {n,html}=suratHTML();
-  wordDoc('Surat-Jemputan-Penerima-Anugerah.doc','Surat Jemputan Penerima Anugerah',html);
-  toast(`${n} surat jemputan dijana (satu setiap murid)`);
+  preview('Surat Jemputan Penerima Anugerah',`Word · ${n} surat (satu setiap murid)`,html,()=>{wordDoc('Surat-Jemputan-Penerima-Anugerah.doc','Surat Jemputan Penerima Anugerah',html);toast(`${n} surat jemputan dijana (satu setiap murid)`)});
 }
 function wordLaporan(){wordDoc('Laporan-Sri-Bitara-2026.doc','Laporan '+D.settings.nama,laporanHTML())}
 
@@ -1467,6 +1488,7 @@ addEventListener('keydown',e=>{
     return;
   }
   if($('#snip').classList.contains('on')){if(e.key==='Escape')closeSnip();return}
+  if($('#pv').classList.contains('on')){if(e.key==='Escape')closePv();return}
   if($('#lb').classList.contains('on')){if(e.key==='ArrowRight')openLb(lbI+1);if(e.key==='ArrowLeft')openLb(lbI-1);if(e.key==='Escape')$('#lb').classList.remove('on');return}
   if(e.key==='Escape')closeDrawer();
 });
