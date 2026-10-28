@@ -9,7 +9,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 const SB_URL = Deno.env.get('SUPABASE_URL')!;
 const db = createClient(SB_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const REF = new URL(SB_URL).hostname.split('.')[0];
-// Senarai murid (Hadir@SKBT) masih dibaca oleh Code.gs kerana ia Google Sheet sekolah. PIN Code.gs mesti sama dengan PIN di sini.
+// Senarai murid (Hadir@SKBT) masih dibaca oleh Code.gs kerana ia Google Sheet sekolah, menggunakan admin.pin_gas (= ADMIN_PIN Code.gs).
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwh54z1yrC5Z5KKIleEUGjMedFaNQ0Bt6yL5-tmx0_Qq8_voqOa1ZHZl0w0mPHVwfU5Jg/exec';
 
 const TABLES: Record<string, string[]> = {
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     await checkPin(r.pin);
     if (r.action === 'login') return out({ ok: true });
     if (r.action === 'admin') return out({ ok: true, data: await allData(), info: info() });
-    if (r.action === 'roster') return out(await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'roster', pin: r.pin }) })).json());
+    if (r.action === 'roster') return out({ ok: true, roster: await roster(r.pin) });
     return out({ ok: true, ...(await handle(r)) });
   } catch (err) {
     return out({ ok: false, error: String((err as Error).message || err) });
@@ -158,6 +158,25 @@ function info() {
 async function writeTable(t: string, rows: any[]) {
   const header = TABLES[t];
   await q(db.rpc('ganti_jadual', { t, r: rows.map((x) => Object.fromEntries(header.map((k) => [k, cell(x[k])]))) }));
+}
+
+/* ---------- senarai murid (admin sahaja: mengandungi nama murid) ---------- */
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
+
+// Apps Script takes 2+ s, so answer from the saved copy and refresh it after replying when it is over 10 minutes old
+async function roster(pin: unknown) {
+  const c = (await q(db.from('murid_cache').select('roster,masa').eq('id', 1)))[0];
+  if (!c) return await rosterGas(pin);
+  if (Date.now() - Date.parse(c.masa) > 10 * 60 * 1000) EdgeRuntime.waitUntil(rosterGas(pin).catch((e) => console.error('roster', e)));
+  return c.roster;
+}
+
+async function rosterGas(pin: unknown) {
+  const p = (await q(db.from('admin').select('pin_gas').eq('id', 1)))[0]?.pin_gas || pin;
+  const j = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'roster', pin: p }) })).json();
+  if (!j.ok) throw new Error(j.error === 'PIN salah' ? 'PIN Apps Script salah: isi admin.pin_gas di Supabase dengan ADMIN_PIN dalam Code.gs.' : j.error);
+  await q(db.from('murid_cache').upsert({ id: 1, roster: j.roster, masa: new Date().toISOString() }));
+  return j.roster;
 }
 
 /* ---------- foto ---------- */

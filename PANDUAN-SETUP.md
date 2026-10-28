@@ -12,9 +12,9 @@ Sejak Oktober 2026 data disimpan dalam **Supabase** (projek *Sri Bitara 2026*, r
 
 - **Data** (anugerah, penerima, AJK, tentatif, persiapan, tetapan): jadual Postgres. Lihat/sunting di **Tetapan → Sistem → Buka Jadual**.
 - **Foto** (galeri, logo, foto AJK): bucket awam `foto` dalam Supabase Storage (1 GB percuma).
-- **Senarai murid Hadir@SKBT** masih dibaca oleh `Code.gs` (Google Apps Script) kerana ia Google Sheet sekolah. Jadi Apps Script mesti kekal di-*deploy*, dan **PIN Supabase mesti sama dengan `ADMIN_PIN` dalam Code.gs**.
+- **Senarai murid Hadir@SKBT** masih dibaca oleh `Code.gs` (Google Apps Script) kerana ia Google Sheet sekolah, jadi Apps Script mesti kekal di-*deploy*. Isi **Table Editor → `admin` → lajur `pin_gas`** dengan `ADMIN_PIN` dalam Code.gs (sekali sahaja). Supabase menyimpan salinan senarai murid (jadual `murid_cache`) supaya ia dibuka dengan pantas, dan mengemas kininya dari Apps Script di latar belakang apabila salinan berusia lebih 10 minit. Murid baharu dalam Hadir muncul selepas ~10 minit.
 - Kod: `supabase/schema.sql` (jadual) dan `supabase/functions/api/index.ts` (Edge Function `api`, protokol sama seperti Code.gs).
-- **Tukar PIN:** Supabase → **Table Editor → `admin` → lajur `pin`**. Tukar juga `ADMIN_PIN` dalam Code.gs kepada PIN yang sama.
+- **Tukar PIN:** Supabase → **Table Editor → `admin` → lajur `pin`**. Jika anda menukar `ADMIN_PIN` dalam Code.gs, kemas kini juga lajur `pin_gas`.
 - **Salin semula data dari Google Sheet** (menggantikan data Supabase): `python tools/gs_ke_supabase.py <URL_EXEC> <URL_API_SUPABASE> <PIN>`.
 - ⚠️ Projek Supabase percuma **dijeda selepas 7 hari tanpa aktiviti**. Buka aplikasi sekurang-kurangnya seminggu sekali, atau sambung semula di papan pemuka Supabase.
 
