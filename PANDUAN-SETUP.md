@@ -6,6 +6,20 @@ Ikut langkah 1 hingga 3 sekali sahaja supaya semua telefon dan LCD berkongsi dat
 
 ---
 
+## Backend semasa: Supabase
+
+Sejak Oktober 2026 data disimpan dalam **Supabase** (projek *Sri Bitara 2026*, rantau Singapura), bukan lagi Google Sheet:
+
+- **Data** (anugerah, penerima, AJK, tentatif, persiapan, tetapan): jadual Postgres. Lihat/sunting di **Tetapan → Sistem → Buka Jadual**.
+- **Foto** (galeri, logo, foto AJK): bucket awam `foto` dalam Supabase Storage (1 GB percuma).
+- **Senarai murid Hadir@SKBT** masih dibaca oleh `Code.gs` (Google Apps Script) kerana ia Google Sheet sekolah. Jadi Apps Script mesti kekal di-*deploy*, dan **PIN Supabase mesti sama dengan `ADMIN_PIN` dalam Code.gs**.
+- Kod: `supabase/schema.sql` (jadual) dan `supabase/functions/api/index.ts` (Edge Function `api`, protokol sama seperti Code.gs).
+- **Tukar PIN:** Supabase → **Table Editor → `admin` → lajur `pin`**. Tukar juga `ADMIN_PIN` dalam Code.gs kepada PIN yang sama.
+- **Salin semula data dari Google Sheet** (menggantikan data Supabase): `python tools/gs_ke_supabase.py <URL_EXEC> <URL_API_SUPABASE> <PIN>`.
+- ⚠️ Projek Supabase percuma **dijeda selepas 7 hari tanpa aktiviti**. Buka aplikasi sekurang-kurangnya seminggu sekali, atau sambung semula di papan pemuka Supabase.
+
+Langkah 1 dan 2 di bawah ialah cara lama (Google Apps Script sebagai backend penuh). Ia masih berfungsi jika `API_URL` ditukar kembali ke URL `/exec`.
+
 ## 1. Pasang backend (Google Apps Script), lebih kurang 10 minit
 
 1. Buka **https://script.google.com**, kemudian klik **Projek baharu**.
@@ -51,7 +65,7 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 | Papar nama penerima kepada umum | **Tetapan → Maklumat Majlis**, togol *Papar nama penerima*. Jika DIMATIKAN, umum hanya nampak bilangan penerima. |
 | Kemas kini AJK / Tentatif / % Persiapan | Tab masing-masing dalam **Tetapan**. Untuk AJK, tulis satu nama setiap baris dan tambah **(K)** untuk Ketua. |
 | Muat turun senarai penerima (CSV) | **Tetapan → Import Penerima → CSV** (untuk JK Sijil / JK Pengurus Penerima) |
-| Betulkan nama murid satu per satu | **Tetapan → Sistem → Buka Sheet**, edit terus dalam Google Sheet (tab `penerima`) |
+| Betulkan nama murid satu per satu | **Tetapan → Sistem → Buka Jadual**, edit terus dalam Supabase Table Editor (jadual `penerima`) |
 | Muat naik foto | **Galeri**. Bila mod admin dibuka, kotak muat naik muncul. Seret foto atau klik **Pilih**. |
 
 ## Hari majlis
@@ -73,14 +87,14 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 ## Sasaran anugerah & foto AJK
 
 - **Sasaran penerima:** **Tetapan → Anugerah**, isi lajur *Sasaran* (cth. 12). Biarkan kosong untuk tiada had. Kad anugerah memaparkan `penerima / sasaran` dan bar kemajuan.
-- **Foto AJK (cara mudah):** buka mod admin, pergi ke halaman **AJK** dan klik inisial / foto seorang guru. Pilih gambar (boleh gambar berkumpulan) atau tekan **Ctrl+V** untuk tampal tangkapan skrin (Win+Shift+S), seret kotak pada wajah, kemudian **Simpan foto**. Foto disimpan dalam folder **Foto AJK** (dicipta automatik dalam folder Drive projek) dengan nama guru, dan menggantikan foto lama.
-- **Foto AJK (manual):** buat satu folder Google Drive, masukkan foto guru dan namakan setiap fail mengikut nama guru (cth. `Harsidi Bin Junick.jpg`, tanpa Pn/En/Cik). Kongsi folder: **Sesiapa yang ada pautan → Pelihat**. Tampal pautan folder di **Tetapan → AJK → Folder foto AJK**. Foto baharu muncul dalam masa ~5 minit. Guru tanpa foto dipaparkan dengan inisial (cth. HJ).
+- **Foto AJK (cara mudah):** buka mod admin, pergi ke halaman **AJK** dan klik inisial / foto seorang guru. Pilih gambar (boleh gambar berkumpulan) atau tekan **Ctrl+V** untuk tampal tangkapan skrin (Win+Shift+S), seret kotak pada wajah, kemudian **Simpan foto**. Foto disimpan dalam Supabase Storage dengan nama guru, dan menggantikan foto lama.
+- **Foto AJK (manual, backend Google Apps Script sahaja):** buat satu folder Google Drive, masukkan foto guru dan namakan setiap fail mengikut nama guru (cth. `Harsidi Bin Junick.jpg`, tanpa Pn/En/Cik). Kongsi folder: **Sesiapa yang ada pautan → Pelihat**. Tampal pautan folder di **Tetapan → AJK → Folder foto AJK**. Foto baharu muncul dalam masa ~5 minit. Guru tanpa foto dipaparkan dengan inisial (cth. HJ).
 
 ## Nota
 
 - **Satu PIN untuk semua admin.** Kongsikan PIN hanya kepada AJK yang perlu (Slaid, Jurugambar, Urus Setia). Mod admin tamat apabila tab pelayar ditutup.
 - 10 cubaan PIN salah akan mengunci log masuk selama 10 minit.
-- **Tukar PIN:** edit `ADMIN_PIN` dalam Apps Script, kemudian **Deploy → Manage deployments → Edit → Version: New version → Deploy**. URL kekal sama.
+- **Tukar PIN (Supabase):** lihat *Backend semasa* di atas. **Tukar PIN (Apps Script):** edit `ADMIN_PIN` dalam Apps Script, kemudian **Deploy → Manage deployments → Edit → Version: New version → Deploy**. URL kekal sama.
 - **Ubah Code.gs:** setiap perubahan mesti di-*deploy* sebagai **New version** (langkah di atas).
 - Aplikasi memerlukan internet. Jika talian terputus, paparan terakhir kekal dan status bertukar kepada *"Luar talian"*.
 
@@ -88,5 +102,6 @@ Untuk cuba tanpa mengubah fail, buka: `https://altrabird.github.io/Sri-Bitara-20
 
 ```bash
 node tests/test-backend.js
+node tests/test-supabase.js <URL_API_SUPABASE> <PIN>   # MEMADAM DATA: projek kosong / ujian sahaja
 python tests/e2e.py "RUJUKAN/ANUGERAH MAJLIS APRESIASI MURID 2025.xlsx"
 ```

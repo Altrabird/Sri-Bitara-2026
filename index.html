@@ -543,7 +543,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
 
 <script>
 /* ================= KONFIGURASI ================= */
-const API_URL = 'https://script.google.com/macros/s/AKfycbwh54z1yrC5Z5KKIleEUGjMedFaNQ0Bt6yL5-tmx0_Qq8_voqOa1ZHZl0w0mPHVwfU5Jg/exec'; // ← tampal URL Web App Google Apps Script (.../exec) di sini selepas deploy Code.gs
+const API_URL = 'https://olbvqazpxnalinvfkvtv.supabase.co/functions/v1/api'; // ← URL Edge Function Supabase "api" (atau URL Web App Google Apps Script .../exec)
 /* =============================================== */
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -552,7 +552,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const store={get(k,d,s=localStorage){try{return JSON.parse(s.getItem('sbt.'+k))??d}catch{return d}},set(k,v,s=localStorage){try{s.setItem('sbt.'+k,JSON.stringify(v))}catch{}},del(k,s=localStorage){try{s.removeItem('sbt.'+k)}catch{}}};
 const API=(()=>{const q=new URLSearchParams(location.search).get('api');if(q!==null)q?store.set('api',q):store.del('api');const v=store.get('api','')||API_URL;return v==='demo'?'':v})(); // ?api=demo forces demo mode, ?api= resets
-const DEMO=!API, DEMO_PIN='123456';
+const DEMO=!API, DEMO_PIN='123456', SB=/\.supabase\.co\//.test(API);
 const KLS=['INOVATIF','INTELEK','KREATIF','KRITIS','PATRIOTIK'];
 const CAT={K:'Kurikulum',H:'Hal Ehwal Murid',KO:'Kokurikulum'};
 const CATIC={K:'i-book',H:'i-shield',KO:'i-trophy'};
@@ -689,7 +689,7 @@ const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
 const isDay=t=>!t.masa; // tentatif row with no time = day heading
 const ahliList=t=>lines(t).map(x=>({nama:x.replace(/\s*\(K\)\s*$/i,''),k:/\(K\)\s*$/i.test(x)}));
 const imgURL=(g,w)=>g.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(g.fid)}&sz=w${w}`;
-const logoURL=()=>{const l=D.settings.logo;return !l?'':/^data:/.test(l)?l:`https://drive.google.com/thumbnail?id=${encodeURIComponent(l)}&sz=w400`};
+const logoURL=()=>{const l=D.settings.logo;return !l?'':/^(data|https?):/.test(l)?l:`https://drive.google.com/thumbnail?id=${encodeURIComponent(l)}&sz=w400`};
 const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' ')[1]||''))-KLS.indexOf((b.kelas.split(' ')[1]||''))||a.kelas.localeCompare(b.kelas)||a.nama.localeCompare(b.nama);
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
@@ -1074,13 +1074,13 @@ function renderSet(){
     <div class="set-row" style="margin-top:12px"><span><b>Muat turun senarai penerima</b><br><small class="muted">CSV untuk JK Sijil / JK Pengurus Penerima (dibuka dalam Excel).</small></span><button class="btn ghost sm" onclick="exportCSV()"><svg class="i"><use href="#i-dl"/></svg>CSV</button></div>
   </div>
   <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. <b>Sasaran</b> = bilangan penerima dirancang, untuk mengukur kemajuan; biarkan kosong untuk tiada had. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
-  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p><div class="set-row"><span style="flex:1 1 320px"><b>Folder foto AJK (Google Drive)</b><br><small class="muted">Namakan setiap fail mengikut nama guru, cth. <i>Harsidi Bin Junick.jpg</i> (gelaran Pn/En/Cik tidak perlu). Kongsi folder: <i>Sesiapa yang ada pautan boleh lihat</i>. Tanpa foto, inisial nama dipaparkan. <b>Cara mudah:</b> klik inisial / foto guru di halaman AJK untuk memilih dan memotong foto; folder <i>Foto AJK</i> dicipta automatik.${s.fotoFolder?` <b>${D.fotoAjk.length} foto dijumpai · ${ajkFotoHits()} sepadan dengan nama AJK.</b>`:''}</small></span><span style="display:flex;gap:8px;flex:1 1 280px"><input class="fi" id="sFoto" placeholder="Tampal pautan folder Google Drive" value="${esc(s.fotoFolder)}" aria-label="Pautan folder foto AJK"><button class="btn ghost sm" id="sFotoSave">Simpan</button></span></div><div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
+  <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p>${SB?'':`<div class="set-row"><span style="flex:1 1 320px"><b>Folder foto AJK (Google Drive)</b><br><small class="muted">Namakan setiap fail mengikut nama guru, cth. <i>Harsidi Bin Junick.jpg</i> (gelaran Pn/En/Cik tidak perlu). Kongsi folder: <i>Sesiapa yang ada pautan boleh lihat</i>. Tanpa foto, inisial nama dipaparkan. <b>Cara mudah:</b> klik inisial / foto guru di halaman AJK untuk memilih dan memotong foto; folder <i>Foto AJK</i> dicipta automatik.${s.fotoFolder?` <b>${D.fotoAjk.length} foto dijumpai · ${ajkFotoHits()} sepadan dengan nama AJK.</b>`:''}</small></span><span style="display:flex;gap:8px;flex:1 1 280px"><input class="fi" id="sFoto" placeholder="Tampal pautan folder Google Drive" value="${esc(s.fotoFolder)}" aria-label="Pautan folder foto AJK"><button class="btn ghost sm" id="sFotoSave">Simpan</button></span></div>`}<div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
   <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. Biarkan <b>Masa</b> kosong untuk baris tajuk hari. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div class="set-row"><span>Muat tentatif 2 hari daripada kertas kerja 2026<br><small class="muted">Menggantikan tentatif sahaja.</small></span><button class="btn ghost sm" id="ttSeed">Muat</button></div><div id="reTT"></div></div>
   <div class="setp card ${SETTAB==='persiapan'?'on':''}" data-p="persiapan"><h3>STATUS PERSIAPAN</h3><p class="hint">Peratus siap (0–100) dipaparkan di Dashboard.</p><div id="rePrep"></div></div>
   <div class="setp card ${SETTAB==='laporan'?'on':''}" data-p="laporan"><h3>LAPORAN MAJLIS</h3><p class="hint">Dijana automatik daripada data sistem: penerima, status "Diterima", sasaran, tentatif, persiapan, AJK dan galeri. Jana selepas majlis tamat untuk laporan muktamad.</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="printLaporan()"><svg class="i"><use href="#i-dl"/></svg>Cetak / Simpan PDF</button><button class="btn ghost" onclick="wordLaporan()"><svg class="i"><use href="#i-dl"/></svg>Muat turun Word</button></div><div style="overflow:auto"><style>${LAP_CSS}</style>${SETTAB==='laporan'?laporanHTML():''}</div></div>
   <div class="setp card ${SETTAB==='sistem'?'on':''}" data-p="sistem"><h3>SISTEM</h3>
-    <div class="set-row"><span>Mod</span><span class="chip ${DEMO?'warn':'live'}">${DEMO?'Demo (localStorage pelayar ini)':'Google Apps Script'}</span></div>
-    ${INFO?`<div class="set-row"><span>Pangkalan data Google Sheet</span><a class="btn ghost sm" href="${esc(INFO.sheetUrl)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg>Buka Sheet</a></div><div class="set-row"><span>Folder galeri Google Drive</span><a class="btn ghost sm" href="${esc(INFO.folderUrl)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg>Buka Folder</a></div>`:''}
+    <div class="set-row"><span>Mod</span><span class="chip ${DEMO?'warn':'live'}">${DEMO?'Demo (localStorage pelayar ini)':SB?'Supabase':'Google Apps Script'}</span></div>
+    ${INFO?`<div class="set-row"><span>Pangkalan data ${SB?'Supabase':'Google Sheet'}</span><a class="btn ghost sm" href="${esc(INFO.sheetUrl)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg>${SB?'Buka Jadual':'Buka Sheet'}</a></div><div class="set-row"><span>${SB?'Storan foto Supabase':'Folder galeri Google Drive'}</span><a class="btn ghost sm" href="${esc(INFO.folderUrl)}" target="_blank" rel="noopener"><svg class="i"><use href="#i-ext"/></svg>Buka Folder</a></div>`:''}
     <div class="set-row"><span>Isi semula data permulaan (kategori, AJK, tentatif, persiapan)<br><small class="muted">Menggantikan jadual tersebut. Penerima & foto tidak terjejas.</small></span><button class="btn danger sm" id="reseed">Isi semula</button></div>
     <div class="set-row"><span>Kunci mod admin pada peranti ini</span><button class="btn ghost sm" onclick="lockAdmin()"><svg class="i"><use href="#i-lock"/></svg>Kunci</button></div>
   </div>`;
@@ -1092,7 +1092,7 @@ function renderSet(){
   if(IMPORT)drawImport();
   rowEditor($('#reAw'),'anugerah',[{k:'nama',label:'Nama anugerah',flex:3},{k:'kat',label:'Kategori',type:'select',opts:CAT,flex:1},{k:'sasaran',label:'Sasaran (kosong = tiada had)',type:'number',flex:1}],{id:'a'});
   $('#ajkSeed').onclick=e=>confirm('Gantikan senarai AJK dengan data kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'ajk',rows:SEED.ajk}));
-  $('#sFotoSave').onclick=e=>{const v=$('#sFoto').value.trim();busy(e.currentTarget,()=>call('saveSettings',{settings:{fotoFolder:(v.match(/folders\/([\w-]+)/)||v.match(/[?&]id=([\w-]+)/)||[0,v])[1]}}))};
+  if(!SB)$('#sFotoSave').onclick=e=>{const v=$('#sFoto').value.trim();busy(e.currentTarget,()=>call('saveSettings',{settings:{fotoFolder:(v.match(/folders\/([\w-]+)/)||v.match(/[?&]id=([\w-]+)/)||[0,v])[1]}}))};
   rowEditor($('#reAjk'),'ajk',[{k:'jk',label:'Jawatankuasa',flex:2},{k:'ahli',label:'Ahli (satu setiap baris)',type:'textarea',flex:3},{k:'tugas',label:'Bidang tugas (satu setiap baris)',type:'textarea',flex:3}],{id:'j'});
   $('#ttSeed').onclick=e=>confirm('Gantikan tentatif dengan tentatif 2 hari daripada kertas kerja 2026?')&&busy(e.currentTarget,()=>call('saveTable',{table:'tentatif',rows:SEED.tentatif}).then(()=>setNow(-1)));
   rowEditor($('#reTT'),'tentatif',[{k:'masa',label:'Masa',type:'time',flex:1},{k:'acara',label:'Acara',flex:3},{k:'pic',label:'PIC / JK',flex:2}],{id:'t'});
