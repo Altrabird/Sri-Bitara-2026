@@ -180,6 +180,8 @@ with sync_playwright() as p:
     pg.click('#reAjk [data-a=add]')
     pg.locator('#reAjk .re-row[data-i]').last.locator('input').fill('JK Ujian')
     pg.locator('#reAjk .re-row[data-i]').last.locator('textarea').first.fill('Cikgu Satu (K)\nCikgu Dua')
+    pg.evaluate('refresh(true)'); pg.wait_for_timeout(300)  # the 15 s admin poll must not wipe unsaved edits
+    assert pg.locator('#reAjk .re-row[data-i]').last.locator('input').input_value() == 'JK Ujian', 'poll reset unsaved AJK edits'
     pg.click('#reAjk [data-a=save]')
     pg.wait_for_function('D.ajk.length===25')
     # settings: date + public names off by default → lock hides names

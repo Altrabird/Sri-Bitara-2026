@@ -629,18 +629,19 @@ async function remote(body){
   const r=body?await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}):await fetch(API+(API.includes('?')?'&':'?')+'action=public',{cache:'no-store'});
   const j=await r.json();if(!j.ok)throw Error(j.error||'Ralat pelayan');return j;
 }
-async function call(action,extra={},{quiet}={}){
+// poll: leave rendering to refresh(), which skips Tetapan so unsaved edits there survive
+async function call(action,extra={},{quiet,poll}={}){
   const body={action,pin:PIN,...extra};
   const j=DEMO?localCall(structuredClone(body)):await remote(body);
   if(j.info!==undefined)INFO=j.info;
-  if(j.data){setData(j.data);render()}
+  if(j.data){setData(j.data);if(!poll)render()}
   if(!quiet&&action!=='admin'&&action!=='login')toast('Disimpan');
   return j;
 }
 async function refresh(fromPoll){
   const before=fromPoll?JSON.stringify(D):'';
   try{
-    if(PIN)await call('admin',{},{quiet:true});
+    if(PIN)await call('admin',{},{quiet:true,poll:fromPoll});
     else{const j=DEMO?localCall({action:'public'}):await remote();setData(j);store.set('cache',j)}
     LAST=Date.now();setSync(true);
   }catch(e){
