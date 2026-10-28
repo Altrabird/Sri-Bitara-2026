@@ -598,7 +598,7 @@ const SEED={
 /* ---------- state ---------- */
 let D={settings:{...SET_DEFAULT},anugerah:[],penerima:null,ajk:[],tentatif:[],persiapan:[],galeri:[],fotoAjk:[]},FOTO=new Map();
 let PIN=store.get('pin','',sessionStorage), INFO=null, VIEW='dashboard', LAST=0;
-let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set(),bulk:'',bulkOpen:false};
+let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set(),role:new Map(),man:'',bulk:'',bulkOpen:false};
 
 /* ---------- backend: demo (localStorage) ---------- */
 function ldb(){let db=store.get('db',null);if(!db){db={settings:{...SET_DEFAULT},...structuredClone(SEED),penerima:[],galeri:[]};store.set('db',db)}return db}
@@ -886,7 +886,7 @@ function renderHadir(){
 }
 function openAw(id){
   const a=D.anugerah.find(x=>x.id===id);if(!a)return closeDrawer();
-  if(DRAWER!==id){ADD.sel.clear();ADD.bulk=''}DRAWER=id;const c=counts(a);const sc=$('#drawer .body')?.scrollTop||0;
+  if(DRAWER!==id){ADD.sel.clear();ADD.role.clear();ADD.bulk=''}DRAWER=id;const c=counts(a);const sc=$('#drawer .body')?.scrollTop||0;
   let body;
   if(canNames()){
     const ps=D.penerima.filter(p=>p.aid===id).sort(byKelas);
@@ -920,16 +920,21 @@ function parseBulk(text,defKls){
     return {nama,kelas};
   }).filter(x=>x.nama);
 }
+const KK=['KETUA KELAS','PEN. KETUA KELAS'];
 async function drawAdd(aid){
   if(!ROSTER&&!ROSTER_ERR){$('#addp').innerHTML='<h5>TAMBAH PENERIMA</h5><p class="muted">Memuatkan senarai murid…</p>';try{await loadRoster()}catch(e){ROSTER_ERR=e.message}if(DRAWER!==aid)return}
   const box=$('#addp');if(!box)return;
   const classes=ROSTER?[...new Set(ROSTER.map(r=>r.kelas))].sort(classSort):['1','2','3','4','5','6'].flatMap(t=>KLS.map(k=>t+' '+k));
-  const have=new Set(D.penerima.filter(p=>p.aid===aid).map(p=>p.nama+'|'+p.kelas));
+  const mine=D.penerima.filter(p=>p.aid===aid),have=new Set(mine.map(p=>p.nama+'|'+p.kelas));
+  // Ketua Kelas & Pen. Ketua Kelas: each ticked pupil gets a role, saved as catatan like the Excel import does
+  const kk=/ketua kelas/i.test(D.anugerah.find(a=>a.id===aid)?.nama||'');
+  const kkTaken=[...mine.filter(p=>p.kelas===ADD.kls).map(p=>p.catatan),...[...ADD.sel].map(n=>ADD.role.get(n))];
+  const nKetua=kkTaken.filter(r=>r===KK[0]).length;
   const studs=ADD.kls&&ROSTER?ROSTER.filter(r=>r.kelas===ADD.kls).sort((x,y)=>x.nama.localeCompare(y.nama)):[];
   box.innerHTML=`<h5>TAMBAH PENERIMA</h5>${ROSTER_ERR?`<p class="warnmsg">${esc(ROSTER_ERR)} Anda masih boleh menaip nama secara manual.</p>`:''}
   <div class="addrow"><select class="fi" id="adKls" aria-label="Pilih kelas"><option value="">1. Pilih kelas…</option>${classes.map(k=>`<option ${k===ADD.kls?'selected':''}>${esc(k)}</option>`).join('')}</select><input class="fi" id="adCat" maxlength="40" placeholder="Catatan (pilihan)" value="${esc(ADD.cat)}" aria-label="Catatan"></div>
-  ${ADD.kls?`${studs.length?`<p class="muted" style="font-size:12.5px;margin:10px 0 6px">2. Tandakan murid · ${studs.length} murid dalam ${esc(ADD.kls)}</p><div class="studs">${studs.map(r=>{const h=have.has(r.nama+'|'+r.kelas);return `<label class="st ${h?'have':''}"><input type="checkbox" value="${esc(r.nama)}" ${h?'checked disabled':ADD.sel.has(r.nama)?'checked':''}><span>${esc(r.nama)}</span>${h?'<small>SUDAH</small>':''}</label>`}).join('')}</div>`:ROSTER?'<p class="muted" style="margin-top:8px">Tiada murid dalam kelas ini.</p>':''}
-  <div class="addrow"><input class="fi" id="adMan" maxlength="80" placeholder="Nama lain (tiada dalam senarai)" aria-label="Nama manual"><button class="btn" id="adGo"><svg class="i"><use href="#i-plus"/></svg>Tambah<span id="adN"></span></button></div>`:''}
+  ${ADD.kls?`${studs.length?`<p class="muted" style="font-size:12.5px;margin:10px 0 6px">2. Tandakan murid · ${studs.length} murid dalam ${esc(ADD.kls)}</p><div class="studs">${studs.map(r=>{const h=have.has(r.nama+'|'+r.kelas);return `<label class="st ${h?'have':''}"><input type="checkbox" value="${esc(r.nama)}" ${h?'checked disabled':ADD.sel.has(r.nama)?'checked':''}><span>${esc(r.nama)}</span>${h?`<small>SUDAH${kk?(mine.find(p=>p.nama===r.nama&&p.kelas===r.kelas)?.catatan||'').replace(/^(.+)$/,' · $1'):''}</small>`:''}</label>`}).join('')}</div>${kk&&ADD.sel.size?`<p class="muted" style="font-size:12.5px;margin:12px 0 6px">3. Tetapkan jawatan</p>${nKetua>1?'<p class="warnmsg">Lebih daripada seorang Ketua Kelas dalam kelas ini.</p>':''}${[...ADD.sel].map(n=>`<div class="addrow" style="align-items:center;margin-top:6px"><span style="flex:1 1 180px;font-size:13px;font-weight:600">${esc(n)}</span><div class="seg" role="group" aria-label="Jawatan ${esc(n)}">${KK.map((r,i)=>`<button type="button" data-kk="${esc(n)}" data-r="${i}" class="${ADD.role.get(n)===r?'on':''}" aria-pressed="${ADD.role.get(n)===r}">${i?'Pen. Ketua Kelas':'Ketua Kelas'}</button>`).join('')}</div></div>`).join('')}`:''}`:ROSTER?'<p class="muted" style="margin-top:8px">Tiada murid dalam kelas ini.</p>':''}
+  <div class="addrow"><input class="fi" id="adMan" maxlength="80" placeholder="Nama lain (tiada dalam senarai)" aria-label="Nama manual" value="${esc(ADD.man)}"><button class="btn" id="adGo"><svg class="i"><use href="#i-plus"/></svg>Tambah<span id="adN"></span></button></div>`:''}
   <details class="bulk" ${ADD.bulkOpen?'open':''}><summary>Tambah pukal: tampal senarai nama &amp; kelas</summary>
     <p class="muted" style="font-size:12.5px;margin:8px 0">Satu murid setiap baris, cth. <i>AHMAD BIN ALI, 6 INOVATIF</i>. Boleh salin terus dari Excel (lajur Nama dan Kelas). Baris tanpa kelas menggunakan kelas yang dipilih di atas. Catatan di atas dikenakan kepada semua.</p>
     <textarea class="fi" id="adBulk" aria-label="Senarai nama dan kelas" placeholder="AHMAD BIN ALI, 6 INOVATIF&#10;SITI AISYAH BINTI OMAR&#9;5 KREATIF">${esc(ADD.bulk)}</textarea>
@@ -952,14 +957,18 @@ async function drawAdd(aid){
       ADD.bulk='';if($('#adBulk')){$('#adBulk').value='';bulkInfo()}
       toast(n===rows.length?`${n} penerima ditambah`:`${n} penerima ditambah · ${rows.length-n} sudah ada dalam anugerah ini`)});
   };
-  $('#adKls').onchange=e=>{ADD.kls=e.target.value;ADD.sel.clear();drawAdd(aid)};
+  $('#adKls').onchange=e=>{ADD.kls=e.target.value;ADD.sel.clear();ADD.role.clear();drawAdd(aid)};
   $('#adCat').oninput=e=>ADD.cat=e.target.value;
-  $$('#addp .studs input:not(:disabled)').forEach(c=>c.onchange=()=>{c.checked?ADD.sel.add(c.value):ADD.sel.delete(c.value);cnt()});
+  if($('#adMan'))$('#adMan').oninput=e=>ADD.man=e.target.value;
+  $$('#addp .studs input:not(:disabled)').forEach(c=>c.onchange=()=>{
+    if(c.checked){ADD.sel.add(c.value);if(kk)ADD.role.set(c.value,kkTaken.includes(KK[0])?KK[1]:KK[0])}else{ADD.sel.delete(c.value);ADD.role.delete(c.value)}
+    kk?drawAdd(aid):cnt()});
+  $$('#addp [data-kk]').forEach(b=>b.onclick=()=>{ADD.role.set(b.dataset.kk,KK[b.dataset.r]);drawAdd(aid)});
   if($('#adGo'))$('#adGo').onclick=e=>{
     const names=[...ADD.sel],man=$('#adMan').value.trim();if(man)names.push(man);
     if(!names.length)return toast('Tandakan sekurang-kurangnya seorang murid',true);
-    const rows=names.map(n=>({id:'r'+uid(),aid,kelas:ADD.kls,tahun:tahunOf(ADD.kls),nama:n.toUpperCase().replace(/\s+/g,' '),catatan:ADD.cat.trim().toUpperCase()}));
-    busy(e.currentTarget,async()=>{ADD.sel.clear();const j=await call('addPenerima',{rows},{quiet:true});toast(j.added===0?'Murid itu sudah ada dalam anugerah ini':`${j.added??rows.length} penerima ditambah`)});
+    const rows=names.map(n=>({id:'r'+uid(),aid,kelas:ADD.kls,tahun:tahunOf(ADD.kls),nama:n.toUpperCase().replace(/\s+/g,' '),catatan:ADD.role.get(n)||ADD.cat.trim().toUpperCase()}));
+    busy(e.currentTarget,async()=>{ADD.sel.clear();ADD.role.clear();ADD.man='';const j=await call('addPenerima',{rows},{quiet:true});toast(j.added===0?'Murid itu sudah ada dalam anugerah ini':`${j.added??rows.length} penerima ditambah`)});
   };
 }
 function closeDrawer(){DRAWER=null;$('#drawer').classList.remove('on');$('#scrim').classList.remove('on')}
