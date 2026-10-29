@@ -851,7 +851,8 @@ function renderAwList(){
   $('#msMulti').onchange=e=>{AWMULTI=e.target.checked;renderAwList()};
   $('#msKls').onchange=e=>{AWKLS=e.target.value;renderAwList()};
   if($('#msConf'))$('#msConf').onclick=()=>{AWCONF=!AWCONF;renderAwList()};
-  $('#msCsv').onclick=()=>downloadCSV('Pemetaan-Penerima-Sri-Bitara-2026.csv',[['Nama','Kelas','Bil. Anugerah','Anugerah','Kategori','Catatan Kelas']].concat(list.map(s=>[s.nama,s.kelas,s.items.length,s.items.map(i=>i.a.nama).join('; '),[...new Set(s.items.map(i=>CAT[i.a.kat]))].join('; '),s.conf?'Kelas berbeza: '+s.conf.join(' / '):''])));
+  $('#msCsv').onclick=()=>{const rows=[['Nama','Kelas','Bil. Anugerah','Anugerah','Kategori','Catatan Kelas']].concat(list.map(s=>[s.nama,s.kelas,s.items.length,s.items.map(i=>i.a.nama).join('; '),[...new Set(s.items.map(i=>CAT[i.a.kat]))].join('; '),s.conf?'Kelas berbeza: '+s.conf.join(' / '):'']));
+    preview('Pemetaan Penerima',`CSV · ${list.length} murid`,rowsHTML(rows),()=>downloadCSV('Pemetaan-Penerima-Sri-Bitara-2026.csv',rows))};
   $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
 }
 function renderAw(){
@@ -1226,7 +1227,8 @@ function drawImport(){
 function exportCSV(){
   if(!D.penerima?.length)return toast('Tiada penerima untuk dimuat turun',true);
   const aw=new Map(D.anugerah.map(a=>[a.id,a]));
-  downloadCSV('Penerima-Sri-Bitara-2026.csv',[['Anugerah','Kategori','Tahun','Kelas','Nama','Catatan','Status']].concat(D.anugerah.flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map(p=>[a.nama,CAT[a.kat],p.tahun,p.kelas,p.nama,p.catatan,p.status]))));
+  const rows=[['Anugerah','Kategori','Tahun','Kelas','Nama','Catatan','Status']].concat(D.anugerah.flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map(p=>[a.nama,CAT[a.kat],p.tahun,p.kelas,p.nama,p.catatan,p.status])));
+  preview('Senarai Penerima',`CSV · ${rows.length-1} penerima`,rowsHTML(rows),()=>downloadCSV('Penerima-Sri-Bitara-2026.csv',rows));
 }
 function downloadCSV(name,rows){
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -1417,7 +1419,7 @@ function wordSurat(){
   const {n,html}=suratHTML();
   preview('Surat Jemputan Penerima Anugerah',`Word · ${n} surat (satu setiap murid)`,html,()=>{wordDoc('Surat-Jemputan-Penerima-Anugerah.doc','Surat Jemputan Penerima Anugerah',html);toast(`${n} surat jemputan dijana (satu setiap murid)`)});
 }
-function wordLaporan(){wordDoc('Laporan-Sri-Bitara-2026.doc','Laporan '+D.settings.nama,laporanHTML())}
+function wordLaporan(){const t='Laporan '+D.settings.nama,h=laporanHTML();preview(t,'Word',h,()=>wordDoc('Laporan-Sri-Bitara-2026.doc',t,h))}
 
 /* ---------- mod pentas ---------- */
 const SG={aid:'',th:'',i:0,mode:'aw'};

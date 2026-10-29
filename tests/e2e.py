@@ -383,7 +383,18 @@ with sync_playwright() as p:
         row = [l for l in merge.splitlines() if '"MURID BAHARU"' in l]
         assert len(row) == 1 and aw5 in row[0] and aw12 in row[0] and '"2"' in row[0], 'one merge row, both awards'
         pg.select_option('#dlFmt', 'doc')
+        pg.click('#awMode button[data-m=murid]')
+        assert download(lambda: pg.click('#msCsv')).suggested_filename == 'Pemetaan-Penerima-Sri-Bitara-2026.csv'
+        pg.click('#awMode button[data-m=kad]')
         pg.click('.nav[data-v=tetapan]')
+        # tetapan downloads also preview first
+        pg.click('#admin .chip[data-t=import]')
+        assert download(lambda: pg.click('#admin button[onclick="exportCSV()"]')).suggested_filename == 'Penerima-Sri-Bitara-2026.csv'
+        pg.click('#admin .chip[data-t=laporan]')
+        pg.click('#admin button[onclick="wordLaporan()"]')
+        expect(pg.frame_locator('#pvF').locator('body')).to_contain_text(aw5)
+        pg.click('#pvC')
+        assert download(lambda: pg.click('#admin button[onclick="wordLaporan()"]')).suggested_filename == 'Laporan-Sri-Bitara-2026.doc'
         # foto AJK: names match files despite titles / Bt vs Binti; a photo that fails to load falls back to initials
         assert pg.evaluate("nameKey('En Harsidi Bin Junick (Penyelaras Program)')===nameKey('Harsidi Bin Junick') && nameKey('Pn. Kalsom Bt Tang')===nameKey('Kalsom Binti Tang')")
         pg.click('#admin .chip[data-t=ajk]')
