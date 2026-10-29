@@ -27,7 +27,8 @@ const TABLES = {
 const SET_DEFAULT = {
   nama: 'Majlis Anugerah Sri Bitara 2026', tagline: 'Meraikan kecemerlangan warga SK Bandar Tawau',
   tarikh: '2026-11-27', masa: '07:00', lokasi: 'Dewan SK Bandar Tawau',
-  showNames: false, now: -1, logo: '', fotoFolder: ''
+  showNames: false, now: -1, logo: '', fotoFolder: '',
+  catatan: { kekuatan: '', kelemahan: '', penambahbaikan: '' } // Catatan Pengarah: admin only, never in the public payload
 };
 
 /* ---------- HTTP ---------- */
@@ -131,8 +132,10 @@ function publicPayload_() {
     const k = cnt[p.aid] || (cnt[p.aid] = { n: 0, d: 0 });
     k.n++; if (p.status === 'Diterima') k.d++;
   });
+  const settings = Object.assign({}, d.settings);
+  delete settings.catatan;
   const pub = {
-    ok: true, t: Date.now(), settings: d.settings,
+    ok: true, t: Date.now(), settings: settings,
     anugerah: d.anugerah.map(function (a) { const k = cnt[a.id] || { n: 0, d: 0 }; return { id: a.id, kat: a.kat, nama: a.nama, sasaran: a.sasaran, n: k.n, d: k.d }; }),
     penerima: d.settings.showNames ? d.penerima : null,
     ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri

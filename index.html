@@ -583,7 +583,7 @@ const COL={K:'#F4D58D',H:'#E8907A',KO:'#7FC8A9'};
 const GKAT=['Majlis','Persiapan','Photo Booth','Lain-lain'];
 
 /* ---------- data permulaan (tiada data murid) ---------- */
-const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:'',fotoFolder:''};
+const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:'',fotoFolder:'',catatan:{kekuatan:'',kelemahan:'',penambahbaikan:''}};
 const SEED={
   anugerah:[['K','Anugerah Bahasa Melayu'],['K','Anugerah Bahasa Inggeris'],['K','Anugerah Pendidikan Agama Islam'],['K','Anugerah Pendidikan Moral'],['K','Anugerah Matematik'],['K','Anugerah Sains'],['K','Anugerah Sejarah'],['K','Anugerah NILAM'],['K','Anugerah Pengawas PSS'],['K','Anugerah Pemulihan Khas'],['K','Anugerah Cemerlang JQAF Tahun 6'],['K','Anugerah Lonjakan Akademik'],['H','Anugerah Pengawas'],['H','Anugerah Pembimbing Rakan Sebaya'],['H','Anugerah Duta Sahsiah'],['H','Anugerah Ketua Kelas & Pen. Ketua Kelas'],['H','Anugerah Kehadiran Penuh'],['KO','Cemerlang Kokurikulum Badan Beruniform'],['KO','Cemerlang Kokurikulum Sukan dan Permainan'],['KO','Cemerlang Kokurikulum Kelab dan Persatuan'],['KO','Pencapaian PAJSK Cemerlang Tahun 6'],['KO','Penglibatan Luar Aktif Kokurikulum'],['KO','Ikon Kokurikulum']].map(([kat,nama],i)=>({id:'a'+(i+1),kat,nama})),
   ajk:[['Jawatankuasa Induk','En Abidin Bin Moen (Pengerusi, Guru Besar) (K)\nEn Juzaidy Bin Selamat (Timbalan Pengerusi, GPK Kokurikulum)\nEn Sulaiman Bin Abd Rahman (Naib Pengerusi, GPK Pentadbiran)\nPn Kalsom Bt Tang (Naib Pengerusi, GPK HEM)\nPn Samsiah Bt Sundu (Naib Pengerusi, GPK Petang)\nEn Harsidi Bin Junick (Penyelaras Program)\nEn Abdul Rahman Bin Madiah (Pen. Penyelaras Program)\nTuan Hj Yusoff Bin Hj Awang Yahya (Setiausaha)\nCik Dayang Anisah Binti Exie@Ahmad (Bendahari)',''],
@@ -624,7 +624,8 @@ function ldb(){let db=store.get('db',null);if(!db){db={settings:{...SET_DEFAULT}
 function lsave(db){try{localStorage.setItem('sbt.db',JSON.stringify(db))}catch{throw Error('Storan pelayar penuh — padam beberapa foto demo')}}
 function publicView(db){
   const cnt={};db.penerima.forEach(p=>{const k=cnt[p.aid]||(cnt[p.aid]={n:0,d:0});k.n++;if(p.status==='Diterima')k.d++});
-  return {ok:true,t:Date.now(),settings:db.settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
+  const {catatan,...settings}=db.settings; // Catatan Pengarah stays admin-only
+  return {ok:true,t:Date.now(),settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
 }
 function localCall(r){
   const db=ldb();
@@ -1120,7 +1121,7 @@ let SETTAB=store.get('settab','majlis',sessionStorage), IMPORT=null;
 function renderSet(){
   $('#gate').style.display=PIN?'none':'';$('#admin').style.display=PIN?'':'none';
   if(!PIN)return;
-  const s=D.settings, tabs={majlis:'Maklumat Majlis',import:'Import Penerima',anugerah:'Anugerah',ajk:'AJK',tentatif:'Tentatif',persiapan:'Persiapan',laporan:'Laporan',sistem:'Sistem'};
+  const s=D.settings, tabs={majlis:'Maklumat Majlis',import:'Import Penerima',anugerah:'Anugerah',ajk:'AJK',tentatif:'Tentatif',persiapan:'Persiapan',catatan:'Catatan Pengarah',laporan:'Laporan',sistem:'Sistem'};
   $('#admin').innerHTML=`<div class="set-tabs">${Object.entries(tabs).map(([k,n])=>`<button class="chip ${k===SETTAB?'on':''}" data-t="${k}">${n}</button>`).join('')}</div>
   <div class="setp card ${SETTAB==='majlis'?'on':''}" data-p="majlis">
     <h3>MAKLUMAT MAJLIS</h3>
@@ -1146,6 +1147,10 @@ function renderSet(){
   <div class="setp card ${SETTAB==='ajk'?'on':''}" data-p="ajk"><h3>AHLI JAWATANKUASA</h3><p class="hint">Satu nama / tugas setiap baris. Tambah <b>(K)</b> di hujung nama untuk Ketua.</p>${SB?'':`<div class="set-row"><span style="flex:1 1 320px"><b>Folder foto AJK (Google Drive)</b><br><small class="muted">Namakan setiap fail mengikut nama guru, cth. <i>Harsidi Bin Junick.jpg</i> (gelaran Pn/En/Cik tidak perlu). Kongsi folder: <i>Sesiapa yang ada pautan boleh lihat</i>. Tanpa foto, inisial nama dipaparkan. <b>Cara mudah:</b> klik inisial / foto guru di halaman AJK untuk memilih dan memotong foto; folder <i>Foto AJK</i> dicipta automatik.${s.fotoFolder?` <b>${D.fotoAjk.length} foto dijumpai · ${ajkFotoHits()} sepadan dengan nama AJK.</b>`:''}</small></span><span style="display:flex;gap:8px;flex:1 1 280px"><input class="fi" id="sFoto" placeholder="Tampal pautan folder Google Drive" value="${esc(s.fotoFolder)}" aria-label="Pautan folder foto AJK"><button class="btn ghost sm" id="sFotoSave">Simpan</button></span></div>`}<div class="set-row"><span>Muat AJK & bidang tugas daripada kertas kerja 2026<br><small class="muted">Menggantikan senarai AJK sahaja.</small></span><button class="btn ghost sm" id="ajkSeed">Muat</button></div><div id="reAjk"></div></div>
   <div class="setp card ${SETTAB==='tentatif'?'on':''}" data-p="tentatif"><h3>TENTATIF</h3><p class="hint">Susun mengikut urutan. Biarkan <b>Masa</b> kosong untuk baris tajuk hari. "Sedang berlangsung" dikawal dari Dashboard atau halaman Tentatif.</p><div class="set-row"><span>Muat tentatif 2 hari daripada kertas kerja 2026<br><small class="muted">Menggantikan tentatif sahaja.</small></span><button class="btn ghost sm" id="ttSeed">Muat</button></div><div id="reTT"></div></div>
   <div class="setp card ${SETTAB==='persiapan'?'on':''}" data-p="persiapan"><h3>STATUS PERSIAPAN</h3><p class="hint">Peratus siap (0–100) dipaparkan di Dashboard.</p><div id="rePrep"></div></div>
+  <div class="setp card ${SETTAB==='catatan'?'on':''}" data-p="catatan"><h3>CATATAN PENGARAH PROGRAM</h3><p class="hint">Penilaian anda sendiri tentang keseluruhan kerja. Hanya admin boleh melihat catatan ini. Tulis <b>satu perkara setiap baris</b>; setiap baris menjadi satu poin dalam bahagian yang sama dalam <b>Laporan</b>, di atas poin yang dijana automatik.</p>
+    <div style="display:grid;gap:12px">${[['cK','kekuatan','Kekuatan','cth. Kerjasama erat antara jawatankuasa'],['cL','kelemahan','Kelemahan','cth. Raptai lewat dimulakan'],['cC','penambahbaikan','Cadangan penambahbaikan','cth. Mulakan raptai seminggu lebih awal']].map(([id,k,n,ph])=>`<label class="f">${n}<textarea class="fi" id="${id}" rows="5" placeholder="${ph}">${esc(s.catatan?.[k]||'')}</textarea></label>`).join('')}</div>
+    <button class="btn" id="cSave" style="margin-top:14px"><svg class="i"><use href="#i-check"/></svg>Simpan</button>
+  </div>
   <div class="setp card ${SETTAB==='laporan'?'on':''}" data-p="laporan"><h3>LAPORAN MAJLIS</h3><p class="hint">Dijana automatik daripada data sistem: penerima, status "Diterima", sasaran, tentatif, persiapan, AJK dan galeri. Jana selepas majlis tamat untuk laporan muktamad.</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="printLaporan()"><svg class="i"><use href="#i-dl"/></svg>Cetak / Simpan PDF</button><button class="btn ghost" onclick="wordLaporan()"><svg class="i"><use href="#i-dl"/></svg>Muat turun Word</button></div><div style="overflow:auto"><style>${LAP_CSS}</style>${SETTAB==='laporan'?laporanHTML():''}</div></div>
   <div class="setp card ${SETTAB==='sistem'?'on':''}" data-p="sistem"><h3>SISTEM</h3>
     <div class="set-row"><span>Mod</span><span class="chip ${DEMO?'warn':'live'}">${DEMO?'Demo (localStorage pelayar ini)':SB?'Supabase':'Google Apps Script'}</span></div>
@@ -1155,6 +1160,7 @@ function renderSet(){
   </div>`;
   $$('#admin .set-tabs .chip').forEach(b=>b.onclick=()=>{SETTAB=b.dataset.t;store.set('settab',SETTAB,sessionStorage);if(SETTAB==='laporan')return renderSet();$$('#admin .set-tabs .chip').forEach(x=>x.classList.toggle('on',x===b));$$('#admin .setp').forEach(p=>p.classList.toggle('on',p.dataset.p===SETTAB))});
   $('#sSave').onclick=e=>busy(e.currentTarget,()=>call('saveSettings',{settings:{nama:$('#sNama').value.trim(),tagline:$('#sTag').value.trim(),tarikh:$('#sTarikh').value,masa:$('#sMasa').value,lokasi:$('#sLokasi').value.trim(),showNames:$('#sShow').checked}}));
+  $('#cSave').onclick=e=>busy(e.currentTarget,()=>call('saveSettings',{settings:{catatan:{kekuatan:$('#cK').value.trim(),kelemahan:$('#cL').value.trim(),penambahbaikan:$('#cC').value.trim()}}}));
   $('#sLogo').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Memuat naik logo…');const data=await compress(f,400,'image/png');await call('upload',{name:'logo.png',mime:'image/png',data,purpose:'logo'})}catch(err){toast(err.message,true)}};
   $('#xlsx').onchange=e=>e.target.files[0]&&readXlsx(e.target.files[0]);
   $('#reseed').onclick=()=>confirm('Gantikan kategori anugerah, AJK, tentatif dan persiapan dengan data permulaan?')&&seedRemote();
@@ -1296,7 +1302,9 @@ function laporanHTML(){
   const multi=[...murid.values()].filter(n=>n>1).length;
   const th=[...new Set(P.map(p=>p.tahun).filter(Boolean))].sort();
   const list=a=>a.slice(0,6).join('; ')+(a.length>6?` dan ${a.length-6} lagi`:'');
-  const K=[],L=[],C=[];
+  // Catatan Pengarah first (one point per line, list markers dropped), then the points worked out from the data
+  const pts=k=>String(s.catatan?.[k]||'').split('\n').map(x=>x.trim().replace(/^([-•*]|\d+[.)])\s+/,'')).filter(Boolean);
+  const K=pts('kekuatan'),L=pts('kelemahan'),C=pts('penambahbaikan');
   const kh=pct(got,tot),given=rows.filter(r=>r.n),full=given.filter(r=>r.d===r.n).length,pv=M.find(m=>m[0].startsWith('Persiapan'))?.[1];
   if(kh!=null&&kh>=90)K.push(`Kadar kehadiran penerima yang tinggi: ${got} daripada ${tot} penerima (${kh}%) menerima anugerah di pentas.`);
   if(full)K.push(`${full} daripada ${given.length} anugerah disampaikan kepada semua penerima yang disenaraikan.`);

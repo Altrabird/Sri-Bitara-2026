@@ -39,6 +39,10 @@ assert.strictEqual(pub.settings.showNames, true);
 assert.strictEqual(pub.settings.now, 3);
 assert.strictEqual(pub.settings.nama, 'Majlis Ujian');
 assert.ok(!('evil' in pub.settings), 'unknown settings ignored');
+// Catatan Pengarah: saved for admin, never public
+r = g.post({ action: 'saveSettings', pin: PIN, settings: { catatan: { kekuatan: 'Kerjasama baik', kelemahan: 'Raptai lewat', penambahbaikan: '' } } });
+assert.strictEqual(r.data.settings.catatan.kelemahan, 'Raptai lewat');
+assert.ok(!('catatan' in g.get().settings), 'catatan hidden from public');
 assert.strictEqual(pub.penerima.length, 3, 'names visible when showNames');
 assert.strictEqual(pub.penerima.find(p => p.id === 'r2').status, 'Diterima');
 

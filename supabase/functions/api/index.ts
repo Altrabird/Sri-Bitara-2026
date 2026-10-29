@@ -23,7 +23,8 @@ const TABLES: Record<string, string[]> = {
 const SET_DEFAULT: Record<string, unknown> = {
   nama: 'Majlis Anugerah Sri Bitara 2026', tagline: 'Meraikan kecemerlangan warga SK Bandar Tawau',
   tarikh: '2026-11-27', masa: '07:00', lokasi: 'Dewan SK Bandar Tawau',
-  showNames: false, now: -1, logo: ''
+  showNames: false, now: -1, logo: '',
+  catatan: { kekuatan: '', kelemahan: '', penambahbaikan: '' } // Catatan Pengarah: admin only, never in the public payload
 };
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type' };
 const MIME_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
@@ -136,8 +137,9 @@ async function publicPayload() {
     const k = cnt[p.aid] || (cnt[p.aid] = { n: 0, d: 0 });
     k.n++; if (p.status === 'Diterima') k.d++;
   });
+  const { catatan: _c, ...settings } = d.settings;
   return {
-    ok: true, t: Date.now(), settings: d.settings,
+    ok: true, t: Date.now(), settings,
     anugerah: d.anugerah.map((a: any) => ({ ...a, ...(cnt[a.id] || { n: 0, d: 0 }) })),
     penerima: d.settings.showNames ? d.penerima.map(({ hadir: _, ...p }: any) => p) : null, // attendance stays admin-only
     ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri

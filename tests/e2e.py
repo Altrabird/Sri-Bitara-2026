@@ -402,6 +402,19 @@ with sync_playwright() as p:
         assert download(lambda: pg.click('#msCsv')).suggested_filename == 'Pemetaan-Penerima-Sri-Bitara-2026.csv'
         pg.click('#awMode button[data-m=kad]')
         pg.click('.nav[data-v=tetapan]')
+        # Catatan Pengarah: saved, admin-only, and its lines lead the laporan sections
+        pg.click('#admin .chip[data-t=catatan]')
+        pg.fill('#cK', 'Kerjasama erat semua AJK\n- Murid berdisiplin')
+        pg.fill('#cL', 'Raptai lewat dimulakan')
+        pg.fill('#cC', '1. Mulakan raptai lebih awal')
+        shot(pg, 'remote-catatan')
+        pg.click('#cSave')
+        pg.wait_for_function("D.settings.catatan.kelemahan==='Raptai lewat dimulakan'", timeout=8000)
+        assert 'catatan' not in pg.evaluate("remote().then(j=>j.settings)")
+        lap = pg.evaluate('laporanHTML()')
+        assert '<li>Murid berdisiplin</li>' in lap and '<li>Mulakan raptai lebih awal</li>' in lap, 'one point per line, markers dropped'
+        assert lap.index('Raptai lewat dimulakan') < lap.index('Cadangan untuk penambahbaikan'), 'kelemahan section'
+        assert 'Tiada kelemahan ketara' not in lap
         # tetapan downloads also preview first
         pg.click('#admin .chip[data-t=import]')
         assert download(lambda: pg.click('#admin button[onclick="exportCSV()"]')).suggested_filename == 'Penerima-Sri-Bitara-2026.csv'

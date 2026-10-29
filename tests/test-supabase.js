@@ -39,6 +39,9 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgA
   assert(!('hadir' in p.penerima[0]), 'attendance hidden from public');
   assert.strictEqual(p.settings.now, 1);
   assert(!('bukan' in p.settings), 'unknown setting ignored');
+  j = await call({ action: 'saveSettings', settings: { catatan: { kekuatan: 'Kerjasama baik', kelemahan: '', penambahbaikan: '' } } });
+  assert.strictEqual(j.data.settings.catatan.kekuatan, 'Kerjasama baik');
+  assert(!('catatan' in (await pub()).settings), 'Catatan Pengarah hidden from public');
   await call({ action: 'saveSettings', settings: { showNames: false } });
   assert.strictEqual((await pub()).penerima, null, 'names hidden from public');
 
