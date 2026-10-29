@@ -213,6 +213,11 @@ with sync_playwright() as p:
     pg.evaluate('refresh(true)'); pg.wait_for_timeout(300)
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('input')).to_be_checked()
     shot(pg, 'demo-kehadiran')
+    # kehadiran semua: every recipient from Tahun 1-6 in one list, class shown on each row
+    pg.select_option('#hdKls', 'SEMUA')
+    expect(pg.locator('#hd .ms.hd')).to_have_count(pg.evaluate("studentMap('ALL').length"))
+    expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_contain_text('4 KREATIF · ✓ HADIR')
+    pg.select_option('#hdKls', '4 KREATIF')
     pg.locator('#hd .ms.hd', has_text='MURID HADIR').click()
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_have_text('BELUM HADIR')
     # Ketua Kelas & Pen. Ketua Kelas: ticked pupils get a role (saved as catatan)

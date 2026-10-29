@@ -888,19 +888,20 @@ function renderHadir(){
   if(!PIN){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Log masuk admin di Tetapan untuk merekod kehadiran.</p></div>`;return}
   const all=studentMap('ALL'),inK=(s,k)=>s.kelas===k||s.conf?.includes(k);
   const classes=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort);
-  if(HDKLS&&!classes.includes(HDKLS))HDKLS='';
-  const list=HDKLS?all.filter(s=>inK(s,HDKLS)).sort((a,b)=>a.nama.localeCompare(b.nama)):[];
+  if(HDKLS&&HDKLS!=='SEMUA'&&!classes.includes(HDKLS))HDKLS='';
+  const ALL=HDKLS==='SEMUA'; // every recipient, Tahun 1 to 6, by class then name
+  const list=ALL?[...all].sort((a,b)=>classSort(a.kelas||'',b.kelas||'')||a.nama.localeCompare(b.nama)):HDKLS?all.filter(s=>inK(s,HDKLS)).sort((a,b)=>a.nama.localeCompare(b.nama)):[];
   const n=a=>a.filter(hadirAt).length,tot=n(all);
   const time=t=>new Date(t).toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'});
   box.innerHTML=`<div class="grid ms-kpi">
     <div class="card"><div class="n">${tot} / ${all.length}</div><div class="l">Murid penerima hadir</div></div>
-    <div class="card"><div class="n">${HDKLS?`${n(list)} / ${list.length}`:'—'}</div><div class="l">Hadir dalam ${HDKLS?esc(HDKLS):'kelas dipilih'}</div></div>
+    <div class="card"><div class="n">${HDKLS?`${n(list)} / ${list.length}`:'—'}</div><div class="l">Hadir dalam ${ALL?'semua kelas':HDKLS?esc(HDKLS):'kelas dipilih'}</div></div>
     <div class="card"><div class="n">${all.length-tot}</div><div class="l">Belum hadir</div></div>
   </div>
-  <div class="tools"><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
+  <div class="tools"><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option><option value="SEMUA" ${ALL?'selected':''}>Kehadiran semua · Tahun 1–6 (${tot}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
   ${!all.length?'<div class="empty"><p>Tiada penerima. Masukkan penerima ke dalam anugerah dahulu.</p></div>'
    :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid penerima dan anugerah mereka.</p></div>`
-   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
+   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
   $('#hdKls').onchange=e=>{HDKLS=e.target.value;store.set('hdkls',HDKLS,sessionStorage);renderHadir()};
   $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,on=c.checked;
     D.penerima.forEach(p=>{if(p.nama===nama)p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
