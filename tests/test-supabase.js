@@ -28,8 +28,8 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgA
   const vis = (b) => fetch(API, { method: 'POST', body: JSON.stringify(b) }).then((r) => r.json());
   j = await vis({ action: 'addPenerima', rows: [{ id: 'p4', aid: 'a1', kelas: '5 KREATIF', nama: 'ABU' }] });
   assert(j.ok && j.added === 1 && !('catatan' in j.data.settings), 'visitor adds and gets public data only');
-  assert.strictEqual((await vis({ action: 'delPenerima', ids: ['p4'] })).error, 'PIN salah');
-  await call({ action: 'delPenerima', ids: ['p4'] });
+  assert((await vis({ action: 'delPenerima', ids: ['p4'] })).ok, 'visitor removes a wrong pupil');
+  assert.strictEqual((await vis({ action: 'saveTable', table: 'tentatif', rows: [] })).error, 'PIN salah');
 
   await call({ action: 'setStatus', ids: ['p1'], status: 'Diterima' });
   j = await call({ action: 'setHadir', nama: ['SITI AMINAH'], hadir: true });

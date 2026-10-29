@@ -39,9 +39,9 @@ Deno.serve(async (req) => {
     }
     let r;
     try { r = JSON.parse(await req.text()); } catch { return out({ ok: false, error: 'Permintaan tidak sah' }); }
-    // owner's choice (2026-10-29): anyone with the link may pick pupils and add them to an award; all else needs the PIN.
+    // owner's choice (2026-10-29): Anugerah needs no PIN (pick, add, remove pupils, tick Diterima); Tetapan still does.
     // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
-    const open = r.action === 'roster' || r.action === 'addPenerima';
+    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus'].includes(r.action);
     if (!open || r.pin) await checkPin(r.pin);
     if (r.action === 'login') return out({ ok: true });
     if (r.action === 'admin') return out({ ok: true, data: await allData(), info: info() });

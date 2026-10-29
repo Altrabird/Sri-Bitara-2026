@@ -629,7 +629,7 @@ function publicView(db){
 }
 function localCall(r){
   const db=ldb();
-  const open=r.action==='roster'||r.action==='addPenerima'; // same as the server: anyone with the link may add pupils
+  const open=['roster','addPenerima','delPenerima','setStatus'].includes(r.action); // same as the server: Anugerah needs no PIN
   if(r.action!=='public'&&(!open||r.pin)&&String(r.pin)!==DEMO_PIN)throw Error('PIN salah');
   const out={ok:true};
   switch(r.action){
@@ -913,7 +913,7 @@ function openAw(id){
   if(canNames()){
     const ps=D.penerima.filter(p=>p.aid===id).sort(byKelas);
     const groups={};ps.forEach(p=>(groups[p.tahun||'-']=groups[p.tahun||'-']||[]).push(p));
-    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span>${PIN?`<span class="rcp-act"><button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button></span>`:(p.status==='Diterima'?'<span class="tg ok">✓ Diterima</span>':'<span></span>')}</div>`).join('')}</div>`).join(''):'<div class="empty"><p>Tiada penerima untuk anugerah ini.</p></div>';
+    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span><span class="rcp-act"><button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button></span></div>`).join('')}</div>`).join(''):'<div class="empty"><p>Tiada penerima untuk anugerah ini.</p></div>';
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
   $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n}${+a.sasaran?` / ${+a.sasaran}`:''} penerima${+a.sasaran&&c.n>+a.sasaran?' (melebihi sasaran)':''}${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
   <div class="body">${PIN&&c.n?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}<div class="addp" id="addp"></div>${body}</div>`;

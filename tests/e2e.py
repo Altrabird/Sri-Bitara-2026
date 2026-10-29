@@ -256,6 +256,8 @@ with sync_playwright() as p:
     pg.locator('#addp .st input').first.check()
     pg.click('#adGo')
     expect(pg.locator('#toast')).to_contain_text('penerima ditambah', timeout=8000)
+    assert pg.evaluate("localCall({action:'delPenerima',ids:['x']}).ok"), 'visitor may remove a pupil'
+    assert pg.evaluate("(()=>{try{localCall({action:'saveTable',table:'ajk',rows:[]})}catch(e){return e.message}})()") == 'PIN salah'
     pg.keyboard.press('Escape')
     pg.click('.nav[data-v=dashboard]')
     if XLSX:
