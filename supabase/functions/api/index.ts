@@ -39,11 +39,16 @@ Deno.serve(async (req) => {
     }
     let r;
     try { r = JSON.parse(await req.text()); } catch { return out({ ok: false, error: 'Permintaan tidak sah' }); }
-    await checkPin(r.pin);
+    // owner's choice (2026-10-29): anyone with the link may pick pupils and add them to an award; all else needs the PIN.
+    // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
+    const open = r.action === 'roster' || r.action === 'addPenerima';
+    if (!open || r.pin) await checkPin(r.pin);
     if (r.action === 'login') return out({ ok: true });
     if (r.action === 'admin') return out({ ok: true, data: await allData(), info: info() });
     if (r.action === 'roster') return out({ ok: true, roster: await roster(r.pin) });
-    return out({ ok: true, ...(await handle(r)) });
+    const res = await handle(r);
+    if (!r.pin) res.data = await publicPayload(); // no attendance or Catatan Pengarah for visitors
+    return out({ ok: true, ...res });
   } catch (err) {
     return out({ ok: false, error: String((err as Error).message || err) });
   }

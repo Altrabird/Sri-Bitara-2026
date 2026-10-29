@@ -249,6 +249,15 @@ with sync_playwright() as p:
     pg.wait_for_timeout(500)
     assert not pg.evaluate('document.body.classList.contains("admin")')
     expect(pg.locator('.nav[data-v=kehadiran]')).to_be_hidden()
+    # visitor with only the link: pupil list is there and adding works without the PIN
+    pg.click('.nav[data-v=anugerah]')
+    pg.locator('#awGrid .aw').nth(2).click()
+    pg.select_option('#adKls', '4 KREATIF')
+    pg.locator('#addp .st input').first.check()
+    pg.click('#adGo')
+    expect(pg.locator('#toast')).to_contain_text('penerima ditambah', timeout=8000)
+    pg.keyboard.press('Escape')
+    pg.click('.nav[data-v=dashboard]')
     if XLSX:
         pg.click('.nav[data-v=anugerah]')
         pg.locator('#awGrid .aw').first.click()

@@ -24,6 +24,12 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgA
   assert.deepStrictEqual(j.data.tentatif.map((t) => t.id), ['t2', 't1'], 'row order kept');
   assert.strictEqual(j.data.tentatif[0].masa, '', 'missing fields become empty strings');
   assert.strictEqual(j.data.anugerah[0].sasaran, '3');
+  // visitors with only the link (no PIN) may add pupils and read the roster, nothing else
+  const vis = (b) => fetch(API, { method: 'POST', body: JSON.stringify(b) }).then((r) => r.json());
+  j = await vis({ action: 'addPenerima', rows: [{ id: 'p4', aid: 'a1', kelas: '5 KREATIF', nama: 'ABU' }] });
+  assert(j.ok && j.added === 1 && !('catatan' in j.data.settings), 'visitor adds and gets public data only');
+  assert.strictEqual((await vis({ action: 'delPenerima', ids: ['p4'] })).error, 'PIN salah');
+  await call({ action: 'delPenerima', ids: ['p4'] });
 
   await call({ action: 'setStatus', ids: ['p1'], status: 'Diterima' });
   j = await call({ action: 'setHadir', nama: ['SITI AMINAH'], hadir: true });
