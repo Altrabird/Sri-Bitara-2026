@@ -398,6 +398,18 @@ with sync_playwright() as p:
         pg.keyboard.press('Escape')
         expect(pg.locator('#pv')).not_to_have_class('lb on')
         assert download(surat_btn).suggested_filename == 'Surat-Jemputan-Penerima-Anugerah.doc'
+        # by class, then one pupil (pupil wins), then back to everyone
+        kls = pg.evaluate("studentMap('ALL').find(s=>s.nama==='MURID BAHARU').kelas")
+        pg.select_option('#dlKls', kls)
+        d = download(lambda: pg.click('#awDl'))
+        assert d.suggested_filename == f"Senarai-Penerima-Keseluruhan-{kls.replace(' ', '-')}.doc"
+        body = open(d.path(), encoding='utf-8-sig').read()
+        assert 'MURID BAHARU' in body and all(p['nama'] not in body for p in pg.evaluate(f"D.penerima.filter(p=>!D.penerima.some(q=>q.nama===p.nama&&q.kelas==={kls!r}))")), 'only that class'
+        pg.select_option('#dlMurid', 'MURID BAHARU')
+        assert pg.evaluate('suratHTML().n') == 1
+        assert download(surat_btn).suggested_filename == 'Surat-Jemputan-Penerima-Anugerah-MURID-BAHARU.doc'
+        pg.select_option('#dlKls', '')
+        assert pg.evaluate("$('#dlMurid').value") == '' and pg.evaluate('suratHTML().n') == names
         # same downloads as Excel / CSV
         pg.select_option('#dlFmt', 'xlsx')
         d = download(lambda: pg.click('#awDl'))

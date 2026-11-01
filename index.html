@@ -479,7 +479,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
         <div class="seg" id="awMode" role="group" aria-label="Mod paparan"><button data-m="kad"><svg class="i" style="width:16px"><use href="#i-dash"/></svg>Kategori</button><button data-m="murid"><svg class="i" style="width:16px"><use href="#i-users"/></svg>Senarai Murid</button></div>
         <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="awQ" placeholder="Cari anugerah…" aria-label="Cari"></label>
         <div id="awCats" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-        <div id="awTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="dlFmt" style="width:auto;min-height:36px" aria-label="Format muat turun"><option value="doc">Word</option><option value="xlsx">Excel</option><option value="csv">CSV</option></select><button class="btn ghost sm" id="awDl"></button><button class="btn ghost sm" onclick="wordSurat()"><svg class="i"><use href="#i-dl"/></svg>Surat jemputan</button></div>
+        <div id="awTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="dlFmt" style="width:auto;min-height:36px" aria-label="Format muat turun"><option value="doc">Word</option><option value="xlsx">Excel</option><option value="csv">CSV</option></select><select class="fi" id="dlKls" style="width:auto;min-height:36px" aria-label="Muat turun mengikut kelas"></select><select class="fi" id="dlMurid" style="width:auto;max-width:220px;min-height:36px" aria-label="Muat turun untuk seorang murid"></select><button class="btn ghost sm" id="awDl"></button><button class="btn ghost sm" onclick="wordSurat()"><svg class="i"><use href="#i-dl"/></svg>Surat jemputan</button></div>
       </div>
       <div class="grid awards" id="awGrid"></div>
       <div id="awList"></div>
@@ -872,6 +872,7 @@ function renderAw(){
   $('#awTools').style.display=canNames()?'flex':'none'; // AJK download lists without the PIN whenever names are public
   $('#awDl').innerHTML=`<svg class="i"><use href="#i-dl"/></svg>${awCat==='ALL'?'Senarai keseluruhan':'Senarai '+esc(CAT[awCat])}`;
   $('#awDl').onclick=()=>wordSenarai(awCat);
+  dlOpts();
   $$('#awMode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===AWMODE);b.setAttribute('aria-pressed',b.dataset.m===AWMODE)});
   $('#awQ').placeholder=AWMODE==='murid'?'Cari nama murid / kelas…':'Cari anugerah…';
   $('#awGrid').style.display=AWMODE==='murid'?'none':'';$('#awList').style.display=AWMODE==='murid'?'':'none';
@@ -1378,16 +1379,29 @@ async function saveRows(base,rows){
   ws['!cols']=rows[0].map((_,i)=>({wch:Math.min(50,Math.max(...rows.map(r=>String(r[i]??'').length))+2)}));
   XLSX.utils.book_append_sheet(wb,ws,'Senarai');XLSX.writeFile(wb,base+'.xlsx');
 }
+/* download pickers: one class, or one pupil (a pupil wins over the class) */
+function dlOpts(){
+  const all=studentMap('ALL'),k=$('#dlKls'),m=$('#dlMurid');
+  const ks=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort),kv=ks.includes(k.value)?k.value:'';
+  k.innerHTML='<option value="">Semua kelas</option>'+ks.map(x=>`<option ${x===kv?'selected':''}>${esc(x)}</option>`).join('');
+  const ms=all.filter(s=>!kv||s.kelas===kv).map(s=>s.nama).sort(),mv=ms.includes(m.value)?m.value:'';
+  m.innerHTML='<option value="">Semua murid</option>'+ms.map(x=>`<option ${x===mv?'selected':''}>${esc(x)}</option>`).join('');
+}
+$('#dlKls').onchange=()=>{$('#dlMurid').value='';dlOpts()};
+const dlSel=()=>{const k=$('#dlKls').value,n=$('#dlMurid').value,tag=n||k;
+  return {tag,sfx:tag?'-'+tag.replace(/[\s\/\\:*?"<>|]+/g,'-'):'',ok:p=>n?p.nama===n:!k||p.kelas===k}};
 function wordSenarai(cat){
   if(!D.penerima?.length)return toast('Tiada penerima untuk dimuat turun',true);
-  const cats=cat==='ALL'?Object.keys(CAT):[cat],tajuk=cat==='ALL'?'Keseluruhan':CAT[cat],base=`Senarai-Penerima-${tajuk.replace(/\s+/g,'-')}`;
-  if($('#dlFmt').value!=='doc'){const rows=[['Bil','Anugerah','Kategori','Nama','Kelas','Tahun','Catatan','Status']].concat(cats.flatMap(k=>D.anugerah.filter(a=>a.kat===k).flatMap(a=>D.penerima.filter(p=>p.aid===a.id).sort(byKelas).map((p,i)=>[i+1,a.nama,CAT[k],p.nama,p.kelas,p.tahun,p.catatan,p.status]))));
+  const {tag,sfx,ok}=dlSel(),pen=D.penerima.filter(ok);
+  if(!pen.length)return toast('Tiada penerima untuk pilihan ini',true);
+  const cats=cat==='ALL'?Object.keys(CAT):[cat],tajuk=(cat==='ALL'?'Keseluruhan':CAT[cat])+(tag?' · '+tag:''),base=`Senarai-Penerima-${(cat==='ALL'?'Keseluruhan':CAT[cat]).replace(/\s+/g,'-')}${sfx}`;
+  if($('#dlFmt').value!=='doc'){const rows=[['Bil','Anugerah','Kategori','Nama','Kelas','Tahun','Catatan','Status']].concat(cats.flatMap(k=>D.anugerah.filter(a=>a.kat===k).flatMap(a=>pen.filter(p=>p.aid===a.id).sort(byKelas).map((p,i)=>[i+1,a.nama,CAT[k],p.nama,p.kelas,p.tahun,p.catatan,p.status]))));
     return preview('Senarai Penerima '+tajuk,`${fmtName()} · ${rows.length-1} penerima`,rowsHTML(rows),()=>saveRows(base,rows))}
   const body=`<div class="lap"><h1>SENARAI PENERIMA ANUGERAH · ${esc(tajuk.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU</div>${cats.map((k,ci)=>{
-    const aws=D.anugerah.filter(a=>a.kat===k);if(!aws.length)return '';
-    return `${cat==='ALL'?`<h2 class="${ci?'pb':''}">${esc(CAT[k])}</h2>`:''}${aws.map(a=>{const ps=D.penerima.filter(p=>p.aid===a.id).sort(byKelas);
+    const aws=D.anugerah.filter(a=>a.kat===k&&(!tag||pen.some(p=>p.aid===a.id)));if(!aws.length)return '';
+    return `${cat==='ALL'?`<h2 class="${ci?'pb':''}">${esc(CAT[k])}</h2>`:''}${aws.map(a=>{const ps=pen.filter(p=>p.aid===a.id).sort(byKelas);
       return `<h3>${esc(a.nama)} (${ps.length} penerima)</h3><table><tr><th style="width:40px">Bil</th><th>Nama</th><th style="width:130px">Kelas</th><th style="width:160px">Catatan</th></tr>${ps.map((p,i)=>`<tr><td class="n">${i+1}</td><td>${esc(p.nama)}</td><td>${esc(p.kelas)}</td><td>${esc(p.catatan)}</td></tr>`).join('')||'<tr><td colspan="4">Tiada penerima</td></tr>'}</table>`}).join('')}`}).join('')}</div>`;
-  preview('Senarai Penerima '+tajuk,`Word · ${D.penerima.filter(p=>cats.includes(D.anugerah.find(a=>a.id===p.aid)?.kat)).length} penerima`,body,()=>wordDoc(base+'.doc','Senarai Penerima '+tajuk,body));
+  preview('Senarai Penerima '+tajuk,`Word · ${pen.filter(p=>cats.includes(D.anugerah.find(a=>a.id===p.aid)?.kat)).length} penerima`,body,()=>wordDoc(base+'.doc','Senarai Penerima '+tajuk,body));
 }
 function printLaporan(){
   const w=open('','_blank');if(!w)return toast('Benarkan tetingkap pop-up untuk mencetak',true);
@@ -1397,8 +1411,8 @@ function printLaporan(){
 /* ---------- surat jemputan: SATU surat setiap murid, semua anugerahnya (semua kategori) disenaraikan ---------- */
 // one entry per pupil (all categories), by class then name; each pupil's awards in category order
 function suratList(){
-  const ord=Object.keys(CAT);
-  return studentMap('ALL').sort((a,b)=>classSort(a.kelas||'9',b.kelas||'9')||a.nama.localeCompare(b.nama))
+  const ord=Object.keys(CAT),{ok}=dlSel();
+  return studentMap('ALL').filter(ok).sort((a,b)=>classSort(a.kelas||'9',b.kelas||'9')||a.nama.localeCompare(b.nama))
     .map(m=>({nama:m.nama,kelas:m.kelas,items:m.items.slice().sort((x,y)=>ord.indexOf(x.a.kat)-ord.indexOf(y.a.kat))}));
 }
 function suratHTML(){
@@ -1438,15 +1452,16 @@ function suratHTML(){
 }
 function wordSurat(){
   if(!D.penerima?.length)return toast('Tiada penerima untuk dijana surat',true);
+  const {sfx}=dlSel();if(!suratList().length)return toast('Tiada penerima untuk pilihan ini',true);
   if($('#dlFmt').value!=='doc'){
     // mail-merge list: one row per pupil, every award in its own column
     const list=suratList(),max=Math.max(...list.map(m=>m.items.length));
     const rows=[['Bil','Nama','Kelas','Bil. Anugerah','Senarai Anugerah',...Array.from({length:max},(_,i)=>'Anugerah '+(i+1))]]
       .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:''));return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),...aw]}));
-    return preview('Surat Jemputan · Senarai Mail Merge',`${fmtName()} · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Surat-Jemputan-Senarai-Mail-Merge',rows));
+    return preview('Surat Jemputan · Senarai Mail Merge',`${fmtName()} · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Surat-Jemputan-Senarai-Mail-Merge'+sfx,rows));
   }
   const {n,html}=suratHTML();
-  preview('Surat Jemputan Penerima Anugerah',`Word · ${n} surat (satu setiap murid)`,html,()=>{wordDoc('Surat-Jemputan-Penerima-Anugerah.doc','Surat Jemputan Penerima Anugerah',html);toast(`${n} surat jemputan dijana (satu setiap murid)`)});
+  preview('Surat Jemputan Penerima Anugerah',`Word · ${n} surat (satu setiap murid)`,html,()=>{wordDoc(`Surat-Jemputan-Penerima-Anugerah${sfx}.doc`,'Surat Jemputan Penerima Anugerah',html);toast(`${n} surat jemputan dijana (satu setiap murid)`)});
 }
 function wordLaporan(){const t='Laporan '+D.settings.nama,h=laporanHTML();preview(t,'Word',h,()=>wordDoc('Laporan-Sri-Bitara-2026.doc',t,h))}
 
