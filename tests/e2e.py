@@ -495,6 +495,16 @@ with sync_playwright() as p:
         if XLSX:
             expect(pg.locator('#awDl')).to_be_visible()
             assert download(lambda: pg.click('#awDl')).suggested_filename == 'Senarai-Penerima-Keseluruhan.doc'
+            # class / pupil pickers work without the PIN too
+            assert not pg.evaluate('PIN')
+            kls = pg.evaluate("$('#dlKls').options[1].value")
+            pg.select_option('#dlKls', kls)
+            assert download(lambda: pg.click('#awDl')).suggested_filename == f"Senarai-Penerima-Keseluruhan-{kls.replace(' ', '-')}.doc"
+            nama = pg.evaluate("$('#dlMurid').options[1].value")
+            pg.select_option('#dlMurid', nama)
+            assert pg.evaluate('suratHTML().n') == 1
+            assert download(lambda: pg.locator('#v-anugerah button', has_text='Surat jemputan').click()).suggested_filename.startswith('Surat-Jemputan-Penerima-Anugerah-')
+            pg.select_option('#dlKls', '')
         else:
             expect(pg.locator('#awDl')).to_be_hidden()
         # a second visitor gets the same live data
