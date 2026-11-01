@@ -479,7 +479,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
         <div class="seg" id="awMode" role="group" aria-label="Mod paparan"><button data-m="kad"><svg class="i" style="width:16px"><use href="#i-dash"/></svg>Kategori</button><button data-m="murid"><svg class="i" style="width:16px"><use href="#i-users"/></svg>Senarai Murid</button></div>
         <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="awQ" placeholder="Cari anugerah…" aria-label="Cari"></label>
         <div id="awCats" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-        <div class="adm" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="dlFmt" style="width:auto;min-height:36px" aria-label="Format muat turun"><option value="doc">Word</option><option value="xlsx">Excel</option><option value="csv">CSV</option></select><button class="btn ghost sm" id="awDl"></button><button class="btn ghost sm" onclick="wordSurat()"><svg class="i"><use href="#i-dl"/></svg>Surat jemputan</button></div>
+        <div id="awTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="dlFmt" style="width:auto;min-height:36px" aria-label="Format muat turun"><option value="doc">Word</option><option value="xlsx">Excel</option><option value="csv">CSV</option></select><button class="btn ghost sm" id="awDl"></button><button class="btn ghost sm" onclick="wordSurat()"><svg class="i"><use href="#i-dl"/></svg>Surat jemputan</button></div>
       </div>
       <div class="grid awards" id="awGrid"></div>
       <div id="awList"></div>
@@ -869,6 +869,7 @@ function renderAwList(){
   $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
 }
 function renderAw(){
+  $('#awTools').style.display=canNames()?'flex':'none'; // AJK download lists without the PIN whenever names are public
   $('#awDl').innerHTML=`<svg class="i"><use href="#i-dl"/></svg>${awCat==='ALL'?'Senarai keseluruhan':'Senarai '+esc(CAT[awCat])}`;
   $('#awDl').onclick=()=>wordSenarai(awCat);
   $$('#awMode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===AWMODE);b.setAttribute('aria-pressed',b.dataset.m===AWMODE)});

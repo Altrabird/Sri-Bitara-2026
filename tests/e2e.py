@@ -478,6 +478,13 @@ with sync_playwright() as p:
         pg.wait_for_timeout(1500)
         if XLSX:
             got = pg.evaluate('D.penerima && D.penerima.length'); assert got == n, f'public sees names when showNames on: {got} vs {n}'
+        # AJK download the lists without the PIN, but only while names are public
+        pg.click('.nav[data-v=anugerah]')
+        if XLSX:
+            expect(pg.locator('#awDl')).to_be_visible()
+            assert download(lambda: pg.click('#awDl')).suggested_filename == 'Senarai-Penerima-Keseluruhan.doc'
+        else:
+            expect(pg.locator('#awDl')).to_be_hidden()
         # a second visitor gets the same live data
         pg2 = page_for(ctx, URL)
         expect(pg2.locator('#sync')).to_contain_text('Langsung', timeout=8000)
