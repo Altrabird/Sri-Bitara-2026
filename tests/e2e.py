@@ -258,6 +258,18 @@ with sync_playwright() as p:
     pg.fill('#sTarikh', '2026-12-01')
     pg.click('#sSave')
     pg.wait_for_function('D.settings.tarikh==="2026-12-01"')
+    # Kunci Anugerah: lock all, unlock all, or pick from the list
+    pg.click('#admin .chip[data-t=kunci]')
+    pg.click('#admin [data-ka="1"]')
+    pg.wait_for_function('D.settings.dikunci.length===D.anugerah.length')
+    expect(pg.locator('#admin .setp.on [data-kunci]:checked')).to_have_count(pg.evaluate('D.anugerah.length'))
+    pg.click('#admin [data-ka=""]')
+    pg.wait_for_function('D.settings.dikunci.length===0')
+    pg.locator('#admin .setp.on .set-row').nth(1).click()
+    pg.wait_for_function('D.settings.dikunci.length===1')
+    shot(pg, 'tetapan-kunci')
+    pg.locator('#admin .setp.on .set-row').nth(1).click()
+    pg.wait_for_function('D.settings.dikunci.length===0')
     pg.click('#admin .chip[data-t=sistem]')
     pg.locator('#admin .setp.on button', has_text='Kunci').click()
     pg.wait_for_timeout(500)
@@ -272,6 +284,24 @@ with sync_playwright() as p:
     expect(pg.locator('#toast')).to_contain_text('penerima ditambah', timeout=8000)
     assert pg.evaluate("localCall({action:'delPenerima',ids:['x']}).ok"), 'visitor may remove a pupil'
     assert pg.evaluate("(()=>{try{localCall({action:'saveTable',table:'ajk',rows:[]})}catch(e){return e.message}})()") == 'PIN salah'
+    # lock this anugerah: locking and unlocking both need the admin PIN; entry stops while locked
+    aid = pg.evaluate('DRAWER')
+    assert pg.evaluate(f"(()=>{{try{{localCall({{action:'setKunci',ids:['{aid}'],kunci:true}})}}catch(e){{return e.message}}}})()") == 'PIN salah'
+    pg.click('#drawer .lockbar summary')
+    pg.fill('#awKunciPin', '000000'); pg.click('#awKunciF button')
+    expect(pg.locator('#toast')).to_contain_text('PIN salah')
+    assert not pg.evaluate('D.settings.dikunci.length')
+    pg.fill('#awKunciPin', '123456'); pg.click('#awKunciF button')
+    expect(pg.locator('#drawer .lockbar')).to_contain_text('dikunci')
+    expect(pg.locator('#addp')).to_have_count(0)
+    expect(pg.locator('#drawer .del-p')).to_have_count(0)
+    assert pg.evaluate(f"(()=>{{try{{localCall({{action:'addPenerima',rows:[{{id:'z',aid:'{aid}',nama:'X',kelas:'4 KREATIF'}}]}})}}catch(e){{return e.message}}}})()").startswith('Anugerah ini dikunci')
+    other = pg.evaluate(f"D.anugerah.find(a=>a.id!=='{aid}').id")
+    assert pg.evaluate(f"localCall({{action:'addPenerima',rows:[{{id:'z2',aid:'{other}',nama:'X',kelas:'4 KREATIF'}}]}}).added") == 1, 'other anugerah stay open'
+    assert pg.evaluate(f"(()=>{{try{{localCall({{action:'setKunci',ids:['{aid}'],kunci:false}})}}catch(e){{return e.message}}}})()") == 'PIN salah'
+    pg.fill('#awKunciPin', '123456'); pg.click('#awKunciF button')
+    expect(pg.locator('#addp')).to_be_visible()
+    assert not pg.evaluate('PIN'), 'unlocking does not log the visitor in'
     pg.keyboard.press('Escape')
     pg.click('.nav[data-v=dashboard]')
     if XLSX:

@@ -23,7 +23,7 @@ const TABLES: Record<string, string[]> = {
 const SET_DEFAULT: Record<string, unknown> = {
   nama: 'Majlis Anugerah Sri Bitara 2026', tagline: 'Meraikan kecemerlangan warga SK Bandar Tawau',
   tarikh: '2026-11-27', masa: '07:00', lokasi: 'Dewan SK Bandar Tawau',
-  showNames: false, now: -1, logo: '',
+  showNames: false, now: -1, logo: '', dikunci: [] as string[], // ids of locked anugerah: no PIN-less entry until an admin unlocks
   catatan: { kekuatan: '', kelemahan: '', penambahbaikan: '' } // Catatan Pengarah: admin only, never in the public payload
 };
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type' };
@@ -41,8 +41,10 @@ Deno.serve(async (req) => {
     try { r = JSON.parse(await req.text()); } catch { return out({ ok: false, error: 'Permintaan tidak sah' }); }
     // owner's choice (2026-10-29): Anugerah needs no PIN (pick, add, remove pupils, tick Diterima); Tetapan still does.
     // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
+    // owner's choice (2026-11-12): locking and unlocking an anugerah (setKunci) both need the PIN
     const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus'].includes(r.action);
     if (!open || r.pin) await checkPin(r.pin);
+    else await checkKunci(r);
     if (r.action === 'login') return out({ ok: true });
     if (r.action === 'admin') return out({ ok: true, data: await allData(), info: info() });
     if (r.action === 'roster') return out({ ok: true, roster: await roster(r.pin) });
@@ -94,6 +96,12 @@ async function handle(r: any) {
     case 'setHadir': // one pupil can hold several awards: mark every row with that name
       await q(db.from('penerima').update({ hadir: r.hadir ? new Date().toISOString() : '' }).in('nama', (r.nama || []).map(String)));
       break;
+    case 'setKunci': {
+      const set = new Set(await dikunci());
+      (r.ids || []).map(String).forEach((id: string) => (r.kunci ? set.add(id) : set.delete(id)));
+      await q(db.from('tetapan').upsert({ kunci: 'dikunci', nilai: [...set] }));
+      break;
+    }
     case 'upload':
       extra.item = await upload(r);
       break;
@@ -122,6 +130,21 @@ async function checkPin(pin: unknown) {
   if (s === 'kunci') throw new Error('Terlalu banyak cubaan salah. Cuba lagi selepas 10 minit.');
   if (s === 'tiada') throw new Error('PIN admin belum ditetapkan (jadual admin)');
   throw new Error('PIN salah');
+}
+
+async function dikunci(): Promise<string[]> {
+  const v = (await q(db.from('tetapan').select('nilai').eq('kunci', 'dikunci')))[0]?.nilai;
+  return Array.isArray(v) ? v.map(String) : [];
+}
+
+// PIN-less entry (add, remove, tick Diterima) is refused on a locked anugerah; the admin PIN bypasses it
+async function checkKunci(r: any) {
+  if (!['addPenerima', 'delPenerima', 'setStatus'].includes(r.action)) return;
+  const k = await dikunci();
+  if (!k.length) return;
+  const aids = r.action === 'addPenerima' ? (r.rows || []).map((x: any) => cell(x.aid))
+    : (await q(db.from('penerima').select('aid').in('id', (r.ids || []).map(String)))).map((p: any) => p.aid);
+  if (aids.some((a: string) => k.includes(a))) throw new Error('Anugerah ini dikunci. Minta admin membuka kunci.');
 }
 
 // throws the database error instead of returning it, so every failed write reaches the user as an error
