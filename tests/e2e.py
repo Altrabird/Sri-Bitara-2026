@@ -297,10 +297,12 @@ with sync_playwright() as p:
     pg.click('#psSurat')
     expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN')
     expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('Tarian Sabah (PENARI)')
+    expect(pg.frame_locator('#pvF').locator('img[src$="tandatangan-guru-besar.png"]')).to_have_count(2)  # one letter per pupil, each signed
     pg.click('#pvC')
     pg.click('#psSijil')
     expect(pg.frame_locator('#pvF').locator('.sj')).to_have_count(2)
     expect(pg.frame_locator('#pvF').locator('.sj').first).to_contain_text('sebagai PENARI')
+    expect(pg.frame_locator('#pvF').locator('.sj img.ttd')).to_have_count(2)  # Guru Besar's signature on every sijil
     expect(pg.locator('#pvOk')).to_contain_text('Cetak / PDF')
     shot(pg, 'sijil-preview')
     pg.click('#pvC')
@@ -312,6 +314,17 @@ with sync_playwright() as p:
     assert dl.value.suggested_filename == 'Sijil-Penghargaan-Persembahan.doc'
     doc = pathlib.Path(dl.value.path()).read_text(encoding='utf-8-sig')
     assert 'mso-page-orientation:landscape' in doc and doc.count('SIJIL PENGHARGAAN') == 2
+    assert doc.count('tandatangan-guru-besar.png') == 2
+    pg.click('#psXls')  # Excel list: one row per pupil per persembahan
+    expect(pg.frame_locator('#pvF').locator('tr')).to_have_count(3)
+    with pg.expect_download() as dl:
+        pg.click('#pvOk')
+    assert dl.value.suggested_filename == 'Senarai-Murid-Persembahan.xlsx'
+    import openpyxl
+    ws = openpyxl.load_workbook(open(dl.value.path(), 'rb')).active  # file object: the temp path has no .xlsx extension
+    rows = list(ws.values)
+    assert rows[0] == ('Bil', 'Persembahan', 'Nama', 'Kelas', 'Tahun', 'Peranan') and len(rows) == 3, rows
+    assert rows[1][1] == 'Tarian Sabah' and rows[1][3] == '5 KREATIF' and rows[1][5] == 'PENARI', rows[1]
     pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=sistem]')
     pg.locator('#admin .setp.on button', has_text='Kunci').click()
