@@ -605,6 +605,11 @@ const hariDate=id=>new Date(hariInfo(id).tarikh+'T00:00');
 const tarikhHari=id=>{const d=hariDate(id);return isNaN(d)?'..............................':d.toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'})+' ('+d.toLocaleDateString('ms-MY',{weekday:'long'})+')'};
 const masaHari=id=>{const h=hariInfo(id);return jam(h.mula)+(jam(h.tamat)?' hingga '+jam(h.tamat):'')};
 const hariPendek=id=>{const d=hariDate(id);return isNaN(d)?'?':d.toLocaleDateString('ms-MY',{day:'numeric',month:'short',weekday:'short'})};
+// owner's choice (2026-11-12): parents are invited on hari 1 and 3 only; hari 2 (HEM, 27 Nov) is for pupils only
+const JEMPUT_HARI=['1','3'];
+// the days of a letter's items split into days parents are invited to (ya) and days they need not come (tak)
+const jemputHari=items=>{const hs=hariIds().filter(h=>items.some(x=>x.hari===h));return {ya:hs.filter(h=>JEMPUT_HARI.includes(h)),tak:hs.filter(h=>!JEMPUT_HARI.includes(h))}};
+const senaraiTarikh=ids=>ids.map(h=>`<b>${esc(tarikhHari(h))}</b>`).join(' dan ');
 const hariLabel=a=>{const m=hariMode(a);return m==='T'?`${hariPendek('1')} (Tahun 6) · ${hariPendek('3')} (Tahun 1–5)`:hariPendek(m)};
 const SEED={
   anugerah:[['K','Anugerah Bahasa Melayu'],['K','Anugerah Bahasa Inggeris'],['K','Anugerah Pendidikan Agama Islam'],['K','Anugerah Pendidikan Moral'],['K','Anugerah Matematik'],['K','Anugerah Sains'],['K','Anugerah Sejarah'],['K','Anugerah NILAM'],['K','Anugerah Pengawas PSS'],['K','Anugerah Pemulihan Khas'],['K','Anugerah Cemerlang JQAF Tahun 6'],['K','Anugerah Lonjakan Akademik'],['H','Anugerah Pengawas'],['H','Anugerah Pembimbing Rakan Sebaya'],['H','Anugerah Duta Sahsiah'],['H','Anugerah Ketua Kelas & Pen. Ketua Kelas'],['H','Anugerah Kehadiran Penuh'],['KO','Cemerlang Kokurikulum Badan Beruniform'],['KO','Cemerlang Kokurikulum Sukan dan Permainan'],['KO','Cemerlang Kokurikulum Kelab dan Persatuan'],['KO','Pencapaian PAJSK Cemerlang Tahun 6'],['KO','Penglibatan Luar Aktif Kokurikulum'],['KO','Ikon Kokurikulum']].map(([kat,nama],i)=>({id:'a'+(i+1),kat,nama})),
@@ -956,7 +961,9 @@ $('#psSurat').onclick=()=>{
     ${jadual(ps,'Persembahan')}
     ${lain(ps,'Seperti yang dimaklumkan oleh guru pembimbing')}
     <p>&nbsp;</p>
-    <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, anak tuan/puan perlu menghadiri sesi latihan yang ditetapkan oleh guru pembimbing dan hadir awal pada hari majlis. Pihak sekolah juga amat berbesar hati menjemput tuan/puan hadir bersama bagi menyaksikan persembahan anak tuan/puan.</p>
+    <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, anak tuan/puan perlu menghadiri sesi latihan yang ditetapkan oleh guru pembimbing dan hadir awal pada hari majlis. ${(({ya,tak})=>ya.length
+      ?`Pihak sekolah juga amat berbesar hati menjemput tuan/puan hadir pada ${senaraiTarikh(ya)} bagi menyaksikan persembahan anak tuan/puan.${tak.length?` Kehadiran ibu bapa/penjaga tidak diperlukan pada ${senaraiTarikh(tak)}.`:''}`
+      :`Kehadiran ibu bapa/penjaga tidak diperlukan pada ${senaraiTarikh(tak)}.`)(jemputHari(ps))}</p>
     <p style="text-align:justify">Kerjasama dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`});
   preview('Surat Pemakluman Persembahan',`Word · ${list.length} surat (satu bagi setiap murid)`,html,()=>wordDoc('Surat-Pemakluman-Persembahan'+psTag()+'.doc','Surat Pemakluman Persembahan',html));
 };
@@ -1286,7 +1293,7 @@ function renderSet(){
     <div class="set-row" style="margin-top:12px"><span><b>Muat turun senarai penerima</b><br><small class="muted">CSV untuk JK Sijil / JK Pengurus Penerima (dibuka dalam Excel).</small></span><button class="btn ghost sm" onclick="exportCSV()"><svg class="i"><use href="#i-dl"/></svg>CSV</button></div>
   </div>
   <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. <b>Sasaran</b> = bilangan penerima dirancang, untuk mengukur kemajuan; biarkan kosong untuk tiada had. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
-  <div class="setp card ${SETTAB==='hari'?'on':''}" data-p="hari"><h3>HARI PENYAMPAIAN</h3><p class="hint">Surat jemputan dan surat pemakluman menyenaraikan setiap anugerah bersama tarikh, hari dan masa penyampaiannya. <b>Ikut Tahun</b> = murid Tahun 6 pada Hari 1, murid Tahun 1–5 pada Hari 3. Tempat kosong = tempat majlis di Maklumat Majlis.</p>
+  <div class="setp card ${SETTAB==='hari'?'on':''}" data-p="hari"><h3>HARI PENYAMPAIAN</h3><p class="hint">Surat jemputan dan surat pemakluman menyenaraikan setiap anugerah bersama tarikh, hari dan masa penyampaiannya. <b>Ikut Tahun</b> = murid Tahun 6 pada Hari 1, murid Tahun 1–5 pada Hari 3. Tempat kosong = tempat majlis di Maklumat Majlis. Surat menjemput ibu bapa hadir pada <b>Hari 1 dan Hari 3</b> sahaja; Hari 2 untuk murid sahaja.</p>
     ${Object.keys(HARI_DEF).map(h=>{const x=hariInfo(h);return `<div class="addrow" data-h="${h}" style="align-items:center"><b style="flex:0 0 64px">Hari ${h}</b><input class="fi" type="date" data-k="tarikh" value="${esc(x.tarikh)}" aria-label="Tarikh hari ${h}" style="flex:1 1 150px"><input class="fi" type="time" data-k="mula" value="${esc(x.mula)}" aria-label="Masa mula hari ${h}" title="Masa mula" style="flex:1 1 110px"><input class="fi" type="time" data-k="tamat" value="${esc(x.tamat)}" aria-label="Masa tamat hari ${h}" title="Masa tamat" style="flex:1 1 110px"><input class="fi" data-k="tempat" value="${esc(x.tempat)}" placeholder="${esc(s.lokasi)}" aria-label="Tempat hari ${h}" style="flex:3 1 200px"></div>`}).join('')}
     ${[...Object.entries(CAT).map(([k,n])=>[n,D.anugerah.filter(a=>a.kat===k),true]),['Persembahan',D.persembahan,false]].map(([n,as,t])=>as.length?`<h5 style="margin:18px 0 4px;color:var(--gold);letter-spacing:.15em;font-size:11px">${esc(n.toUpperCase())}</h5>${as.map(a=>`<div class="set-row"><span>${esc(a.nama)}</span><select class="fi" data-hari="${esc(a.id)}" style="width:auto;min-width:230px" aria-label="Hari penyampaian ${esc(a.nama)}">${(t?['T']:[]).concat(Object.keys(HARI_DEF)).map(h=>`<option value="${h}" ${hariMode(a)===h?'selected':''}>${h==='T'?'Ikut Tahun (T6 Hari 1 · T1–5 Hari 3)':'Hari '+h+' · '+esc(tarikhHari(h))}</option>`).join('')}</select></div>`).join('')}`:'').join('')}
     <div style="margin-top:14px"><button class="btn" id="hSave"><svg class="i"><use href="#i-check"/></svg>Simpan hari penyampaian</button></div></div>
@@ -1580,7 +1587,9 @@ function suratHTML(){
     ${jadual(aw,'Anugerah')}
     ${lain(aw,'Pakaian Rasmi Sekolah')}
     <p>&nbsp;</p>
-    <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, pihak sekolah amat berbesar hati menjemput tuan/puan hadir bersama anak bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.</p>
+    <p style="text-align:justify">3. &nbsp; &nbsp; ${(({ya,tak})=>ya.length
+      ?`Sehubungan dengan itu, pihak sekolah amat berbesar hati menjemput tuan/puan hadir bersama anak pada ${senaraiTarikh(ya)} bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.${tak.length?` Kehadiran ibu bapa/penjaga tidak diperlukan pada ${senaraiTarikh(tak)}.`:''}`
+      :`Majlis penyampaian anugerah pada ${senaraiTarikh(tak)} melibatkan murid sahaja. Oleh itu, kehadiran ibu bapa/penjaga tidak diperlukan.`)(jemputHari(aw))}</p>
     <p style="text-align:justify">Keprihatinan dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`})};
 }
 // letterhead, date block and signature shared by the surat jemputan and the surat pemakluman persembahan; mid() writes the perkara and body
@@ -1619,8 +1628,9 @@ function wordSurat(){
   if($('#dlFmt').value!=='doc'){
     // mail-merge list: one row per pupil, every award in its own column
     const list=suratList(),max=Math.max(...list.map(m=>m.items.length));
-    const rows=[['Bil','Nama','Kelas','Bil. Anugerah','Senarai Anugerah',...Array.from({length:max},(_,i)=>'Anugerah '+(i+1))]]
-      .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:'')+' — '+tarikhHari(hariOf(a,p)));return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),...aw]}));
+    const rows=[['Bil','Nama','Kelas','Bil. Anugerah','Senarai Anugerah','Ibu Bapa Dijemput',...Array.from({length:max},(_,i)=>'Anugerah '+(i+1))]]
+      .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:'')+' — '+tarikhHari(hariOf(a,p))),{ya}=jemputHari(m.items.map(({a,p})=>({hari:hariOf(a,p)})));
+        return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),ya.length?ya.map(tarikhHari).join(' dan '):'Tidak',...aw]}));
     return preview('Surat Jemputan · Senarai Mail Merge',`${fmtName()} · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Surat-Jemputan-Senarai-Mail-Merge'+sfx,rows));
   }
   const {n,html}=suratHTML();

@@ -224,7 +224,7 @@ with sync_playwright() as p:
     pg.locator('#hd .ms.hd', has_text='MURID HADIR').click()
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_have_text('BELUM HADIR')
     # hari penyampaian: subject awards Tahun 6 on 21 Nov, Tahun 1-5 on 28 Nov, HEM on 27 Nov; ONE letter per pupil lists each award with its date
-    pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'}]},{quiet:true})})()")
+    pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'},{id:'d4',aid:h,kelas:'3 KREATIF',nama:'MURID HEM'}]},{quiet:true})})()")
     letter = lambda n: [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if f'<b>{n}</b>' in x]
     modes = pg.evaluate("Object.fromEntries(D.anugerah.map(a=>[a.nama,hariMode(a)]))")
     assert modes['Anugerah Sains'] == 'T' and modes['Anugerah NILAM'] == '3' and modes['Anugerah Pengawas'] == '2', modes  # 'SAINS' contains 'AINS'
@@ -232,6 +232,11 @@ with sync_playwright() as p:
     assert len(six) == 1 and '21 November 2026 (Sabtu)' in six[0] and '27 November 2026 (Jumaat)' in six[0] and '28 November' not in six[0], six
     assert six[0].index('Anugerah Matematik') < six[0].index('21 November') < six[0].index('27 November'), 'awards in date order'
     assert len(five) == 1 and '28 November 2026 (Sabtu)' in five[0] and '21 November' not in five[0]
+    # parents are invited on hari 1 and 3 only; hari 2 (HEM) is for pupils
+    hem = letter('MURID HEM')
+    assert 'menjemput tuan/puan hadir bersama anak pada <b>21 November 2026 (Sabtu)</b>' in six[0] and 'tidak diperlukan pada <b>27 November 2026 (Jumaat)</b>' in six[0], six[0]
+    assert 'menjemput tuan/puan hadir bersama anak pada <b>28 November 2026 (Sabtu)</b>' in five[0] and 'tidak diperlukan' not in five[0]
+    assert len(hem) == 1 and 'menjemput' not in hem[0] and 'melibatkan murid sahaja' in hem[0] and 'kehadiran ibu bapa/penjaga tidak diperlukan' in hem[0]
     assert 'MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU' in six[0] and 'sempena Majlis Anugerah Sri Bitara' in six[0] and 'Majlis Anugerah Apresiasi' not in six[0] and 'MAJLIS APRESIASI' not in six[0]
     # Tetapan › Hari Penyampaian: times per day and a per-anugerah override
     pg.click('.nav[data-v=tetapan]')
@@ -250,7 +255,7 @@ with sync_playwright() as p:
     pg.select_option(f'#admin [data-hari="{mat}"]', 'T')
     pg.click('#hSave')
     pg.wait_for_function(f"D.settings.hariAw['{mat}']==='T'")
-    pg.evaluate("call('delPenerima',{ids:['d1','d2','d3']},{quiet:true})")
+    pg.evaluate("call('delPenerima',{ids:['d1','d2','d3','d4']},{quiet:true})")
     # Ketua Kelas & Pen. Ketua Kelas: ticked pupils get a role (saved as catatan)
     pg.click('.nav[data-v=anugerah]')
     pg.locator('#awGrid .aw', has_text='Ketua Kelas').click()
