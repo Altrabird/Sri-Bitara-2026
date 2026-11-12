@@ -304,9 +304,14 @@ with sync_playwright() as p:
     expect(pg.locator('#pvOk')).to_contain_text('Cetak / PDF')
     shot(pg, 'sijil-preview')
     pg.click('#pvC')
-    pg.click('#psSurat')
+    pg.click('#psSijilW')  # Word version: same two certificates, landscape .doc
     expect(pg.locator('#pvOk')).to_contain_text('Muat turun')
-    pg.click('#pvC')
+    expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('sebagai PENARI')
+    with pg.expect_download() as dl:
+        pg.click('#pvOk')
+    assert dl.value.suggested_filename == 'Sijil-Penghargaan-Persembahan.doc'
+    doc = pathlib.Path(dl.value.path()).read_text(encoding='utf-8-sig')
+    assert 'mso-page-orientation:landscape' in doc and doc.count('SIJIL PENGHARGAAN') == 2
     pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=sistem]')
     pg.locator('#admin .setp.on button', has_text='Kunci').click()

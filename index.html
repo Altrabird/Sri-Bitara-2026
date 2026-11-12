@@ -488,7 +488,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <section class="view" id="v-persembahan">
       <div class="tools">
         <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="psQ" placeholder="Cari persembahan…" aria-label="Cari persembahan"></label>
-        <div id="psTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="psSel" style="width:auto;max-width:240px;min-height:36px" aria-label="Pilih persembahan untuk surat dan sijil"></select><button class="btn ghost sm" id="psSurat"><svg class="i"><use href="#i-dl"/></svg>Surat pemakluman</button><button class="btn ghost sm" id="psSijil"><svg class="i"><use href="#i-dl"/></svg>Sijil penghargaan</button></div>
+        <div id="psTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="psSel" style="width:auto;max-width:240px;min-height:36px" aria-label="Pilih persembahan untuk surat dan sijil"></select><button class="btn ghost sm" id="psSurat"><svg class="i"><use href="#i-dl"/></svg>Surat pemakluman</button><button class="btn ghost sm" id="psSijil"><svg class="i"><use href="#i-dl"/></svg>Sijil penghargaan</button><button class="btn ghost sm" id="psSijilW"><svg class="i"><use href="#i-dl"/></svg>Sijil (Word)</button></div>
       </div>
       <div class="grid awards" id="psGrid"></div>
       <div id="psAdm"></div>
@@ -938,10 +938,14 @@ $('#psSurat').onclick=()=>{
     <p style="text-align:justify">Kerjasama dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`});
   preview('Surat Pemakluman Persembahan',`Word · ${list.length} surat (satu bagi setiap murid)`,html,()=>wordDoc('Surat-Pemakluman-Persembahan'+psTag()+'.doc','Surat Pemakluman Persembahan',html));
 };
-// one certificate per pupil per persembahan; A4 landscape, printed or saved as PDF from the browser
-function sijilHTML(rows){
+// one certificate per pupil per persembahan, A4 landscape: HTML to print / save as PDF, or a Word file to edit
+function sijilInfo(){
   const s=D.settings,d=new Date(s.tarikh+'T00:00'),tarikh=isNaN(d)?'':d.toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'});
-  const gb=who(/guru besar/i).replace(HONOR,''),logo=esc(new URL('img/logo-sekolah.jpg',location.href).href);
+  return {tarikh,gb:who(/guru besar/i).replace(HONOR,''),logo:esc(new URL('img/logo-sekolah.jpg',location.href).href),
+    text:(p,a)=>`atas sumbangan dan penglibatan dalam persembahan <b>${esc(a.nama)}</b>${p.catatan?` sebagai <b>${esc(p.catatan)}</b>`:''} sempena <b>${esc(s.nama)}</b>${tarikh?` yang diadakan pada ${esc(tarikh)}`:''}${s.lokasi?` di ${esc(s.lokasi)}`:''}.`};
+}
+function sijilHTML(rows){
+  const {tarikh,gb,logo,text}=sijilInfo();
   return `<style>@page{size:A4 landscape;margin:0}body{padding:0!important;margin:0}
   .sj{width:297mm;height:209mm;box-sizing:border-box;padding:9mm;page-break-after:always;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sj:last-child{page-break-after:auto;break-after:auto}
   .sj-in{height:100%;box-sizing:border-box;border:5px double #9a7428;padding:12mm 24mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;background:#fffcf3;color:#3a1c12}
@@ -953,10 +957,32 @@ function sijilHTML(rows){
   .sj .sg div{text-align:center;min-width:70mm}</style>${rows.map(({p,a})=>`<div class="sj"><div class="sj-in">
     <img src="${logo}" alt=""><p class="sk">SEKOLAH KEBANGSAAN BANDAR TAWAU</p><h1>SIJIL PENGHARGAAN</h1>
     <p class="k">Setinggi-tinggi penghargaan dan terima kasih diberikan kepada</p><p class="nm">${esc(p.nama)}</p><p class="k">${esc(p.kelas)}</p>
-    <p class="tx">atas sumbangan dan penglibatan dalam persembahan <b>${esc(a.nama)}</b>${p.catatan?` sebagai <b>${esc(p.catatan)}</b>`:''} sempena <b>${esc(s.nama)}</b>${tarikh?` yang diadakan pada ${esc(tarikh)}`:''}${s.lokasi?` di ${esc(s.lokasi)}`:''}.</p>
+    <p class="tx">${text(p,a)}</p>
     <div class="sg"><div>${esc(tarikh)}<br>..............................<br>Tarikh</div><div><br>..............................<br><b>${esc(gb)}</b><br>Guru Besar<br>SK Bandar Tawau</div></div>
   </div></div>`).join('')}`;
 }
+// Word ignores flexbox and @page on <body>: one bordered table per page, landscape set through a named Word section
+function sijilWord(rows){
+  const {tarikh,gb,logo,text}=sijilInfo(),f="font-family:Georgia,'Times New Roman',serif;color:#3a1c12;";
+  const P=(t,st='')=>`<p align="center" style="text-align:center;margin:0;${f}${st}">${t}</p>`;
+  const sig=(t,st='')=>`<td width="50%" align="center" valign="bottom" style="width:50%;text-align:center;vertical-align:bottom;${f}font-size:11pt">${t}</td>`;
+  return rows.map(({p,a},i)=>`${i?'<p style="page-break-before:always;margin:0;font-size:1pt">&nbsp;</p>':''}<table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;border:4.5pt double #9A7428;background:#FFFCF3"><tr style="height:480pt"><td valign="middle" style="height:480pt;vertical-align:middle;padding:14pt 60pt">
+    ${P(`<img src="${logo}" width="70" height="72" alt="">`)}
+    ${P('SEKOLAH KEBANGSAAN BANDAR TAWAU','font-size:12pt;letter-spacing:2pt;font-weight:bold;color:#7A2A1A;margin-top:6pt')}
+    ${P('SIJIL PENGHARGAAN','font-size:34pt;letter-spacing:4pt;font-weight:bold;color:#7A2A1A;margin:12pt 0 14pt')}
+    ${P('Setinggi-tinggi penghargaan dan terima kasih diberikan kepada','font-size:13pt;font-style:italic')}
+    ${P(esc(p.nama),'font-size:24pt;font-weight:bold;margin-top:12pt')}
+    ${P(esc(p.kelas),'font-size:13pt;font-style:italic;margin:4pt 0 14pt')}
+    ${P(text(p,a),'font-size:13pt;line-height:150%')}
+    <table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin-top:34pt"><tr>${sig(`${esc(tarikh)}<br>..............................<br>Tarikh`)}${sig(`..............................<br><b>${esc(gb)}</b><br>Guru Besar<br>SK Bandar Tawau`)}</tr></table>
+  </td></tr></table>`).join('')+'<p style="margin:0;font-size:1pt;line-height:1pt">&nbsp;</p>'; // Word ends a document with a paragraph; keep it 1pt so it fits on the last page
+}
+const sijilDoc=(title,body)=>`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(title)}</title><style>@page Sijil{size:841.9pt 595.3pt;mso-page-orientation:landscape;margin:28pt}div.Sijil{page:Sijil}</style></head><body><div class="Sijil">${body}</div></body></html>`;
+$('#psSijilW').onclick=()=>{
+  const rows=psRows();if(!rows.length)return toast('Tiada murid untuk dijana sijil',true);
+  const body=sijilWord(rows);
+  preview('Sijil Penghargaan Persembahan (Word)',`Word · ${rows.length} sijil · A4 melintang, boleh diedit`,body,()=>saveBlob('Sijil-Penghargaan-Persembahan'+psTag()+'.doc',new Blob(['\ufeff'+sijilDoc('Sijil Penghargaan Persembahan',body)],{type:'application/msword'})));
+};
 $('#psSijil').onclick=()=>{
   const rows=psRows();if(!rows.length)return toast('Tiada murid untuk dijana sijil',true);
   const html=sijilHTML(rows);
