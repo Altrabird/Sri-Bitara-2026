@@ -232,6 +232,7 @@ with sync_playwright() as p:
     assert len(six) == 1 and '21 November 2026 (Sabtu)' in six[0] and '27 November 2026 (Jumaat)' in six[0] and '28 November' not in six[0], six
     assert six[0].index('Anugerah Matematik') < six[0].index('21 November') < six[0].index('27 November'), 'awards in date order'
     assert len(five) == 1 and '28 November 2026 (Sabtu)' in five[0] and '21 November' not in five[0]
+    assert 'MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU' in six[0] and 'sempena Majlis Anugerah Sri Bitara' in six[0] and 'Majlis Anugerah Apresiasi' not in six[0] and 'MAJLIS APRESIASI' not in six[0]
     # Tetapan › Hari Penyampaian: times per day and a per-anugerah override
     pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=hari]')

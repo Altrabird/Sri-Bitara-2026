@@ -950,9 +950,9 @@ $('#psSurat').onclick=()=>{
   const m=new Map();psRows().forEach(({p,a})=>{const k=p.nama+'|'+p.kelas,x=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[]};x.items.push({a,p});m.set(k,x)});
   const list=[...m.values()];if(!list.length)return toast('Tiada murid untuk dijana surat',true);
   const html=suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{const ps=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
-    return `<p><b>MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN MAJLIS APRESIASI MURID SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
+    return `<p><b>MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
-    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih untuk terlibat dalam ${ps.length>1?`<b>${ps.length}</b> persembahan`:'persembahan'} berikut sempena Majlis Anugerah Apresiasi Murid:</p>
+    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih untuk terlibat dalam ${ps.length>1?`<b>${ps.length}</b> persembahan`:'persembahan'} berikut sempena Majlis Anugerah Sri Bitara:</p>
     ${jadual(ps,'Persembahan')}
     ${lain(ps,'Seperti yang dimaklumkan oleh guru pembimbing')}
     <p>&nbsp;</p>
@@ -1574,9 +1574,9 @@ function suratHTML(){
   const list=suratList();
   return {n:list.length,html:suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{
     const aw=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
-    return `<p><b>MAKLUMAN PENERIMAAN ANUGERAH MAJLIS APRESIASI MURID SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
+    return `<p><b>MAKLUMAN PENERIMAAN ANUGERAH MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
-    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima ${aw.length>1?`<b>${aw.length}</b> anugerah`:'anugerah'} berikut sempena Majlis Anugerah Apresiasi Murid. Anugerah akan disampaikan mengikut tarikh seperti berikut:</p>
+    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima ${aw.length>1?`<b>${aw.length}</b> anugerah`:'anugerah'} berikut sempena Majlis Anugerah Sri Bitara. Anugerah akan disampaikan mengikut tarikh seperti berikut:</p>
     ${jadual(aw,'Anugerah')}
     ${lain(aw,'Pakaian Rasmi Sekolah')}
     <p>&nbsp;</p>
