@@ -270,6 +270,44 @@ with sync_playwright() as p:
     shot(pg, 'tetapan-kunci')
     pg.locator('#admin .setp.on .set-row').nth(1).click()
     pg.wait_for_function('D.settings.dikunci.length===0')
+    # Persembahan: admin adds performances, pupils are picked like anugerah, letters and certificates are generated
+    naw, nstud = pg.evaluate('D.anugerah.length'), pg.evaluate("studentMap('ALL').length")
+    pg.click('.nav[data-v=persembahan]')
+    expect(pg.locator('#psGrid')).to_contain_text('Belum ada persembahan')
+    for i, n in enumerate(['Tarian Sabah', 'Nasyid']):
+        pg.click('#rePs [data-a=add]')
+        pg.locator('#rePs .fi[data-k=nama]').nth(i).fill(n)
+    pg.click('#rePs [data-a=save]')
+    expect(pg.locator('#psGrid .aw')).to_have_count(2, timeout=8000)
+    assert pg.evaluate('D.anugerah.length') == naw, 'persembahan stay out of the anugerah list'
+    pg.locator('#psGrid .aw', has_text='Tarian Sabah').click()
+    expect(pg.locator('#drawer header')).to_contain_text('PERSEMBAHAN')
+    pg.select_option('#adKls', '5 KREATIF')
+    pg.fill('#adCat', 'Penari')
+    pg.locator('#addp .st input').nth(0).check(); pg.locator('#addp .st input').nth(1).check()
+    pg.click('#adGo')
+    expect(pg.locator('#drawer .rcp')).to_have_count(2, timeout=8000)
+    expect(pg.locator('#drawer .tg')).to_have_count(0)
+    pg.keyboard.press('Escape')
+    expect(pg.locator('#psGrid .aw', has_text='Tarian Sabah')).to_contain_text('2 murid')
+    assert pg.evaluate("studentMap('ALL').length") == nstud, 'performers are not counted as award recipients'
+    # whole-table anugerah saves keep the persembahan
+    pg.evaluate("call('saveTable',{table:'anugerah',rows:D.anugerah},{quiet:true})")
+    assert pg.evaluate('D.persembahan.length') == 2 and pg.evaluate('D.peserta.length') == 2
+    pg.click('#psSurat')
+    expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN')
+    expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('Tarian Sabah (PENARI)')
+    pg.click('#pvC')
+    pg.click('#psSijil')
+    expect(pg.frame_locator('#pvF').locator('.sj')).to_have_count(2)
+    expect(pg.frame_locator('#pvF').locator('.sj').first).to_contain_text('sebagai PENARI')
+    expect(pg.locator('#pvOk')).to_contain_text('Cetak / PDF')
+    shot(pg, 'sijil-preview')
+    pg.click('#pvC')
+    pg.click('#psSurat')
+    expect(pg.locator('#pvOk')).to_contain_text('Muat turun')
+    pg.click('#pvC')
+    pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=sistem]')
     pg.locator('#admin .setp.on button', has_text='Kunci').click()
     pg.wait_for_timeout(500)
@@ -319,7 +357,7 @@ with sync_playwright() as p:
     pg = page_for(ctx, DEMO_URL)
     shot(pg, 'mobile-dashboard')
     assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth'), 'no horizontal scroll'
-    for v in ['anugerah', 'ajk', 'tentatif', 'galeri', 'tetapan']:
+    for v in ['anugerah', 'persembahan', 'ajk', 'tentatif', 'galeri', 'tetapan']:
         pg.click(f'.nav[data-v={v}]'); pg.wait_for_timeout(500)
         assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth'), f'hscroll on {v}'
     shot(pg, 'mobile-tetapan')
