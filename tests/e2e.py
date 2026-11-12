@@ -200,26 +200,56 @@ with sync_playwright() as p:
     pg.click('#reAjk [data-a=save]')
     pg.wait_for_function('D.ajk.length===25')
     # kehadiran: pick a class → each pupil once with all their awards → tick present
-    pg.evaluate("call('addPenerima',{rows:[{id:'h1',aid:D.anugerah[0].id,kelas:'4 KREATIF',nama:'MURID HADIR'},{id:'h2',aid:D.anugerah[1].id,kelas:'4 KREATIF',nama:'MURID HADIR'},{id:'h3',aid:D.anugerah[0].id,kelas:'4 KREATIF',nama:'MURID LAIN'}]},{quiet:true})")
+    # h4 is a HEM award (27 Nov): ticking the pupil present on 28 Nov must leave it unmarked
+    pg.evaluate("call('addPenerima',{rows:[{id:'h1',aid:D.anugerah[0].id,kelas:'4 KREATIF',nama:'MURID HADIR'},{id:'h2',aid:D.anugerah[1].id,kelas:'4 KREATIF',nama:'MURID HADIR'},{id:'h3',aid:D.anugerah[0].id,kelas:'4 KREATIF',nama:'MURID LAIN'},{id:'h4',aid:D.anugerah.find(a=>a.kat==='H').id,kelas:'4 KREATIF',nama:'MURID HADIR'}]},{quiet:true})")
     pg.click('.nav[data-v=kehadiran]')
+    pg.select_option('#hdHari', '3')
     expect(pg.locator('#hd .empty')).to_contain_text('Pilih kelas')
     pg.select_option('#hdKls', '4 KREATIF')
     row = pg.locator('#hd .ms.hd', has_text='MURID HADIR')
     expect(row.locator('.b')).to_have_count(2)
     row.click()
     expect(row.locator('.ms-n small')).to_contain_text('✓ HADIR')
-    assert pg.evaluate("D.penerima.filter(p=>p.nama==='MURID HADIR').every(p=>p.hadir)"), 'every award row of the pupil marked'
+    assert pg.evaluate("D.penerima.filter(p=>p.nama==='MURID HADIR'&&p.id!=='h4').every(p=>p.hadir)"), 'every award row of the pupil on that day marked'
+    assert not pg.evaluate("D.penerima.find(p=>p.id==='h4').hadir"), 'the 27 Nov award is not marked from 28 Nov'
     assert not pg.evaluate("D.penerima.find(p=>p.nama==='MURID LAIN').hadir")
     pg.evaluate('refresh(true)'); pg.wait_for_timeout(300)
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('input')).to_be_checked()
     shot(pg, 'demo-kehadiran')
     # kehadiran semua: every recipient from Tahun 1-6 in one list, class shown on each row
     pg.select_option('#hdKls', 'SEMUA')
-    expect(pg.locator('#hd .ms.hd')).to_have_count(pg.evaluate("studentMap('ALL').length"))
+    expect(pg.locator('#hd .ms.hd')).to_have_count(pg.evaluate("studentMap('ALL').filter(s=>s.items.some(({a,p})=>hariOf(a,p)==='3')).length"))
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_contain_text('4 KREATIF · ✓ HADIR')
     pg.select_option('#hdKls', '4 KREATIF')
     pg.locator('#hd .ms.hd', has_text='MURID HADIR').click()
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_have_text('BELUM HADIR')
+    # hari penyampaian: subject awards Tahun 6 on 21 Nov, Tahun 1-5 on 28 Nov, HEM on 27 Nov; ONE letter per pupil lists each award with its date
+    pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'}]},{quiet:true})})()")
+    letter = lambda n: [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if f'<b>{n}</b>' in x]
+    modes = pg.evaluate("Object.fromEntries(D.anugerah.map(a=>[a.nama,hariMode(a)]))")
+    assert modes['Anugerah Sains'] == 'T' and modes['Anugerah NILAM'] == '3' and modes['Anugerah Pengawas'] == '2', modes  # 'SAINS' contains 'AINS'
+    six, five = letter('MURID ENAM'), letter('MURID LIMA')
+    assert len(six) == 1 and '21 November 2026 (Sabtu)' in six[0] and '27 November 2026 (Jumaat)' in six[0] and '28 November' not in six[0], six
+    assert six[0].index('Anugerah Matematik') < six[0].index('21 November') < six[0].index('27 November'), 'awards in date order'
+    assert len(five) == 1 and '28 November 2026 (Sabtu)' in five[0] and '21 November' not in five[0]
+    # Tetapan › Hari Penyampaian: times per day and a per-anugerah override
+    pg.click('.nav[data-v=tetapan]')
+    pg.click('#admin .chip[data-t=hari]')
+    pg.fill('#admin [data-h="1"] [data-k=mula]', '08:00')
+    pg.fill('#admin [data-h="1"] [data-k=tamat]', '11:30')
+    mat = pg.evaluate("D.anugerah.find(a=>a.nama==='Anugerah Matematik').id")
+    expect(pg.locator(f'#admin [data-hari="{mat}"]')).to_have_value('T')
+    pg.click('#hSave')
+    pg.wait_for_function("D.settings.hari['1'].tamat==='11:30'")
+    assert '8.00 pagi hingga 11.30 pagi' in letter('MURID ENAM')[0]
+    pg.select_option(f'#admin [data-hari="{mat}"]', '2')
+    pg.click('#hSave')
+    pg.wait_for_function(f"D.settings.hariAw['{mat}']==='2'")
+    assert '21 November' not in letter('MURID ENAM')[0], 'override: Matematik now on 27 Nov for everyone'
+    pg.select_option(f'#admin [data-hari="{mat}"]', 'T')
+    pg.click('#hSave')
+    pg.wait_for_function(f"D.settings.hariAw['{mat}']==='T'")
+    pg.evaluate("call('delPenerima',{ids:['d1','d2','d3']},{quiet:true})")
     # Ketua Kelas & Pen. Ketua Kelas: ticked pupils get a role (saved as catatan)
     pg.click('.nav[data-v=anugerah]')
     pg.locator('#awGrid .aw', has_text='Ketua Kelas').click()
@@ -323,7 +353,8 @@ with sync_playwright() as p:
     import openpyxl
     ws = openpyxl.load_workbook(open(dl.value.path(), 'rb')).active  # file object: the temp path has no .xlsx extension
     rows = list(ws.values)
-    assert rows[0] == ('Bil', 'Persembahan', 'Nama', 'Kelas', 'Tahun', 'Peranan') and len(rows) == 3, rows
+    assert rows[0] == ('Bil', 'Persembahan', 'Nama', 'Kelas', 'Tahun', 'Peranan', 'Tarikh') and len(rows) == 3, rows
+    assert rows[1][6] == '28 November 2026 (Sabtu)', rows[1]
     assert rows[1][1] == 'Tarian Sabah' and rows[1][3] == '5 KREATIF' and rows[1][5] == 'PENARI', rows[1]
     pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=sistem]')

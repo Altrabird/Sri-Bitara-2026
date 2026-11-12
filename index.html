@@ -592,7 +592,20 @@ const COL={K:'#F4D58D',H:'#E8907A',KO:'#7FC8A9'};
 const GKAT=['Majlis','Persiapan','Photo Booth','Lain-lain'];
 
 /* ---------- data permulaan (tiada data murid) ---------- */
-const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:'',fotoFolder:'',dikunci:[],catatan:{kekuatan:'',kelemahan:'',penambahbaikan:''}};
+const SET_DEFAULT={nama:'Majlis Anugerah Sri Bitara 2026',tagline:'Meraikan kecemerlangan warga SK Bandar Tawau',tarikh:'2026-11-27',masa:'07:00',lokasi:'Dewan SK Bandar Tawau',showNames:false,now:-1,logo:'',fotoFolder:'',dikunci:[],hari:{},hariAw:{},catatan:{kekuatan:'',kelemahan:'',penambahbaikan:''}};
+// hari penyampaian: each anugerah is presented on one day, or 'T' = by Tahun (Tahun 6 on hari 1, Tahun 1-5 on hari 3)
+const HARI_DEF={'1':{tarikh:'2026-11-21',mula:'07:30',tamat:'',tempat:''},'2':{tarikh:'2026-11-27',mula:'07:30',tamat:'',tempat:''},'3':{tarikh:'2026-11-28',mula:'07:30',tamat:'',tempat:''}};
+const hariInfo=id=>({...HARI_DEF[id],...(D.settings.hari||{})[id]});
+const hariIds=()=>Object.keys(HARI_DEF).sort((a,b)=>hariInfo(a).tarikh.localeCompare(hariInfo(b).tarikh));
+// owner's choice (2026-11-12): subject awards by Tahun, HEM on 27 Nov; NILAM/AINS, Pemulihan Khas, j-QAF, Pengawas PSS, Kokurikulum, persembahan on 28 Nov
+const hariMode=a=>D.settings.hariAw?.[a.id]||(a.kat==='H'?'2':a.kat==='K'&&!/\b(NILAM|AINS|PEMULIHAN|J-?QAF|PENGAWAS\s+PSS)\b/i.test(a.nama)?'T':'3');
+const hariOf=(a,p)=>{const m=hariMode(a);return m!=='T'?m:(p.tahun||tahunOf(p.kelas))==='6'?'1':'3'};
+const jam=h=>{const [H,M]=String(h||'').split(':').map(Number);return !h||isNaN(H)?'':`${H>12?H-12:H}.${String(M||0).padStart(2,'0')} ${H<12?'pagi':H<14?'tengah hari':H<19?'petang':'malam'}`};
+const hariDate=id=>new Date(hariInfo(id).tarikh+'T00:00');
+const tarikhHari=id=>{const d=hariDate(id);return isNaN(d)?'..............................':d.toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'})+' ('+d.toLocaleDateString('ms-MY',{weekday:'long'})+')'};
+const masaHari=id=>{const h=hariInfo(id);return jam(h.mula)+(jam(h.tamat)?' hingga '+jam(h.tamat):'')};
+const hariPendek=id=>{const d=hariDate(id);return isNaN(d)?'?':d.toLocaleDateString('ms-MY',{day:'numeric',month:'short',weekday:'short'})};
+const hariLabel=a=>{const m=hariMode(a);return m==='T'?`${hariPendek('1')} (Tahun 6) · ${hariPendek('3')} (Tahun 1–5)`:hariPendek(m)};
 const SEED={
   anugerah:[['K','Anugerah Bahasa Melayu'],['K','Anugerah Bahasa Inggeris'],['K','Anugerah Pendidikan Agama Islam'],['K','Anugerah Pendidikan Moral'],['K','Anugerah Matematik'],['K','Anugerah Sains'],['K','Anugerah Sejarah'],['K','Anugerah NILAM'],['K','Anugerah Pengawas PSS'],['K','Anugerah Pemulihan Khas'],['K','Anugerah Cemerlang JQAF Tahun 6'],['K','Anugerah Lonjakan Akademik'],['H','Anugerah Pengawas'],['H','Anugerah Pembimbing Rakan Sebaya'],['H','Anugerah Duta Sahsiah'],['H','Anugerah Ketua Kelas & Pen. Ketua Kelas'],['H','Anugerah Kehadiran Penuh'],['KO','Cemerlang Kokurikulum Badan Beruniform'],['KO','Cemerlang Kokurikulum Sukan dan Permainan'],['KO','Cemerlang Kokurikulum Kelab dan Persatuan'],['KO','Pencapaian PAJSK Cemerlang Tahun 6'],['KO','Penglibatan Luar Aktif Kokurikulum'],['KO','Ikon Kokurikulum']].map(([kat,nama],i)=>({id:'a'+(i+1),kat,nama})),
   ajk:[['Jawatankuasa Induk','En Abidin Bin Moen (Pengerusi, Guru Besar) (K)\nEn Juzaidy Bin Selamat (Timbalan Pengerusi, GPK Kokurikulum)\nEn Sulaiman Bin Abd Rahman (Naib Pengerusi, GPK Pentadbiran)\nPn Kalsom Bt Tang (Naib Pengerusi, GPK HEM)\nPn Samsiah Bt Sundu (Naib Pengerusi, GPK Petang)\nEn Harsidi Bin Junick (Penyelaras Program)\nEn Abdul Rahman Bin Madiah (Pen. Penyelaras Program)\nTuan Hj Yusoff Bin Hj Awang Yahya (Setiausaha)\nCik Dayang Anisah Binti Exie@Ahmad (Bendahari)',''],
@@ -653,7 +666,7 @@ function localCall(r){
     case 'roster':return {ok:true,roster:['1','2','3','4','5','6'].flatMap(t=>KLS.flatMap(k=>[1,2,3,4].map(n=>({nama:`MURID CONTOH ${t}${k.slice(0,3)} ${n}`,kelas:t+' '+k}))))};
     case 'addPenerima':{const have=new Set(db.penerima.map(p=>p.aid+'|'+p.nama+'|'+p.kelas));const add=r.rows.filter(x=>!have.has(x.aid+'|'+x.nama+'|'+x.kelas)).map(x=>({...x,status:''}));db.penerima.push(...add);out.added=add.length;break}
     case 'delPenerima':db.penerima=db.penerima.filter(p=>!r.ids.includes(p.id));break;
-    case 'setHadir':db.penerima.forEach(p=>{if(r.nama.includes(p.nama))p.hadir=r.hadir?new Date().toISOString():''});break;
+    case 'setHadir':db.penerima.forEach(p=>{if(r.ids?r.ids.includes(p.id):r.nama.includes(p.nama))p.hadir=r.hadir?new Date().toISOString():''});break;
     case 'setKunci':{const k=new Set(db.settings.dikunci||[]);r.ids.forEach(id=>r.kunci?k.add(id):k.delete(id));db.settings.dikunci=[...k];break}
     case 'setStatus':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.status=r.status==='Diterima'?'Diterima':''});break;
     case 'upload':if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='foto'){db.fotoAjk=(db.fotoAjk||[]).filter(f=>nameKey(f.n)!==nameKey(r.nama)).concat({n:r.nama,fid:'',src:'data:'+r.mime+';base64,'+r.data})}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
@@ -702,6 +715,7 @@ function setData(d){
   D.settings.showNames=D.settings.showNames===true||D.settings.showNames==='true';
   D.settings.now=+D.settings.now;
   if(!Array.isArray(D.settings.dikunci))D.settings.dikunci=[];
+  ['hari','hariAw'].forEach(k=>{if(!D.settings[k]||typeof D.settings[k]!=='object')D.settings[k]={}});
   // persembahan are stored as anugerah rows with kat 'P' (pupils as penerima rows): split them off so anugerah screens never see them
   D.persembahan=D.anugerah.filter(a=>a.kat==='P');D.anugerah=D.anugerah.filter(a=>a.kat!=='P');D.peserta=null;
   if(D.penerima){const ids=new Set(D.anugerah.map(a=>a.id)),ps=new Set(D.persembahan.map(a=>a.id));D.peserta=D.penerima.filter(p=>ps.has(p.aid));D.penerima=D.penerima.filter(p=>ids.has(p.aid))}
@@ -905,7 +919,7 @@ function renderAw(){
   if(AWMODE==='murid')return renderAwList();
   const q=$('#awQ').value.toLowerCase();
   const list=D.anugerah.filter(a=>(awCat==='ALL'||a.kat===awCat)&&a.nama.toLowerCase().includes(q));
-  $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a),t=+a.sasaran||0;return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}</div><h4>${esc(a.nama)}</h4><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b>${t?` / ${t}`:''} penerima</span></div>${t?`<div class="prog t ${c.n>t?'over':''}" title="Sasaran ${t} penerima"><i style="width:${Math.min(100,c.n/t*100)}%"></i></div>`:''}${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
+  $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a),t=+a.sasaran||0;return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}</div><h4>${esc(a.nama)}</h4><div class="muted" style="font-size:11.5px;margin:-4px 0 8px">${esc(hariLabel(a))}</div><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b>${t?` / ${t}`:''} penerima</span></div>${t?`<div class="prog t ${c.n>t?'over':''}" title="Sasaran ${t} penerima"><i style="width:${Math.min(100,c.n/t*100)}%"></i></div>`:''}${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
   $$('#awGrid .aw').forEach(b=>b.onclick=()=>openAw(b.dataset.id));
 }
 /* ---------- persembahan ---------- */
@@ -914,7 +928,7 @@ function renderPs(fromPoll){
   const sel=$('#psSel'),sv=D.persembahan.some(a=>a.id===sel.value)?sel.value:'';
   sel.innerHTML='<option value="">Semua persembahan</option>'+D.persembahan.map(a=>`<option value="${esc(a.id)}" ${a.id===sv?'selected':''}>${esc(a.nama)}</option>`).join('');
   const q=$('#psQ').value.toLowerCase(),list=D.persembahan.filter(a=>a.nama.toLowerCase().includes(q));
-  $('#psGrid').innerHTML=list.length?list.map((a,n)=>`<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#i-spark"/></svg></div><div class="cat">PERSEMBAHAN ${n+1}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}</div><h4>${esc(a.nama)}</h4><div class="row"><span>&nbsp;</span><span><b>${counts(a).n}</b> murid</span></div></button>`).join('')
+  $('#psGrid').innerHTML=list.length?list.map((a,n)=>`<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#i-spark"/></svg></div><div class="cat">PERSEMBAHAN ${n+1}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}</div><h4>${esc(a.nama)}</h4><div class="muted" style="font-size:11.5px;margin:-4px 0 8px">${esc(hariLabel(a))}</div><div class="row"><span>&nbsp;</span><span><b>${counts(a).n}</b> murid</span></div></button>`).join('')
     :`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-spark"/></svg><p>${D.persembahan.length?'Tiada persembahan ditemui.':PIN?'Belum ada persembahan. Tambah persembahan di bawah.':'Belum ada persembahan.'}</p></div>`;
   $$('#psGrid .aw').forEach(b=>b.onclick=()=>openAw(b.dataset.id));
   if(fromPoll&&PIN)return; // keep unsaved edits in the editor below
@@ -929,17 +943,18 @@ const psTag=()=>{const a=D.persembahan.find(a=>a.id===$('#psSel').value);return 
 $('#psXls').onclick=()=>{
   const list=psRows().sort((x,y)=>D.persembahan.indexOf(x.a)-D.persembahan.indexOf(y.a)||byKelas(x.p,y.p));
   if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
-  const rows=[['Bil','Persembahan','Nama','Kelas','Tahun','Peranan']].concat(list.map(({p,a},i)=>[i+1,a.nama,p.nama,p.kelas,p.tahun,p.catatan]));
+  const rows=[['Bil','Persembahan','Nama','Kelas','Tahun','Peranan','Tarikh']].concat(list.map(({p,a},i)=>[i+1,a.nama,p.nama,p.kelas,p.tahun,p.catatan,tarikhHari(hariOf(a,p))]));
   preview('Senarai Murid Persembahan',`Excel · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Senarai-Murid-Persembahan'+psTag(),rows,'xlsx'));
 };
 $('#psSurat').onclick=()=>{
   const m=new Map();psRows().forEach(({p,a})=>{const k=p.nama+'|'+p.kelas,x=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[]};x.items.push({a,p});m.set(k,x)});
   const list=[...m.values()];if(!list.length)return toast('Tiada murid untuk dijana surat',true);
-  const html=suratDoc(list,({nama,kelas,items},{y,ketetapan})=>{const ps=items.map(({a,p})=>esc(a.nama)+(p.catatan?` (${esc(p.catatan)})`:''));
+  const html=suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{const ps=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
     return `<p><b>MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN MAJLIS APRESIASI MURID SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
-    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih untuk terlibat dalam ${ps.length>1?`<b>${ps.length}</b> persembahan berikut:</p><ol>${ps.map(x=>`<li><b>${x}</b></li>`).join('')}</ol><p style="text-align:justify">sempena`:`persembahan <b>${ps[0]}</b> sempena`} Majlis Anugerah Apresiasi Murid yang akan diadakan pada ketetapan berikut:</p>
-    ${ketetapan('Seperti yang dimaklumkan oleh guru pembimbing')}
+    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih untuk terlibat dalam ${ps.length>1?`<b>${ps.length}</b> persembahan`:'persembahan'} berikut sempena Majlis Anugerah Apresiasi Murid:</p>
+    ${jadual(ps,'Persembahan')}
+    ${lain(ps,'Seperti yang dimaklumkan oleh guru pembimbing')}
     <p>&nbsp;</p>
     <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, anak tuan/puan perlu menghadiri sesi latihan yang ditetapkan oleh guru pembimbing dan hadir awal pada hari majlis. Pihak sekolah juga amat berbesar hati menjemput tuan/puan hadir bersama bagi menyaksikan persembahan anak tuan/puan.</p>
     <p style="text-align:justify">Kerjasama dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`});
@@ -947,12 +962,12 @@ $('#psSurat').onclick=()=>{
 };
 // one certificate per pupil per persembahan, A4 landscape: HTML to print / save as PDF, or a Word file to edit
 function sijilInfo(){
-  const s=D.settings,d=new Date(s.tarikh+'T00:00'),tarikh=isNaN(d)?'':d.toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'});
-  return {tarikh,gb:who(/guru besar/i).replace(HONOR,''),logo:esc(new URL('img/logo-sekolah.jpg',location.href).href),ttd:esc(new URL('img/tandatangan-guru-besar.png',location.href).href),
-    text:(p,a)=>`atas sumbangan dan penglibatan dalam persembahan <b>${esc(a.nama)}</b>${p.catatan?` sebagai <b>${esc(p.catatan)}</b>`:''} sempena <b>${esc(s.nama)}</b>${tarikh?` yang diadakan pada ${esc(tarikh)}`:''}${s.lokasi?` di ${esc(s.lokasi)}`:''}.`};
+  const s=D.settings,tk=(p,a)=>{const d=hariDate(hariOf(a,p));return isNaN(d)?'':d.toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'})};
+  return {tk,gb:who(/guru besar/i).replace(HONOR,''),logo:esc(new URL('img/logo-sekolah.jpg',location.href).href),ttd:esc(new URL('img/tandatangan-guru-besar.png',location.href).href),
+    text:(p,a)=>{const t=tk(p,a),l=hariInfo(hariOf(a,p)).tempat||s.lokasi;return `atas sumbangan dan penglibatan dalam persembahan <b>${esc(a.nama)}</b>${p.catatan?` sebagai <b>${esc(p.catatan)}</b>`:''} sempena <b>${esc(s.nama)}</b>${t?` yang diadakan pada ${esc(t)}`:''}${l?` di ${esc(l)}`:''}.`}};
 }
 function sijilHTML(rows){
-  const {tarikh,gb,logo,ttd,text}=sijilInfo();
+  const {tk,gb,logo,ttd,text}=sijilInfo();
   return `<style>@page{size:A4 landscape;margin:0}body{padding:0!important;margin:0}
   .sj{width:297mm;height:209mm;box-sizing:border-box;padding:9mm;page-break-after:always;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sj:last-child{page-break-after:auto;break-after:auto}
   .sj-in{height:100%;box-sizing:border-box;border:5px double #9a7428;padding:12mm 24mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;background:#fffcf3;color:#3a1c12}
@@ -965,12 +980,12 @@ function sijilHTML(rows){
     <img src="${logo}" alt=""><p class="sk">SEKOLAH KEBANGSAAN BANDAR TAWAU</p><h1>SIJIL PENGHARGAAN</h1>
     <p class="k">Setinggi-tinggi penghargaan dan terima kasih diberikan kepada</p><p class="nm">${esc(p.nama)}</p><p class="k">${esc(p.kelas)}</p>
     <p class="tx">${text(p,a)}</p>
-    <div class="sg"><div>${esc(tarikh)}<br>..............................<br>Tarikh</div><div><img class="ttd" src="${ttd}" alt="Tandatangan Guru Besar"><br>..............................<br><b>${esc(gb)}</b><br>Guru Besar<br>SK Bandar Tawau</div></div>
+    <div class="sg"><div>${esc(tk(p,a))}<br>..............................<br>Tarikh</div><div><img class="ttd" src="${ttd}" alt="Tandatangan Guru Besar"><br>..............................<br><b>${esc(gb)}</b><br>Guru Besar<br>SK Bandar Tawau</div></div>
   </div></div>`).join('')}`;
 }
 // Word ignores flexbox and @page on <body>: one bordered table per page, landscape set through a named Word section
 function sijilWord(rows){
-  const {tarikh,gb,logo,ttd,text}=sijilInfo(),f="font-family:Georgia,'Times New Roman',serif;color:#3a1c12;";
+  const {tk,gb,logo,ttd,text}=sijilInfo(),f="font-family:Georgia,'Times New Roman',serif;color:#3a1c12;";
   const P=(t,st='')=>`<p align="center" style="text-align:center;margin:0;${f}${st}">${t}</p>`;
   const sig=(t,st='')=>`<td width="50%" align="center" valign="bottom" style="width:50%;text-align:center;vertical-align:bottom;${f}font-size:11pt">${t}</td>`;
   return rows.map(({p,a},i)=>`${i?'<p style="page-break-before:always;margin:0;font-size:1pt">&nbsp;</p>':''}<table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;border:4.5pt double #9A7428;background:#FFFCF3"><tr style="height:480pt"><td valign="middle" style="height:480pt;vertical-align:middle;padding:14pt 60pt">
@@ -981,7 +996,7 @@ function sijilWord(rows){
     ${P(esc(p.nama),'font-size:24pt;font-weight:bold;margin-top:12pt')}
     ${P(esc(p.kelas),'font-size:13pt;font-style:italic;margin:4pt 0 14pt')}
     ${P(text(p,a),'font-size:13pt;line-height:150%')}
-    <table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin-top:34pt"><tr>${sig(`${esc(tarikh)}<br>..............................<br>Tarikh`)}${sig(`<img src="${ttd}" width="96" height="64" alt=""><br>..............................<br><b>${esc(gb)}</b><br>Guru Besar<br>SK Bandar Tawau`)}</tr></table>
+    <table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin-top:34pt"><tr>${sig(`${esc(tk(p,a))}<br>..............................<br>Tarikh`)}${sig(`<img src="${ttd}" width="96" height="64" alt=""><br>..............................<br><b>${esc(gb)}</b><br>Guru Besar<br>SK Bandar Tawau`)}</tr></table>
   </td></tr></table>`).join('')+'<p style="margin:0;font-size:1pt;line-height:1pt">&nbsp;</p>'; // Word ends a document with a paragraph; keep it 1pt so it fits on the last page
 }
 const sijilDoc=(title,body)=>`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(title)}</title><style>@page Sijil{size:841.9pt 595.3pt;mso-page-orientation:landscape;margin:28pt}div.Sijil{page:Sijil}</style></head><body><div class="Sijil">${body}</div></body></html>`;
@@ -997,12 +1012,14 @@ $('#psSijil').onclick=()=>{
   $('#pvOk').innerHTML='<svg class="i"><use href="#i-dl"/></svg>Cetak / PDF';
 };
 /* ---------- kehadiran (AJK Pendaftaran) ---------- */
-let HDKLS=store.get('hdkls','',sessionStorage);
+let HDKLS=store.get('hdkls','',sessionStorage),HDHARI=store.get('hdhari','',sessionStorage);
 const hadirAt=s=>s.items.map(i=>i.p.hadir||'').sort().pop();
 function renderHadir(){
   const box=$('#hd');
   if(!PIN){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Log masuk admin di Tetapan untuk merekod kehadiran.</p></div>`;return}
-  const all=studentMap('ALL'),inK=(s,k)=>s.kelas===k||s.conf?.includes(k);
+  // one day at a time: today's day when the majlis is on, so a pupil ticked on 21 Nov is not also marked for 27 Nov
+  const iso=new Date().toLocaleDateString('sv');if(!HDHARI)HDHARI=hariIds().find(h=>hariInfo(h).tarikh===iso)||hariIds()[0];
+  const all=studentMap('ALL').map(s=>({...s,items:s.items.filter(({a,p})=>hariOf(a,p)===HDHARI)})).filter(s=>s.items.length),inK=(s,k)=>s.kelas===k||s.conf?.includes(k);
   const classes=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort);
   if(HDKLS&&HDKLS!=='SEMUA'&&!classes.includes(HDKLS))HDKLS='';
   const ALL=HDKLS==='SEMUA'; // every recipient, Tahun 1 to 6, by class then name
@@ -1014,14 +1031,15 @@ function renderHadir(){
     <div class="card"><div class="n">${HDKLS?`${n(list)} / ${list.length}`:'—'}</div><div class="l">Hadir dalam ${ALL?'semua kelas':HDKLS?esc(HDKLS):'kelas dipilih'}</div></div>
     <div class="card"><div class="n">${all.length-tot}</div><div class="l">Belum hadir</div></div>
   </div>
-  <div class="tools"><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option><option value="SEMUA" ${ALL?'selected':''}>Kehadiran semua · Tahun 1–6 (${tot}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
+  <div class="tools"><select class="fi" id="hdHari" style="width:auto;min-width:200px" aria-label="Pilih hari">${hariIds().map(h=>`<option value="${h}" ${h===HDHARI?'selected':''}>${esc(tarikhHari(h))}</option>`).join('')}</select><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option><option value="SEMUA" ${ALL?'selected':''}>Kehadiran semua · Tahun 1–6 (${tot}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
   ${!all.length?'<div class="empty"><p>Tiada penerima. Masukkan penerima ke dalam anugerah dahulu.</p></div>'
    :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid penerima dan anugerah mereka.</p></div>`
-   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
+   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" data-ids="${esc(s.items.map(i=>i.p.id).join(','))}" ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
+  $('#hdHari').onchange=e=>{HDHARI=e.target.value;store.set('hdhari',HDHARI,sessionStorage);renderHadir()};
   $('#hdKls').onchange=e=>{HDKLS=e.target.value;store.set('hdkls',HDKLS,sessionStorage);renderHadir()};
-  $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,on=c.checked;
-    D.penerima.forEach(p=>{if(p.nama===nama)p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
-    try{await call('setHadir',{nama:[nama],hadir:on},{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
+  $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,ids=c.dataset.ids.split(','),on=c.checked;
+    D.penerima.forEach(p=>{if(ids.includes(p.id))p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
+    try{await call('setHadir',{ids,hadir:on},{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
 }
 function openAw(id){
   const a=D.anugerah.find(x=>x.id===id)||D.persembahan.find(x=>x.id===id);if(!a)return closeDrawer();
@@ -1245,7 +1263,7 @@ let SETTAB=store.get('settab','majlis',sessionStorage), IMPORT=null;
 function renderSet(){
   $('#gate').style.display=PIN?'none':'';$('#admin').style.display=PIN?'':'none';
   if(!PIN)return;
-  const s=D.settings, tabs={majlis:'Maklumat Majlis',import:'Import Penerima',anugerah:'Anugerah',kunci:'Kunci Anugerah',ajk:'AJK',tentatif:'Tentatif',persiapan:'Persiapan',catatan:'Catatan Pengarah',laporan:'Laporan',sistem:'Sistem'};
+  const s=D.settings, tabs={majlis:'Maklumat Majlis',import:'Import Penerima',anugerah:'Anugerah',hari:'Hari Penyampaian',kunci:'Kunci Anugerah',ajk:'AJK',tentatif:'Tentatif',persiapan:'Persiapan',catatan:'Catatan Pengarah',laporan:'Laporan',sistem:'Sistem'};
   $('#admin').innerHTML=`<div class="set-tabs">${Object.entries(tabs).map(([k,n])=>`<button class="chip ${k===SETTAB?'on':''}" data-t="${k}">${n}</button>`).join('')}</div>
   <div class="setp card ${SETTAB==='majlis'?'on':''}" data-p="majlis">
     <h3>MAKLUMAT MAJLIS</h3>
@@ -1268,6 +1286,10 @@ function renderSet(){
     <div class="set-row" style="margin-top:12px"><span><b>Muat turun senarai penerima</b><br><small class="muted">CSV untuk JK Sijil / JK Pengurus Penerima (dibuka dalam Excel).</small></span><button class="btn ghost sm" onclick="exportCSV()"><svg class="i"><use href="#i-dl"/></svg>CSV</button></div>
   </div>
   <div class="setp card ${SETTAB==='anugerah'?'on':''}" data-p="anugerah"><h3>KATEGORI ANUGERAH</h3><p class="hint">Ubah nama / kategori, tambah atau padam. <b>Sasaran</b> = bilangan penerima dirancang, untuk mengukur kemajuan; biarkan kosong untuk tiada had. Memadam anugerah turut menyembunyikan penerimanya.</p><div id="reAw"></div></div>
+  <div class="setp card ${SETTAB==='hari'?'on':''}" data-p="hari"><h3>HARI PENYAMPAIAN</h3><p class="hint">Surat jemputan dan surat pemakluman menyenaraikan setiap anugerah bersama tarikh, hari dan masa penyampaiannya. <b>Ikut Tahun</b> = murid Tahun 6 pada Hari 1, murid Tahun 1–5 pada Hari 3. Tempat kosong = tempat majlis di Maklumat Majlis.</p>
+    ${Object.keys(HARI_DEF).map(h=>{const x=hariInfo(h);return `<div class="addrow" data-h="${h}" style="align-items:center"><b style="flex:0 0 64px">Hari ${h}</b><input class="fi" type="date" data-k="tarikh" value="${esc(x.tarikh)}" aria-label="Tarikh hari ${h}" style="flex:1 1 150px"><input class="fi" type="time" data-k="mula" value="${esc(x.mula)}" aria-label="Masa mula hari ${h}" title="Masa mula" style="flex:1 1 110px"><input class="fi" type="time" data-k="tamat" value="${esc(x.tamat)}" aria-label="Masa tamat hari ${h}" title="Masa tamat" style="flex:1 1 110px"><input class="fi" data-k="tempat" value="${esc(x.tempat)}" placeholder="${esc(s.lokasi)}" aria-label="Tempat hari ${h}" style="flex:3 1 200px"></div>`}).join('')}
+    ${[...Object.entries(CAT).map(([k,n])=>[n,D.anugerah.filter(a=>a.kat===k),true]),['Persembahan',D.persembahan,false]].map(([n,as,t])=>as.length?`<h5 style="margin:18px 0 4px;color:var(--gold);letter-spacing:.15em;font-size:11px">${esc(n.toUpperCase())}</h5>${as.map(a=>`<div class="set-row"><span>${esc(a.nama)}</span><select class="fi" data-hari="${esc(a.id)}" style="width:auto;min-width:230px" aria-label="Hari penyampaian ${esc(a.nama)}">${(t?['T']:[]).concat(Object.keys(HARI_DEF)).map(h=>`<option value="${h}" ${hariMode(a)===h?'selected':''}>${h==='T'?'Ikut Tahun (T6 Hari 1 · T1–5 Hari 3)':'Hari '+h+' · '+esc(tarikhHari(h))}</option>`).join('')}</select></div>`).join('')}`:'').join('')}
+    <div style="margin-top:14px"><button class="btn" id="hSave"><svg class="i"><use href="#i-check"/></svg>Simpan hari penyampaian</button></div></div>
   <div class="setp card ${SETTAB==='kunci'?'on':''}" data-p="kunci"><h3>KUNCI ANUGERAH</h3><p class="hint">Anugerah yang dikunci tidak boleh ditambah, dipadam atau ditanda <b>Diterima</b> tanpa PIN admin. Admin masih boleh mengubahnya. Kunci kekal sehingga dibuka semula.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px"><button class="btn" data-ka="1"><svg class="i"><use href="#i-lock"/></svg>Kunci semua</button><button class="btn ghost" data-ka="">Buka semua</button><span class="chip" style="align-self:center">${D.anugerah.filter(a=>isLocked(a.id)).length} / ${D.anugerah.length} dikunci</span></div>
     ${Object.entries(CAT).map(([k,n])=>{const as=D.anugerah.filter(a=>a.kat===k);return as.length?`<h5 style="margin:16px 0 4px;color:var(--gold);letter-spacing:.15em;font-size:11px">${esc(n.toUpperCase())}</h5>${as.map(a=>`<label class="set-row"><span>${esc(a.nama)}</span><span class="sw"><input type="checkbox" data-kunci="${esc(a.id)}" ${isLocked(a.id)?'checked':''} aria-label="Kunci ${esc(a.nama)}"><span></span></span></label>`).join('')}`:''}).join('')}</div>
@@ -1289,6 +1311,12 @@ function renderSet(){
   $('#sSave').onclick=e=>busy(e.currentTarget,()=>call('saveSettings',{settings:{nama:$('#sNama').value.trim(),tagline:$('#sTag').value.trim(),tarikh:$('#sTarikh').value,masa:$('#sMasa').value,lokasi:$('#sLokasi').value.trim(),showNames:$('#sShow').checked}}));
   $('#cSave').onclick=e=>busy(e.currentTarget,()=>call('saveSettings',{settings:{catatan:{kekuatan:$('#cK').value.trim(),kelemahan:$('#cL').value.trim(),penambahbaikan:$('#cC').value.trim()}}}));
   $('#sLogo').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{toast('Memuat naik logo…');const data=await compress(f,400,'image/png');await call('upload',{name:'logo.png',mime:'image/png',data,purpose:'logo'})}catch(err){toast(err.message,true)}};
+  $('#hSave').onclick=e=>{
+    const hari={},hariAw={};$$('#admin [data-h]').forEach(r=>{hari[r.dataset.h]={};r.querySelectorAll('.fi').forEach(i=>hari[r.dataset.h][i.dataset.k]=i.value.trim())});
+    $$('#admin [data-hari]').forEach(x=>hariAw[x.dataset.hari]=x.value);
+    if(Object.values(hari).some(h=>!h.tarikh))return toast('Isi tarikh untuk setiap hari',true);
+    busy(e.currentTarget,()=>call('saveSettings',{settings:{hari,hariAw}}));
+  };
   $$('#admin [data-ka]').forEach(b=>b.onclick=e=>busy(e.currentTarget,()=>call('setKunci',{ids:D.anugerah.map(a=>a.id),kunci:!!b.dataset.ka},{quiet:true}).then(()=>toast(b.dataset.ka?'Semua anugerah dikunci':'Semua anugerah dibuka'))));
   $$('#admin [data-kunci]').forEach(c=>c.onchange=()=>call('setKunci',{ids:[c.dataset.kunci],kunci:c.checked},{quiet:true}).then(()=>toast(c.checked?'Dikunci':'Kunci dibuka'),e=>{toast(e.message,true);refresh()}));
   $('#xlsx').onchange=e=>e.target.files[0]&&readXlsx(e.target.files[0]);
@@ -1494,7 +1522,8 @@ $('#pvX').onclick=$('#pvC').onclick=closePv;
 $('#pvF').onload=e=>{const d=e.target.contentDocument?.documentElement,w=e.target.clientWidth;if(d&&w<800){d.style.minWidth='800px';d.style.zoom=w/800}};
 const rowsHTML=rows=>`<div class="lap"><table><tr>${rows[0].map(h=>`<th>${esc(h)}</th>`).join('')}</tr>${rows.slice(1).map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table></div>`;
 const fmtName=()=>$('#dlFmt').selectedOptions[0].text;
-const wordDoc=(name,title,body)=>saveBlob(name,new Blob(['﻿'+docHTML(title,body)],{type:'application/msword'}));
+// Word reads page size and margins only from a named section, so @page A4/15mm above would fall back to 1-inch margins
+const wordDoc=(name,title,body)=>saveBlob(name,new Blob(['﻿'+docHTML(title,'<style>@page Seksyen{size:595.3pt 841.9pt;margin:42.5pt}div.Seksyen{page:Seksyen}</style><div class="Seksyen">'+body+'</div>')],{type:'application/msword'}));
 /* ---------- senarai penerima (Word): satu kategori, atau keseluruhan ---------- */
 // Excel (.xlsx via the SheetJS loader the importer already uses) or CSV from the same rows
 async function saveRows(base,rows,fmt=$('#dlFmt').value){
@@ -1520,7 +1549,7 @@ function wordSenarai(cat){
   const {tag,sfx,ok}=dlSel(),pen=D.penerima.filter(ok);
   if(!pen.length)return toast('Tiada penerima untuk pilihan ini',true);
   const cats=cat==='ALL'?Object.keys(CAT):[cat],tajuk=(cat==='ALL'?'Keseluruhan':CAT[cat])+(tag?' · '+tag:''),base=`Senarai-Penerima-${(cat==='ALL'?'Keseluruhan':CAT[cat]).replace(/\s+/g,'-')}${sfx}`;
-  if($('#dlFmt').value!=='doc'){const rows=[['Bil','Anugerah','Kategori','Nama','Kelas','Tahun','Catatan','Status']].concat(cats.flatMap(k=>D.anugerah.filter(a=>a.kat===k).flatMap(a=>pen.filter(p=>p.aid===a.id).sort(byKelas).map((p,i)=>[i+1,a.nama,CAT[k],p.nama,p.kelas,p.tahun,p.catatan,p.status]))));
+  if($('#dlFmt').value!=='doc'){const rows=[['Bil','Anugerah','Kategori','Nama','Kelas','Tahun','Catatan','Status','Tarikh Penyampaian']].concat(cats.flatMap(k=>D.anugerah.filter(a=>a.kat===k).flatMap(a=>pen.filter(p=>p.aid===a.id).sort(byKelas).map((p,i)=>[i+1,a.nama,CAT[k],p.nama,p.kelas,p.tahun,p.catatan,p.status,tarikhHari(hariOf(a,p))]))));
     return preview('Senarai Penerima '+tajuk,`${fmtName()} · ${rows.length-1} penerima`,rowsHTML(rows),()=>saveRows(base,rows))}
   const body=`<div class="lap"><h1>SENARAI PENERIMA ANUGERAH · ${esc(tajuk.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU</div>${cats.map((k,ci)=>{
     const aws=D.anugerah.filter(a=>a.kat===k&&(!tag||pen.some(p=>p.aid===a.id)));if(!aws.length)return '';
@@ -1543,12 +1572,13 @@ function suratList(){
 }
 function suratHTML(){
   const list=suratList();
-  return {n:list.length,html:suratDoc(list,({nama,kelas,items},{y,ketetapan})=>{
-    const aw=items.map(({a,p})=>esc(a.nama)+(p.catatan?` (${esc(p.catatan)})`:''));
+  return {n:list.length,html:suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{
+    const aw=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
     return `<p><b>MAKLUMAN PENERIMAAN ANUGERAH MAJLIS APRESIASI MURID SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
-    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima ${aw.length>1?`<b>${aw.length}</b> anugerah berikut:</p><ol>${aw.map(x=>`<li><b>${x}</b></li>`).join('')}</ol><p style="text-align:justify">pada`:`anugerah <b>${aw[0]}</b> pada`} Majlis Anugerah Apresiasi Murid yang akan diadakan pada ketetapan berikut:</p>
-    ${ketetapan('Pakaian Rasmi Sekolah')}
+    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima ${aw.length>1?`<b>${aw.length}</b> anugerah`:'anugerah'} berikut sempena Majlis Anugerah Apresiasi Murid. Anugerah akan disampaikan mengikut tarikh seperti berikut:</p>
+    ${jadual(aw,'Anugerah')}
+    ${lain(aw,'Pakaian Rasmi Sekolah')}
     <p>&nbsp;</p>
     <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, pihak sekolah amat berbesar hati menjemput tuan/puan hadir bersama anak bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.</p>
     <p style="text-align:justify">Keprihatinan dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`})};
@@ -1556,12 +1586,7 @@ function suratHTML(){
 // letterhead, date block and signature shared by the surat jemputan and the surat pemakluman persembahan; mid() writes the perkara and body
 function suratDoc(list,mid){
   // wording and layout follow RUJUKAN/SURAT JEMPUTAN MURID PENERIMA (2025)
-  const s=D.settings,d=new Date(s.tarikh+'T'+(s.masa||'07:00')),y=isNaN(d)?new Date().getFullYear():d.getFullYear();
-  const hari=isNaN(d)?'..............................':d.toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'})+' / '+d.toLocaleDateString('ms-MY',{weekday:'long'});
-  const jam=h=>{const [H,M]=String(h).split(':').map(Number);return isNaN(H)?'':`${H>12?H-12:H}.${String(M||0).padStart(2,'0')} ${H<12?'pagi':H<14?'tengah hari':H<19?'petang':'malam'}`};
-  // end time = last item of the first day in the tentatif (the day the Tetapan date refers to)
-  const day1=[];for(const t of D.tentatif){if(isDay(t)){if(day1.length)break;continue}day1.push(t)}
-  const masa=jam(s.masa)+(day1.length&&jam(day1.at(-1).masa)?' hingga '+jam(day1.at(-1).masa):'');
+  const s=D.settings,d=new Date(s.tarikh+'T00:00'),y=isNaN(d)?new Date().getFullYear():d.getFullYear();
   const today=new Date().toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'});
   // absolute URLs so the logos also load when the downloaded .doc is opened in Word
   const gb=who(/guru besar/i).replace(HONOR,''),img=f=>esc(new URL('img/'+f,location.href).href);
@@ -1569,7 +1594,12 @@ function suratDoc(list,mid){
   const td=(w,x,st='',at='')=>`<td width="${w}" ${at} style="width:${w};${st}">${x}</td>`;
   const tbl=rows=>`<table class="lt" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse">${rows}</table>`;
   const row=(k,v)=>`<tr>${td('16%',k)}${td('84%',': '+esc(v))}</tr>`;
-  const ketetapan=pakaian=>tbl(row('Tarikh',hari)+row('Masa',masa)+row('Tempat',s.lokasi)+row('Pakaian',pakaian));
+  // items: [{nama (html), hari}] → one row each, grouped by day in date order; the date and time cells span the day's rows
+  const cell=(x,at='')=>`<td ${at} valign="top" style="border:1px solid #000;padding:1pt 4pt;vertical-align:top;font-size:10pt">${x}</td>`;
+  const th=(x,w)=>`<th width="${w}" style="width:${w};border:1px solid #000;padding:1pt 4pt;background:#eee;text-align:left;font-size:10pt">${x}</th>`;
+  const jadual=(items,tajuk)=>{let n=0;return `<table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse"><tr>${th('Bil','6%')}${th(tajuk,'38%')}${th('Tarikh / Hari','30%')}${th('Masa','26%')}</tr>${hariIds().map(h=>{const xs=items.filter(x=>x.hari===h);
+    return xs.map((x,i)=>`<tr>${cell(++n+'.')}${cell(x.nama)}${i?'':cell(esc(tarikhHari(h)),`rowspan="${xs.length}"`)+cell(esc(masaHari(h)),`rowspan="${xs.length}"`)}</tr>`).join('')}).join('')}</table>`};
+  const lain=(items,pakaian)=>'<p style="margin:0;font-size:6pt">&nbsp;</p>'+tbl(row('Tempat',[...new Set(items.map(x=>hariInfo(x.hari).tempat||s.lokasi))].join(' / '))+row('Pakaian',pakaian));
   return `<div class="lap surat">${list.map((m,i)=>{
     return `${i?'<p class="pb" style="page-break-before:always;margin:0;font-size:1pt">&nbsp;</p>':''}
     ${tbl(`<tr>${td('16%',`<img src="${img('jata.jpg')}" width="88" height="72" alt="">`,'vertical-align:middle','valign="middle"')}${td('64%','<b style="font-size:13pt">SEKOLAH KEBANGSAAN BANDAR TAWAU<br>JABATAN PENDIDIKAN NEGERI SABAH<br>PETI SURAT 214<br>91007 TAWAU, SABAH</b>','vertical-align:middle','valign="middle"')}${td('20%',`<img src="${img('logo-sekolah.jpg')}" width="78" height="80" alt="">`,'vertical-align:middle;text-align:right','valign="middle" align="right"')}</tr>`)}
@@ -1579,7 +1609,7 @@ function suratDoc(list,mid){
     <p>&nbsp;</p>
     <p><b>Ibu &amp; bapa / Penjaga Murid,<br>SK Bandar Tawau.</b></p>
     <p>Tuan/Puan,</p>
-    ${mid(m,{y,ketetapan})}
+    ${mid(m,{y,jadual,lain})}
     <p>Sekian.</p><p><b>“MALAYSIA MADANI”</b></p><p><b>“BERKHIDMAT UNTUK NEGARA”</b></p>
     <p>Saya yang menjalankan amanah,<br><img src="${img('tandatangan-guru-besar.png')}" width="110" height="74" alt=""><br>${esc(gb)}<br>Guru Besar<br>SK. Bandar Tawau.</p><p>sk : Fail</p>`}).join('')}</div>`;
 }
@@ -1590,7 +1620,7 @@ function wordSurat(){
     // mail-merge list: one row per pupil, every award in its own column
     const list=suratList(),max=Math.max(...list.map(m=>m.items.length));
     const rows=[['Bil','Nama','Kelas','Bil. Anugerah','Senarai Anugerah',...Array.from({length:max},(_,i)=>'Anugerah '+(i+1))]]
-      .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:''));return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),...aw]}));
+      .concat(list.map((m,i)=>{const aw=m.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:'')+' — '+tarikhHari(hariOf(a,p)));return [i+1,m.nama,m.kelas,aw.length,aw.join('; '),...aw]}));
     return preview('Surat Jemputan · Senarai Mail Merge',`${fmtName()} · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Surat-Jemputan-Senarai-Mail-Merge'+sfx,rows));
   }
   const {n,html}=suratHTML();

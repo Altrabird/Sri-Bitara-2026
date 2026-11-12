@@ -24,6 +24,7 @@ const SET_DEFAULT: Record<string, unknown> = {
   nama: 'Majlis Anugerah Sri Bitara 2026', tagline: 'Meraikan kecemerlangan warga SK Bandar Tawau',
   tarikh: '2026-11-27', masa: '07:00', lokasi: 'Dewan SK Bandar Tawau',
   showNames: false, now: -1, logo: '', dikunci: [] as string[], // ids of locked anugerah: no PIN-less entry until an admin unlocks
+  hari: {}, hariAw: {}, // hari penyampaian (date/time/venue per day) and the day each anugerah is presented; defaults live in index.html
   catatan: { kekuatan: '', kelemahan: '', penambahbaikan: '' } // Catatan Pengarah: admin only, never in the public payload
 };
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type' };
@@ -93,9 +94,11 @@ async function handle(r: any) {
     case 'setStatus':
       await q(db.from('penerima').update({ status: r.status === 'Diterima' ? 'Diterima' : '' }).in('id', (r.ids || []).map(String)));
       break;
-    case 'setHadir': // one pupil can hold several awards: mark every row with that name
-      await q(db.from('penerima').update({ hadir: r.hadir ? new Date().toISOString() : '' }).in('nama', (r.nama || []).map(String)));
+    case 'setHadir': { // ids = one day's award rows of a pupil; nama (older pages) = every row with that name
+      const v = { hadir: r.hadir ? new Date().toISOString() : '' };
+      await q(r.ids ? db.from('penerima').update(v).in('id', r.ids.map(String)) : db.from('penerima').update(v).in('nama', (r.nama || []).map(String)));
       break;
+    }
     case 'setKunci': {
       const set = new Set(await dikunci());
       (r.ids || []).map(String).forEach((id: string) => (r.kunci ? set.add(id) : set.delete(id)));
