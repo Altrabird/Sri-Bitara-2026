@@ -505,7 +505,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <section class="view" id="v-persembahan">
       <div class="tools">
         <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="psQ" placeholder="Cari persembahan…" aria-label="Cari persembahan"></label>
-        <div id="psTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="psSel" style="width:auto;max-width:240px;min-height:36px" aria-label="Pilih persembahan untuk surat dan sijil"></select><button class="btn ghost sm" id="psXls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button><button class="btn ghost sm" id="psSurat"><svg class="i"><use href="#i-dl"/></svg>Surat pemakluman</button><button class="btn ghost sm" id="psSijil"><svg class="i"><use href="#i-dl"/></svg>Sijil penghargaan</button><button class="btn ghost sm" id="psSijilW"><svg class="i"><use href="#i-dl"/></svg>Sijil (Word)</button><button class="btn ghost sm" id="psPoster" title="Poster setiap murid persembahan yang dipilih, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>Semua poster</span></button></div>
+        <div id="psTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="psSel" style="width:auto;max-width:240px;min-height:36px" aria-label="Pilih persembahan untuk surat dan sijil"></select><button class="btn ghost sm" id="psXls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button><button class="btn ghost sm" id="psSurat"><svg class="i"><use href="#i-dl"/></svg>Surat pemakluman</button><button class="btn ghost sm" id="psSijil"><svg class="i"><use href="#i-dl"/></svg>Sijil penghargaan</button><button class="btn ghost sm" id="psSijilW"><svg class="i"><use href="#i-dl"/></svg>Sijil (Word)</button><button class="btn ghost sm" id="psPoster" title="Poster setiap murid persembahan yang dipilih, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>Semua poster</span></button><button class="btn ghost sm" id="psKad" title="Kad tajuk setiap persembahan, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>Semua kad tajuk</span></button></div>
       </div>
       <div class="grid awards" id="psGrid"></div>
       <div id="psAdm"></div>
@@ -992,6 +992,10 @@ const psMurid=()=>{const m=new Map();psRows().forEach(({p,a})=>{const k=p.nama+'
 $('#psPoster').onclick=()=>{
   const list=psMurid();if(!list.length)return toast('Tiada murid untuk dijana poster',true);
   if(confirm(`Jana ${list.length} poster persembahan dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(list.map(s=>[s,'P']),'#psPoster','Poster-Persembahan-Sri-Bitara-2026'+psTag()+'.zip');
+};
+$('#psKad').onclick=()=>{
+  const list=D.persembahan||[];if(!list.length)return toast('Tiada persembahan',true);
+  downloadAllPosters(list.map(a=>[a,'KAD']),'#psKad','Kad-Tajuk-Persembahan-Sri-Bitara-2026.zip');
 };
 $('#psSurat').onclick=()=>{
   const list=psMurid();if(!list.length)return toast('Tiada murid untuk dijana surat',true);
@@ -2038,11 +2042,11 @@ async function downloadAllPosters(jobs,sel,zipName){
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim(),files=[];
   try{
     for(const [i,[s,k]] of jobs.entries()){
-      set(`Menjana poster ${i+1} / ${jobs.length}…`);
-      const c=await posterCanvas(s,k),b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(Error('Poster gagal dijana')),'image/jpeg',.92));
-      files.push({name:`${POSTER_STYLE[k].title}/${clean(s.kelas)} - ${clean(s.nama)}.jpg`,data:new Uint8Array(await b.arrayBuffer())});
+      const kad=k==='KAD';set(`Menjana ${kad?'kad':'poster'} ${i+1} / ${jobs.length}…`);
+      const c=await (kad?kadCanvas(s):posterCanvas(s,k)),b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(Error('Poster gagal dijana')),kad?'image/png':'image/jpeg',.92));
+      files.push({name:kad?`${String(i+1).padStart(2,'0')} - ${clean(s.nama.replace(/[\/\\]/g,'-'))}.png`:`${POSTER_STYLE[k].title}/${clean(s.kelas)} - ${clean(s.nama)}.jpg`,data:new Uint8Array(await b.arrayBuffer())});
     }
-    saveBlob(zipName,zipBlob(files));toast(`${files.length} poster dimuat turun (ZIP)`);
+    saveBlob(zipName,zipBlob(files));toast(`${files.length} ${jobs[0]?.[1]==='KAD'?'kad tajuk':'poster'} dimuat turun (ZIP)`);
   }catch(e){toast(e.message,true)}finally{set('')}
 }
 // store-only ZIP (JPEG is already compressed). shortcut: no ZIP64, so max 65535 files / 4 GB — far above one school's posters
