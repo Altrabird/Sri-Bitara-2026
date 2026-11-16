@@ -405,6 +405,12 @@ with sync_playwright() as p:
     s = pg.evaluate(f"(()=>{{const s=studentMap('ALL').find(s=>s.nama==='MURID KOKO');const i=s.items.find(i=>i.a.id==='{ko}');return [i.p.catatan,i.ps.length,counts(i.a).n]}})()")
     assert s == ['BOLA SEPAK – JOHAN – DAERAH; OLAHRAGA – JOHAN – NEGERI', 2, pg.evaluate(f"new Set(D.penerima.filter(p=>p.aid==='{ko}').map(p=>p.nama+'|'+p.kelas)).size")], s
     assert pg.evaluate("posterCanvas(studentMap('ALL').find(s=>s.nama==='MURID KOKO'),'KO').then(c=>[c.width,c.height])") == [1920, 1080]
+    # the 'Semua poster' ZIP writer: read back by Python's zipfile (CRC, sizes, UTF-8 folder names)
+    import io, zipfile
+    zb = pg.evaluate("zipBlob([{name:'Kokurikulum/5 KREATIF - MURID KOKO.jpg',data:new Uint8Array([1,2,3,255])},{name:'Hal Ehwal Murid/Ä.jpg',data:new TextEncoder().encode('x'.repeat(5000))}]).arrayBuffer().then(b=>[...new Uint8Array(b)])")
+    z = zipfile.ZipFile(io.BytesIO(bytes(zb)))
+    assert z.testzip() is None and z.namelist() == ['Kokurikulum/5 KREATIF - MURID KOKO.jpg', 'Hal Ehwal Murid/Ä.jpg']
+    assert z.read('Kokurikulum/5 KREATIF - MURID KOKO.jpg') == bytes([1, 2, 3, 255]) and len(z.read('Hal Ehwal Murid/Ä.jpg')) == 5000
     pg.evaluate(f"PIN='123456';openAw('{ko}')")  # names are hidden from visitors here, so edit as admin
     pg.click('#drawer [data-ed=k1]')
     pg.fill('#drawer .ed-c input', 'Bola sepak – johan – zon')

@@ -891,6 +891,7 @@ $('#awCats').innerHTML=[['ALL','Semua'],...Object.entries(CAT)].map(([k,n])=>`<b
 $$('#awCats .chip').forEach(b=>b.onclick=()=>{awCat=b.dataset.c;$$('#awCats .chip').forEach(x=>x.classList.toggle('on',x===b));renderAw()});
 $('#awQ').oninput=renderAw;
 let AWMODE=store.get('awmode','kad',sessionStorage),AWMULTI=true,AWKLS='',AWCONF=false;
+let PZIP=''; // 'download all posters' progress; renderAwList (re-run by the poll) shows it on the button
 $$('#awMode button').forEach(b=>b.onclick=()=>{AWMODE=b.dataset.m;store.set('awmode',AWMODE,sessionStorage);$('#awQ').value='';renderAw()});
 // one entry per pupil name; if the source lists the same name under different classes we flag it instead of splitting
 function studentMap(cat=awCat){
@@ -930,7 +931,8 @@ function renderAwList(){
     <select class="fi" id="msKls" style="width:auto;min-width:160px" aria-label="Tapis kelas"><option value="">Semua kelas</option>${classes.map(k=>`<option ${k===AWKLS?'selected':''}>${esc(k)}</option>`).join('')}</select>
     ${[2,3,4].filter(n=>dist[n]).map(n=>`<span class="chip">${n}${n===4?'+':''} anugerah: <b>${dist[n]}</b></span>`).join('')}
     ${nconf?`<button class="chip warn ${AWCONF?'on':''}" id="msConf" title="Nama sama tersenarai dengan kelas berbeza dalam senarai anugerah">⚠ ${nconf} murid: kelas tidak konsisten</button>`:''}
-    <button class="btn ghost sm" id="msCsv" style="margin-left:auto"><svg class="i"><use href="#i-dl"/></svg>CSV</button>
+    <button class="btn ghost sm" id="msPoster" style="margin-left:auto" ${PZIP||!list.length?'disabled':''} title="Poster setiap murid yang dipaparkan, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${PZIP||`Semua poster (${list.length} murid)`}</span></button>
+    <button class="btn ghost sm" id="msCsv"><svg class="i"><use href="#i-dl"/></svg>CSV</button>
   </div>
   <div class="tools" style="margin-top:-6px">${Object.entries(CAT).map(([k,n])=>`<span class="lg"><i style="background:${COL[k]}"></i>${n}</span>`).join('')}<span class="lg">· ${list.length} murid dipaparkan</span></div>
   ${list.length?list.map(s=>`<div class="ms ${s.items.length>2?'hi':''}"><div class="ms-n"><b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf" title="Kelas berbeza dalam senarai anugerah — sila semak">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b ${p.status==='Diterima'?'ok':''}" data-aid="${esc(a.id)}" title="${esc(CAT[a.kat]||'')} · ${esc(p.kelas||'tiada kelas')}${p.status==='Diterima'?' · Diterima':''}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}${p.status==='Diterima'?' ✓':''}</button>`).join('')}</div><div class="ms-c"><b>${s.items.length}</b><small>anugerah</small>${s.items.some(i=>['K','H','KO'].includes(i.a.kat))?`<button class="btn ghost sm poster-open" data-poster-name="${esc(s.nama)}" aria-label="Poster ${esc(s.nama)}">Poster</button>`:''}</div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan tapisan.':'Tiada penerima.'}</p></div>`}`;
@@ -939,6 +941,9 @@ function renderAwList(){
   if($('#msConf'))$('#msConf').onclick=()=>{AWCONF=!AWCONF;renderAwList()};
   $('#msCsv').onclick=()=>{const rows=[['Nama','Kelas','Bil. Anugerah','Anugerah','Kategori','Catatan Kelas']].concat(list.map(s=>[s.nama,s.kelas,s.items.length,s.items.map(i=>i.a.nama+(i.p.catatan?` (${i.p.catatan})`:'')).join('; '),[...new Set(s.items.map(i=>CAT[i.a.kat]))].join('; '),s.conf?'Kelas berbeza: '+s.conf.join(' / '):'']));
     preview('Pemetaan Penerima',`CSV · ${list.length} murid`,rowsHTML(rows),()=>downloadCSV('Pemetaan-Penerima-Sri-Bitara-2026.csv',rows))};
+  $('#msPoster').onclick=()=>{
+    const jobs=list.flatMap(s=>Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>i.a.kat===k)).map(k=>[s,k]));
+    if(jobs.length&&confirm(`Jana ${jobs.length} poster untuk ${list.length} murid dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(jobs)};
   $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
 }
 function renderAw(){
@@ -1968,6 +1973,36 @@ async function downloadPoster(){
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim().replace(/\s+/g,'-');
   try{const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG gagal dijana.')),'image/png'));saveBlob('Poster-'+clean(student.nama)+'-'+clean(POSTER_STYLE[kat].title)+'.png',blob)}
   catch(e){document.getElementById('posterNote').textContent='Muat turun gagal. Sila buka aplikasi melalui http(s) dan cuba semula.';console.error(e)}
+}
+// every poster of the pupils shown in Senarai Murid, one ZIP with a folder per kategori;
+// JPEG because 300 PNGs at ~3 MB each would not fit in the browser's memory
+async function downloadAllPosters(jobs){
+  const set=t=>{PZIP=t;const b=$('#msPoster');if(b){b.disabled=!!t||!jobs.length;b.querySelector('span').textContent=t||'Semua poster'}};
+  const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim(),files=[];
+  try{
+    for(const [i,[s,k]] of jobs.entries()){
+      set(`Menjana poster ${i+1} / ${jobs.length}…`);
+      const c=await posterCanvas(s,k),b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(Error('Poster gagal dijana')),'image/jpeg',.92));
+      files.push({name:`${POSTER_STYLE[k].title}/${clean(s.kelas)} - ${clean(s.nama)}.jpg`,data:new Uint8Array(await b.arrayBuffer())});
+    }
+    saveBlob(`Poster-Sri-Bitara-2026${AWKLS?'-'+clean(AWKLS):''}.zip`,zipBlob(files));toast(`${files.length} poster dimuat turun (ZIP)`);
+  }catch(e){toast(e.message,true)}finally{set('');if($('#msPoster'))renderAwList()}
+}
+// store-only ZIP (JPEG is already compressed). shortcut: no ZIP64, so max 65535 files / 4 GB — far above one school's posters
+const CRC_T=[...Array(256)].map((_,n)=>{for(let k=0;k<8;k++)n=n&1?0xEDB88320^(n>>>1):n>>>1;return n>>>0});
+const crc32=b=>{let c=~0;for(const x of b)c=CRC_T[(c^x)&255]^(c>>>8);return ~c>>>0};
+function zipBlob(files){
+  const enc=new TextEncoder(),d=new Date(),parts=[],dir=[];let off=0;
+  const time=d.getHours()<<11|d.getMinutes()<<5|d.getSeconds()>>1,date=(d.getFullYear()-1980)<<9|(d.getMonth()+1)<<5|d.getDate();
+  for(const f of files){
+    const name=enc.encode(f.name),crc=crc32(f.data),n=f.data.length,h=new DataView(new ArrayBuffer(30)),c=new DataView(new ArrayBuffer(46));
+    [[0,0x04034b50,4],[4,20],[6,0x800],[10,time],[12,date],[14,crc,4],[18,n,4],[22,n,4],[26,name.length]].forEach(([o,v,w])=>w?h.setUint32(o,v,true):h.setUint16(o,v,true)); // 0x800: UTF-8 names
+    [[0,0x02014b50,4],[4,20],[6,20],[8,0x800],[12,time],[14,date],[16,crc,4],[20,n,4],[24,n,4],[28,name.length],[42,off,4]].forEach(([o,v,w])=>w?c.setUint32(o,v,true):c.setUint16(o,v,true));
+    parts.push(h,name,f.data);dir.push(c,name);off+=30+name.length+n;
+  }
+  const size=dir.reduce((t,x)=>t+x.byteLength,0),e=new DataView(new ArrayBuffer(22));
+  [[0,0x06054b50,4],[8,files.length],[10,files.length],[12,size,4],[16,off,4]].forEach(([o,v,w])=>w?e.setUint32(o,v,true):e.setUint16(o,v,true));
+  return new Blob([...parts,...dir,e],{type:'application/zip'});
 }
 document.getElementById('posterClose').onclick=closePoster;
 document.getElementById('posterDownload').onclick=downloadPoster;
