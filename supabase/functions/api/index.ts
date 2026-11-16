@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
     // owner's choice (2026-10-29): Anugerah needs no PIN (pick, add, remove pupils, tick Diterima); Tetapan still does.
     // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
     // owner's choice (2026-11-12): locking and unlocking an anugerah (setKunci) both need the PIN
-    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan'].includes(r.action);
+    // owner's choice (2026-11-16): Majlis T6 (hobi, cita-cita, photo) is filled like Anugerah, without a PIN
+    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'setT6', 'delT6Foto'].includes(r.action) || (r.action === 'upload' && r.purpose === 't6');
     if (!open || r.pin) await checkPin(r.pin);
     else await checkKunci(r);
     if (r.action === 'login') return out({ ok: true });
@@ -114,6 +115,20 @@ async function handle(r: any) {
     case 'upload':
       extra.item = await upload(r);
       break;
+    case 'setT6': { // only the fields sent are changed
+      const m = await murid6(r), v: Record<string, string> = {};
+      for (const f of ['hobi', 'cita']) if (f in r) v[f] = cell(r[f]).trim().toUpperCase().replace(/\s+/g, ' ').slice(0, 60);
+      await q(db.from('murid_t6').upsert({ ...m, ...v }, { onConflict: 'k' }));
+      break;
+    }
+    case 'delT6Foto': {
+      const m = await murid6(r), old = (await q(db.from('murid_t6').select('fid').eq('k', m.k)))[0]?.fid;
+      if (old) {
+        await q(db.from('murid_t6').update({ fid: '' }).eq('k', m.k));
+        await db.storage.from('foto').remove([old]);
+      }
+      break;
+    }
     case 'deletePhoto': {
       const hit = (await q(db.from('galeri').select('fid').eq('id', cell(r.id))))[0];
       if (hit) {
@@ -182,6 +197,7 @@ async function publicPayload() {
     ok: true, t: Date.now(), settings,
     anugerah: d.anugerah.map((a: any) => ({ ...a, ...(cnt[a.id] || { n: 0, d: 0 }) })),
     penerima: d.settings.showNames ? d.penerima.map(({ hadir: _, ...p }: any) => p) : null, // attendance stays admin-only
+    t6: d.settings.showNames ? d.t6 : null,
     ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri
   };
 }
@@ -193,6 +209,7 @@ async function allData() {
   delete d.tetapan;
   d.galeri.forEach((g: any) => (g.src = pub(g.fid)));
   d.fotoAjk.forEach((f: any) => (f.src = pub(f.fid)));
+  d.t6 = (await q(db.from('murid_t6').select('nama,kelas,hobi,cita,fid').order('k'))).map((x: any) => ({ ...x, src: x.fid ? pub(x.fid) : '' }));
   return d;
 }
 
@@ -224,6 +241,15 @@ async function rosterGas(pin: unknown) {
   return j.roster;
 }
 
+// a Year 6 pupil on the school list (Hadir@SKBT), so PIN-less Majlis T6 writes can't add anyone else
+async function murid6(r: any) {
+  const n = (v: unknown) => cell(v).trim().toUpperCase().replace(/\s+/g, ' ');
+  const nama = n(r.nama), kelas = n(r.kelas);
+  if (!/^6\b/.test(kelas) || !(await roster(r.pin)).some((x: any) => n(x.nama) === nama && n(x.kelas) === kelas))
+    throw new Error('Murid Tahun 6 ini tiada dalam senarai murid');
+  return { k: nama + '|' + kelas, nama, kelas };
+}
+
 /* ---------- foto ---------- */
 async function upload(r: any) {
   const ext = MIME_EXT[r.mime];
@@ -236,7 +262,10 @@ async function upload(r: any) {
   // foto AJK is matched by the teacher's name, e.g. "Harsidi Bin Junick"
   const nama = foto ? cell(r.nama).replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 80) : '';
   if (foto && !nama) throw new Error('Nama AJK tidak sah');
-  const path = `${r.purpose === 'logo' ? 'logo' : foto ? 'ajk' : 'galeri'}/${id}.${ext}`;
+  // Majlis T6 photos are uploaded without a PIN: only a real Year 6 pupil, one small photo each
+  const t6 = r.purpose === 't6' ? await murid6(r) : null;
+  if (t6 && bytes.length > 1.5 * 1024 * 1024) throw new Error('Foto terlalu besar (maks 1.5MB)');
+  const path = `${r.purpose === 'logo' ? 'logo' : foto ? 'ajk' : t6 ? 't6' : 'galeri'}/${id}.${ext}`;
   await q(db.storage.from('foto').upload(path, bytes, { contentType: r.mime, cacheControl: '31536000' }));
   try {
     if (r.purpose === 'logo') {
@@ -244,6 +273,12 @@ async function upload(r: any) {
       await q(db.from('tetapan').upsert({ kunci: 'logo', nilai: pub(path) }));
       if (typeof old === 'string' && old.startsWith(pub(''))) await db.storage.from('foto').remove([old.slice(pub('').length)]);
       return { fid: path };
+    }
+    if (t6) {
+      const old = (await q(db.from('murid_t6').select('fid').eq('k', t6.k)))[0]?.fid;
+      await q(db.from('murid_t6').upsert({ ...t6, fid: path }, { onConflict: 'k' }));
+      if (old) await db.storage.from('foto').remove([old]);
+      return { fid: path, src: pub(path) };
     }
     if (foto) {
       // replace the teacher's old photo: same name, or the file the app matched (r.replace)

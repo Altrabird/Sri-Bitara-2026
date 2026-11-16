@@ -15,11 +15,13 @@ create table public.tetapan   (kunci text primary key, nilai jsonb);
 create table public.admin     (id int primary key check (id = 1), pin text not null, gagal int not null default 0, sejak timestamptz, pin_gas text);
 -- salinan senarai murid Hadir@SKBT (dari Code.gs), dikemas kini di latar belakang
 create table public.murid_cache (id int primary key check (id = 1), roster jsonb not null, masa timestamptz not null default now());
+-- Majlis T6 (Sijil Berhenti Sekolah): hobi, cita-cita dan foto murid Tahun 6. k = "NAMA|KELAS", fid = laluan foto dalam bucket "foto"
+create table public.murid_t6  (k text primary key, nama text not null default '', kelas text not null default '', hobi text not null default '', cita text not null default '', fid text not null default '');
 
 create index on public.penerima (aid);
 
 do $$ declare t text; begin
-  foreach t in array array['anugerah','penerima','ajk','tentatif','persiapan','galeri','foto_ajk','tetapan','admin','murid_cache'] loop
+  foreach t in array array['anugerah','penerima','ajk','tentatif','persiapan','galeri','foto_ajk','tetapan','admin','murid_cache','murid_t6'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
   end loop;

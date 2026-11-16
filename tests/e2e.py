@@ -411,6 +411,15 @@ with sync_playwright() as p:
     z = zipfile.ZipFile(io.BytesIO(bytes(zb)))
     assert z.testzip() is None and z.namelist() == ['Kokurikulum/5 KREATIF - MURID KOKO.jpg', 'Hal Ehwal Murid/Ä.jpg']
     assert z.read('Kokurikulum/5 KREATIF - MURID KOKO.jpg') == bytes([1, 2, 3, 255]) and len(z.read('Hal Ehwal Murid/Ä.jpg')) == 5000
+    # Majlis T6: saved in capitals, only the fields sent change, photo can be removed; poster still draws with a broken photo
+    t6 = "D.t6.find(t=>t.nama==='MURID CONTOH 6INO 1')"
+    pg.evaluate("call('setT6',{nama:' murid contoh 6ino 1',kelas:'6 inovatif',hobi:'  bermain   catur '},{quiet:true})")
+    pg.evaluate("call('setT6',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF',cita:'doktor gigi'},{quiet:true})")
+    pg.evaluate("call('upload',{purpose:'t6',nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF',mime:'image/jpeg',data:'AAAA'},{quiet:true})")
+    assert pg.evaluate(f"[{t6}.hobi,{t6}.cita,!!{t6}.src,D.t6.length]") == ['BERMAIN CATUR', 'DOKTOR GIGI', True, 1]
+    assert pg.evaluate(f"t6Canvas({t6}).then(c=>[c.width,c.height])") == [1920, 1080]
+    pg.evaluate("call('delT6Foto',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF'},{quiet:true})")
+    assert pg.evaluate(f"{t6}.src") == ''
     pg.evaluate(f"PIN='123456';openAw('{ko}')")  # names are hidden from visitors here, so edit as admin
     pg.click('#drawer [data-ed=k1]')
     pg.fill('#drawer .ed-c input', 'Bola sepak – johan – zon')

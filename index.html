@@ -207,6 +207,13 @@ span.tg{display:inline-flex;align-items:center}
 .del-p{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}
 .del-p:hover{color:var(--bad);border-color:var(--bad)}
 .del-p.ed:hover{color:var(--gold);border-color:var(--gold)}
+.t6-row{display:grid;grid-template-columns:28px 52px minmax(190px,1.3fr) minmax(160px,1fr) minmax(160px,1fr) 34px;gap:12px;align-items:center;padding:10px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--line);margin-bottom:8px}
+.t6-row.ok{border-color:rgba(63,182,139,.45)}.t6-i{color:var(--muted);font-size:12px;text-align:right}
+.t6-foto{width:52px;height:68px;border-radius:6px;border:1px dashed rgba(var(--gold-rgb),.55);display:grid;place-items:center;color:var(--gold);overflow:hidden;padding:0}
+.t6-foto img{width:100%;height:100%;object-fit:cover}.t6-foto:hover{border-style:solid}
+.t6-f{display:flex;flex-direction:column;gap:6px}.t6-f .fi{min-height:38px;font-size:13px}.t6-f input{text-transform:uppercase}
+.t6-del{color:var(--muted);text-decoration:underline;font-size:11px;letter-spacing:0;margin-left:4px}.t6-del:hover{color:var(--bad)}
+@media (max-width:980px){.t6-row{grid-template-columns:52px 1fr auto}.t6-i{display:none}.t6-f{grid-column:1/-1}}
 .ed-c{display:flex;gap:6px;margin-top:6px}.ed-c .fi{min-height:34px;padding:6px 10px;font-size:12.5px}
 .addp{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(var(--gold-rgb),.05)}
 .addp h5{font:700 14px var(--hf);letter-spacing:.2em;color:var(--gold);margin-bottom:10px}
@@ -473,6 +480,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <button class="nav" data-v="dashboard"><svg class="i"><use href="#i-dash"/></svg>Dashboard</button>
     <button class="nav" data-v="anugerah"><svg class="i"><use href="#i-award"/></svg>Anugerah</button>
     <button class="nav" data-v="persembahan"><svg class="i"><use href="#i-spark"/></svg>Persembahan</button>
+    <button class="nav" data-v="t6"><svg class="i"><use href="#i-book"/></svg>Majlis T6</button>
     <button class="nav adm" data-v="kehadiran"><svg class="i"><use href="#i-check"/></svg>Kehadiran</button>
     <button class="nav" data-v="ajk"><svg class="i"><use href="#i-users"/></svg>AJK</button>
     <button class="nav" data-v="tentatif"><svg class="i"><use href="#i-cal"/></svg>Tentatif</button>
@@ -510,6 +518,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
       <div class="grid awards" id="psGrid"></div>
       <div id="psAdm"></div>
     </section>
+    <section class="view" id="v-t6"><div id="t6"></div></section>
     <section class="view" id="v-kehadiran"><div id="hd"></div></section>
     <section class="view" id="v-ajk">
       <div class="tools"><label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ajkQ" placeholder="Cari nama guru / jawatankuasa / tugas…" aria-label="Cari AJK"></label><button class="btn" onclick="openAjkStage()"><svg class="i"><use href="#i-stage"/></svg>Bentang AJK</button></div>
@@ -666,7 +675,7 @@ const SEED={
 };
 
 /* ---------- state ---------- */
-let D={settings:{...SET_DEFAULT},anugerah:[],persembahan:[],peserta:null,penerima:null,ajk:[],tentatif:[],persiapan:[],galeri:[],fotoAjk:[]},FOTO=new Map();
+let D={settings:{...SET_DEFAULT},anugerah:[],persembahan:[],peserta:null,penerima:null,t6:null,ajk:[],tentatif:[],persiapan:[],galeri:[],fotoAjk:[]},FOTO=new Map();
 let PIN=store.get('pin','',sessionStorage), INFO=null, VIEW='dashboard', LAST=0;
 let ROSTER=null, ROSTER_ERR='';const ADD={kls:'',cat:'',sel:new Set(),role:new Map(),man:'',bulk:'',bulkOpen:false,ed:''};
 
@@ -679,11 +688,13 @@ function pupilCounts(rows){const g={};rows.forEach(p=>{const m=g[p.aid]=g[p.aid]
 function publicView(db){
   const cnt=pupilCounts(db.penerima);
   const {catatan,...settings}=db.settings; // Catatan Pengarah stays admin-only
-  return {ok:true,t:Date.now(),settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
+  return {ok:true,t:Date.now(),settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,t6:db.settings.showNames?(db.t6||[]):null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
 }
+const t6n=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' '),t6Key=s=>t6n(s.nama)+'|'+t6n(s.kelas);
+function t6Row(db,r){db.t6=db.t6||[];let x=db.t6.find(t=>t6Key(t)===t6Key(r));if(!x)db.t6.push(x={nama:t6n(r.nama),kelas:t6n(r.kelas),hobi:'',cita:'',src:''});return x}
 function localCall(r){
   const db=ldb();
-  const open=['roster','addPenerima','delPenerima','setStatus','setCatatan'].includes(r.action); // same as the server: Anugerah entry needs no PIN, locking it does
+  const open=['roster','addPenerima','delPenerima','setStatus','setCatatan','setT6','delT6Foto'].includes(r.action)||(r.action==='upload'&&r.purpose==='t6'); // same as the server: Anugerah and Majlis T6 entry need no PIN, locking an anugerah does
   if(r.action!=='public'&&(!open||r.pin)&&String(r.pin)!==DEMO_PIN)throw Error('PIN salah');
   if(!r.pin&&['addPenerima','delPenerima','setStatus','setCatatan'].includes(r.action)){const k=db.settings.dikunci||[],aids=r.action==='addPenerima'?r.rows.map(x=>x.aid):db.penerima.filter(p=>r.ids.includes(p.id)).map(p=>p.aid);
     if(aids.some(a=>k.includes(a)))throw Error('Anugerah ini dikunci. Minta admin membuka kunci.')}
@@ -702,7 +713,9 @@ function localCall(r){
     case 'setKunci':{const k=new Set(db.settings.dikunci||[]);r.ids.forEach(id=>r.kunci?k.add(id):k.delete(id));db.settings.dikunci=[...k];break}
     case 'setStatus':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.status=r.status==='Diterima'?'Diterima':''});break;
     case 'setCatatan':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.catatan=String(r.catatan||'').trim().toUpperCase()});break;
-    case 'upload':if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='foto'){db.fotoAjk=(db.fotoAjk||[]).filter(f=>nameKey(f.n)!==nameKey(r.nama)).concat({n:r.nama,fid:'',src:'data:'+r.mime+';base64,'+r.data})}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
+    case 'setT6':{const x=t6Row(db,r);['hobi','cita'].forEach(f=>{if(f in r)x[f]=t6n(r[f]).slice(0,60)});break}
+    case 'delT6Foto':t6Row(db,r).src='';break;
+    case 'upload':if(r.purpose==='t6'){t6Row(db,r).src='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='foto'){db.fotoAjk=(db.fotoAjk||[]).filter(f=>nameKey(f.n)!==nameKey(r.nama)).concat({n:r.nama,fid:'',src:'data:'+r.mime+';base64,'+r.data})}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
     case 'deletePhoto':db.galeri=db.galeri.filter(g=>g.id!==r.id);break;
     default:throw Error('Tindakan tidak dikenali');
   }
@@ -743,7 +756,7 @@ async function refresh(fromPoll){
   render(fromPoll);
 }
 function setData(d){
-  D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[],fotoAjk:d.fotoAjk||[]};
+  D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[],fotoAjk:d.fotoAjk||[],t6:d.t6||null};
   FOTO=new Map(D.fotoAjk.map(f=>[nameKey(f.n),f.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(f.fid)}&sz=w200`]));
   D.settings.showNames=D.settings.showNames===true||D.settings.showNames==='true';
   D.settings.now=+D.settings.now;
@@ -790,7 +803,7 @@ const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' '
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
 /* ---------- navigasi ---------- */
-const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],kehadiran:['Kehadiran','Pendaftaran murid penerima pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
+const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Berhenti Sekolah'],kehadiran:['Kehadiran','Pendaftaran murid penerima pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
 function go(v){if(!TITLES[v])v='dashboard';if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);show(v)}
 function show(v){
   VIEW=v;
@@ -811,6 +824,7 @@ function render(fromPoll,nav){
   if(VIEW==='dashboard')renderDash(nav);
   if(VIEW==='anugerah')renderAw();
   if(VIEW==='persembahan')renderPs(fromPoll);
+  if(VIEW==='t6')renderT6(fromPoll);
   if(VIEW==='kehadiran')renderHadir();
   if(VIEW==='ajk')renderAjk();
   if(VIEW==='tentatif')renderTT();
@@ -1092,6 +1106,73 @@ function renderHadir(){
   $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,ids=c.dataset.ids.split(','),on=c.checked;
     D.penerima.forEach(p=>{if(ids.includes(p.id))p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
     try{await call('setHadir',{ids,hadir:on},{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
+}
+/* ---------- Majlis T6 (Sijil Berhenti Sekolah): hobi, cita-cita & foto murid Tahun 6 ---------- */
+// ten presets each; anything else goes in through LAIN-LAIN
+const T6_PILIHAN={
+  hobi:['MEMBACA','MELUKIS','BERMAIN BOLA SEPAK','BERMAIN BADMINTON','BERENANG','MENYANYI','MEMASAK','BERKEBUN','MENARI','BERBASIKAL'],
+  cita:['DOKTOR','GURU','JURUTERA','POLIS','TENTERA','JURURAWAT','PEGUAM','JURUTERBANG','USAHAWAN','ARKITEK']};
+const T6_LABEL={hobi:'Hobi',cita:'Cita-cita'};
+let T6KLS=store.get('t6kls','',sessionStorage),T6Q='',T6ZIP='';const T6LAIN=new Set(); // T6LAIN: LAIN-LAIN picked, nothing typed yet
+// every Year 6 pupil on the school list, with what was saved for them, by class then name (stage order)
+function t6List(){
+  const m=new Map((D.t6||[]).map(t=>[t6Key(t),t]));
+  return (ROSTER||[]).filter(r=>/^6\b/.test(t6n(r.kelas))).map(r=>({hobi:'',cita:'',src:'',...m.get(t6Key(r)),nama:t6n(r.nama),kelas:t6n(r.kelas)}))
+    .sort((a,b)=>classSort(a.kelas,b.kelas)||a.nama.localeCompare(b.nama));
+}
+async function renderT6(fromPoll){
+  const box=$('#t6'),act=document.activeElement,mine=box.contains(act);
+  if(fromPoll&&mine)return; // don't wipe what a teacher is choosing or typing
+  if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Nama murid hanya dipaparkan kepada admin. Log masuk di Tetapan.</p></div>`;return}
+  if(!ROSTER&&!ROSTER_ERR){box.innerHTML='<div class="empty"><p>Memuatkan senarai murid Tahun 6…</p></div>';try{await loadRoster()}catch(e){ROSTER_ERR=e.message}if(VIEW==='t6')renderT6();return}
+  if(!ROSTER){box.innerHTML=`<div class="empty"><p class="warnmsg">${esc(ROSTER_ERR)}</p></div>`;return}
+  const all=t6List(),classes=[...new Set(all.map(s=>s.kelas))],find=k=>all.find(x=>t6Key(x)===k);
+  if(T6KLS&&!classes.includes(T6KLS))T6KLS='';
+  const q=t6n(T6Q),list=all.filter(s=>(!T6KLS||s.kelas===T6KLS)&&(!q||s.nama.includes(q)));
+  const done=a=>a.filter(s=>s.hobi&&s.cita).length,foto=a=>a.filter(s=>s.src).length,tag=T6KLS?'-'+T6KLS.replace(/\s+/g,'-'):'';
+  // keep focus, caret and half-typed text across a re-render
+  const sel=mine?(act.id?'#'+act.id:act.dataset.k?`${act.tagName.toLowerCase()}[data-f="${act.dataset.f}"][data-k="${CSS.escape(act.dataset.k)}"]`:''):'',val=act?.value,caret=act?.selectionStart;
+  const field=(s,f)=>{const v=s[f],k=t6Key(s),pre=T6_PILIHAN[f].includes(v),lain=T6LAIN.has(f+'|'+k)||!!(v&&!pre);
+    return `<div class="t6-f"><select class="fi" data-f="${f}" data-k="${esc(k)}" aria-label="${T6_LABEL[f]} ${esc(s.nama)}"><option value="">${T6_LABEL[f]}…</option>${T6_PILIHAN[f].map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}<option value="*" ${lain?'selected':''}>LAIN-LAIN…</option></select>${lain?`<input class="fi" data-f="${f}" data-k="${esc(k)}" value="${esc(pre?'':v)}" maxlength="60" placeholder="Taip ${T6_LABEL[f].toLowerCase()}…" aria-label="${T6_LABEL[f]} lain ${esc(s.nama)}">`:''}</div>`};
+  box.innerHTML=`<div class="grid ms-kpi">
+    <div class="card"><div class="n">${all.length}</div><div class="l">Murid Tahun 6</div></div>
+    <div class="card"><div class="n">${done(all)} / ${all.length}</div><div class="l">Hobi & cita-cita lengkap</div></div>
+    <div class="card"><div class="n">${foto(all)} / ${all.length}</div><div class="l">Ada foto</div></div>
+  </div>
+  <div class="tools"><select class="fi" id="t6Kls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Semua kelas Tahun 6 (${done(all)}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>s.kelas===k);return `<option value="${esc(k)}" ${k===T6KLS?'selected':''}>${esc(k)} (${done(c)}/${c.length})</option>`}).join('')}</select>
+    <input class="fi" id="t6Q" type="search" style="width:auto;min-width:200px;flex:1" placeholder="Cari nama…" value="${esc(T6Q)}" aria-label="Cari nama murid">
+    <button class="btn ghost sm" id="t6Xls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button>
+    <button class="btn ghost sm" id="t6Poster" ${T6ZIP?'disabled':''} title="Poster setiap murid yang dipaparkan, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${T6ZIP||'Semua poster'}</span></button></div>
+  ${!all.length?'<div class="empty"><p>Tiada murid Tahun 6 dalam senarai murid.</p></div>':!list.length?'<div class="empty"><p>Tiada murid sepadan.</p></div>'
+   :list.map((s,i)=>{const k=esc(t6Key(s));return `<div class="t6-row ${s.hobi&&s.cita?'ok':''}"><span class="t6-i">${i+1}</span>
+    <button class="t6-foto" data-foto="${k}" title="${s.src?'Tukar foto':'Muat naik foto'}" aria-label="${s.src?'Tukar':'Muat naik'} foto ${esc(s.nama)}">${s.src?`<img src="${esc(s.src)}" alt="" loading="lazy">`:'<svg class="i"><use href="#i-cam"/></svg>'}</button>
+    <div class="ms-n"><b>${esc(s.nama)}</b><small>${esc(s.kelas)}${s.src?`<button type="button" class="t6-del" data-delfoto="${k}">padam foto</button>`:''}</small></div>
+    ${field(s,'hobi')}${field(s,'cita')}
+    <button class="del-p ed" data-t6poster="${k}" title="Poster" aria-label="Poster ${esc(s.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button></div>`}).join('')}
+  <input type="file" id="t6File" accept="image/*" hidden>`;
+  const el=sel&&box.querySelector(sel);
+  if(el){el.focus();if(el.tagName==='INPUT'){el.value=val;try{el.setSelectionRange(caret,caret)}catch{}}}
+  $('#t6Kls').onchange=e=>{T6KLS=e.target.value;store.set('t6kls',T6KLS,sessionStorage);renderT6()};
+  $('#t6Q').oninput=e=>{T6Q=e.target.value;renderT6()};
+  const save=async(k,f,v)=>{const s=find(k);if(!s)return;
+    try{await call('setT6',{nama:s.nama,kelas:s.kelas,[f]:t6n(v)},{quiet:true});toast(`${T6_LABEL[f]} ${s.nama} disimpan`)}catch(e){toast(e.message,true);refresh()}};
+  $$('#t6 select[data-f]').forEach(c=>c.onchange=()=>{const id=c.dataset.f+'|'+c.dataset.k;
+    if(c.value==='*'){T6LAIN.add(id);renderT6();box.querySelector(`input[data-f="${c.dataset.f}"][data-k="${CSS.escape(c.dataset.k)}"]`)?.focus();return}
+    T6LAIN.delete(id);save(c.dataset.k,c.dataset.f,c.value)});
+  $$('#t6 input[data-f]').forEach(c=>{c.onkeydown=e=>{if(e.key==='Enter')c.blur()};
+    c.onchange=()=>{if(t6n(c.value)){T6LAIN.delete(c.dataset.f+'|'+c.dataset.k);save(c.dataset.k,c.dataset.f,c.value)}}});
+  let fk='';
+  $$('#t6 [data-foto]').forEach(b=>b.onclick=()=>{fk=b.dataset.foto;$('#t6File').click()});
+  $('#t6File').onchange=async e=>{const f=e.target.files[0],s=find(fk);e.target.value='';if(!f||!s)return;
+    try{toast('Memuat naik foto '+s.nama+'…');const data=await compress(f,900,'image/jpeg',.85);await call('upload',{purpose:'t6',nama:s.nama,kelas:s.kelas,mime:'image/jpeg',data},{quiet:true});toast('Foto '+s.nama+' disimpan')}catch(err){toast(err.message,true)}};
+  $$('#t6 [data-delfoto]').forEach(b=>b.onclick=async()=>{const s=find(b.dataset.delfoto);if(!s||!confirm('Padam foto '+s.nama+'?'))return;
+    try{await call('delT6Foto',{nama:s.nama,kelas:s.kelas},{quiet:true});toast('Foto '+s.nama+' dipadam')}catch(e){toast(e.message,true)}});
+  $$('#t6 [data-t6poster]').forEach(b=>b.onclick=()=>openCard('t6',find(b.dataset.t6poster),b));
+  $('#t6Xls').onclick=()=>{if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
+    const rows=[['Bil','Nama','Kelas','Hobi','Cita-cita','Foto']].concat(list.map((s,i)=>[i+1,s.nama,s.kelas,s.hobi,s.cita,s.src?'ADA':'TIADA']));
+    preview('Majlis T6 · Hobi & Cita-cita',`Excel · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Majlis-T6'+tag,rows,'xlsx'))};
+  $('#t6Poster').onclick=()=>{if(!list.length)return toast('Tiada murid untuk dijana poster',true);
+    if(confirm(`Jana ${list.length} poster Majlis T6 dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(list.map(s=>[s,'T6']),'#t6Poster','Poster-T6-Sri-Bitara-2026'+tag+'.zip')};
 }
 function openAw(id){
   const a=D.anugerah.find(x=>x.id===id)||D.persembahan.find(x=>x.id===id);if(!a)return closeDrawer();
@@ -1831,6 +1912,7 @@ function posterImage(url){
     const im=new Image();let done=false;
     const finish=value=>{if(done)return;done=true;clearTimeout(timer);resolve(value)};
     const timer=setTimeout(()=>finish(null),12000);
+    if(/^https?:/.test(url)&&new URL(url).origin!==location.origin)im.crossOrigin='anonymous';
     im.onload=()=>finish(im);im.onerror=()=>finish(null);im.src=url;
   }));
   return posterImages.get(url);
@@ -1986,19 +2068,92 @@ async function kadCanvas(a){
   posterWrite(ctx,posterFit(ctx,KAD_TEKS.majlis(),1200,70,{size:30,min:14,maxLines:2,weight:'500'}),960,835,'#fff0cd');
   return canvas;
 }
-async function openKad(a,trigger){
+// Majlis T6 (Sijil Berhenti Sekolah) poster: one per Year 6 pupil, with photo, hobi and cita-cita
+const T6_TEKS={head:'SIJIL BERHENTI SEKOLAH',sub:'Selamat maju jaya, anak-anak Tahun 6',hobi:'HOBI',cita:'CITA-CITA',
+  majlis:()=>D.settings?.nama||'Majlis Anugerah Sri Bitara 2026',sekolah:'SK BANDAR TAWAU',foto:'FOTO'};
+
+async function t6Canvas(m){
+  // Snapshot the pupil before asynchronous image/font loading.
+  const pupil={...m},majlis=T6_TEKS.majlis();
+  const upper=value=>String(value??'').trim().toUpperCase()||'—';
+  await Promise.allSettled([document.fonts.load('700 80px "Cormorant SC"'),document.fonts.load('italic 34px "Cormorant Garamond"'),document.fonts.load('600 34px "Plus Jakarta Sans"')]);
+  const [bg,logo,photo]=await Promise.all([posterImage('img/poster-t6.jpg'),posterImage('img/logo-sekolah.jpg'),pupil.src?posterImage(pupil.src):Promise.resolve(null)]);
+  const canvas=document.createElement('canvas');canvas.width=1920;canvas.height=1080;
+  const ctx=canvas.getContext('2d');
+  const gold=posterGold(ctx,100,100,1700,900),cream='#fff2d5';
+  const base=ctx.createLinearGradient(0,0,1600,1080);base.addColorStop(0,'#102d58');base.addColorStop(.55,'#06132f');base.addColorStop(1,'#294369');
+  ctx.fillStyle=base;ctx.fillRect(0,0,1920,1080);
+  if(bg)ctx.drawImage(bg,0,0,1920,1080);
+  else{
+    const dawn=ctx.createRadialGradient(1120,1120,20,1120,1120,700);dawn.addColorStop(0,'#edb66899');dawn.addColorStop(1,'#edb66800');ctx.fillStyle=dawn;ctx.fillRect(0,0,1920,1080);
+    ctx.strokeStyle=gold;ctx.lineWidth=2;ctx.strokeRect(40,30,1840,1020);
+  }
+  const write=(text,x,y,w,h,options={},color=cream)=>{const fit=posterFit(ctx,text,w,h,options);posterWrite(ctx,fit,x,y,color);return fit;};
+  const line=(x,y,w,alpha=1)=>{ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=gold;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.stroke();ctx.restore();};
+  // A soft scrim preserves readable copy even over the background glow.
+  const shade=ctx.createRadialGradient(1230,620,140,1230,620,740);shade.addColorStop(0,'#06132fbb');shade.addColorStop(1,'#06132f00');ctx.fillStyle=shade;ctx.fillRect(0,0,1920,1080);
+  ctx.save();ctx.shadowColor='#0008';ctx.shadowBlur=24;ctx.fillStyle=gold;ctx.beginPath();ctx.arc(193,126,62,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fffdf5';ctx.beginPath();ctx.arc(193,126,54,0,Math.PI*2);ctx.fill();ctx.clip();
+  if(logo){const s=Math.min(80/logo.naturalWidth,84/logo.naturalHeight);ctx.drawImage(logo,193-logo.naturalWidth*s/2,126-logo.naturalHeight*s/2,logo.naturalWidth*s,logo.naturalHeight*s);}ctx.restore();
+  write(T6_TEKS.sekolah,282,78,1040,34,{size:24,maxLines:1},'#eacb88');
+  write(T6_TEKS.head,278,117,1120,74,{size:57,family:'Cormorant SC',weight:'700',maxLines:1},gold);
+  line(282,202,1060,.5);
+  // Photo opening is exactly 510 × 680 (3:4), at (154, 274).
+  ctx.save();ctx.shadowColor='#000a';ctx.shadowBlur=36;ctx.shadowOffsetY=12;ctx.fillStyle=gold;ctx.fillRect(130,250,558,728);ctx.restore();
+  ctx.fillStyle='#081b38';ctx.fillRect(138,258,542,712);ctx.strokeStyle=gold;ctx.lineWidth=1.5;ctx.strokeRect(145,265,528,698);
+  ctx.save();ctx.beginPath();ctx.rect(154,274,510,680);ctx.clip();
+  const inner=ctx.createLinearGradient(154,274,664,954);inner.addColorStop(0,'#1d3b62');inner.addColorStop(1,'#091a34');ctx.fillStyle=inner;ctx.fillRect(154,274,510,680);
+  if(photo&&photo.naturalWidth&&photo.naturalHeight){
+    const scale=Math.max(510/photo.naturalWidth,680/photo.naturalHeight),sw=510/scale,sh=680/scale;
+    ctx.drawImage(photo,(photo.naturalWidth-sw)/2,(photo.naturalHeight-sh)*.32,sw,sh,154,274,510,680);
+  }else{
+    ctx.fillStyle='#c8d5e21f';ctx.beginPath();ctx.arc(409,553,57,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(292,715);ctx.bezierCurveTo(292,591,526,591,526,715);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#e0c58a50';ctx.lineWidth=1;ctx.beginPath();ctx.arc(409,618,150,0,Math.PI*2);ctx.stroke();
+    ctx.textAlign='center';write(T6_TEKS.foto,409,798,300,34,{size:20,maxLines:1},'#b7c5d6');ctx.textAlign='left';
+  }ctx.restore();
+  // Stepped gold corners and tiny diamond studs distinguish this frame.
+  for(const [x,y,dx,dy] of [[130,250,1,1],[688,250,-1,1],[130,978,1,-1],[688,978,-1,-1]]){
+    ctx.save();ctx.translate(x,y);ctx.scale(dx,dy);ctx.strokeStyle=gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-8,52);ctx.lineTo(-8,-8);ctx.lineTo(52,-8);ctx.stroke();ctx.fillStyle='#ffe7a7';ctx.translate(8,8);ctx.rotate(Math.PI/4);ctx.fillRect(-4,-4,8,8);ctx.restore();
+  }
+  write(T6_TEKS.sub,762,338,1020,55,{size:34,family:'Cormorant Garamond',weight:'italic',maxLines:1},'#e4c995');
+  const name=posterFit(ctx,upper(pupil.nama),1020,190,{size:82,min:40,family:'Cormorant SC',weight:'700',maxLines:2,leading:1.05});
+  posterWrite(ctx,name,758,413+(190-name.height)/2,cream);
+  // Class sits in its own understated gold-edged ribbon.
+  const kelas=posterFit(ctx,upper(pupil.kelas),940,39,{size:27,maxLines:1});ctx.font=kelas.font;
+  const kw=Math.min(1000,Math.max(180,ctx.measureText(kelas.lines[0]||'').width+48));
+  ctx.fillStyle='#d8b97516';ctx.fillRect(762,627,kw,58);ctx.strokeStyle='#d6b56d80';ctx.lineWidth=1;ctx.strokeRect(762,627,kw,58);
+  posterWrite(ctx,kelas,786,639,'#efd294');
+  const badge=(x,label,value,target)=>{
+    const y=734,w=492,h=176;
+    const panel=ctx.createLinearGradient(x,y,x+w,y+h);panel.addColorStop(0,'#1a3659e8');panel.addColorStop(1,'#0a1b36dc');ctx.fillStyle=panel;ctx.fillRect(x,y,w,h);ctx.strokeStyle='#bfa36a66';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+    ctx.save();ctx.translate(x+42,y+42);ctx.strokeStyle=gold;ctx.fillStyle=gold;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(0,0,23,0,Math.PI*2);ctx.stroke();ctx.beginPath();
+    if(target){ctx.arc(0,0,13,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(19,-19);ctx.moveTo(11,-19);ctx.lineTo(19,-19);ctx.lineTo(19,-11);ctx.stroke();}
+    else{for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?6:14;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.stroke();}ctx.restore();
+    write(label,x+80,y+27,w-104,32,{size:22,maxLines:1},'#e6c988');
+    write(upper(value),x+25,y+86,w-50,74,{size:31,min:20,weight:'600',maxLines:2,leading:1.12});
+  };
+  badge(762,T6_TEKS.hobi,pupil.hobi,false);badge(1282,T6_TEKS.cita,pupil.cita,true);
+  line(762,952,1012,.6);
+  const footShade=ctx.createLinearGradient(730,0,1810,0);footShade.addColorStop(0,'#06132f00');footShade.addColorStop(.08,'#06132fbb');footShade.addColorStop(.92,'#06132fbb');footShade.addColorStop(1,'#06132f00');ctx.fillStyle=footShade;ctx.fillRect(730,969,1080,56);
+  write(majlis,762,978,1012,40,{size:25,maxLines:1},'#f3ddaf');
+  return canvas;
+}
+const openKad=(a,trigger)=>openCard('kad',{id:a.id,nama:a.nama},trigger);
+async function openCard(mode,item,trigger){
+  if(!item)return;
+  const {title,make}={kad:{title:'Kad tajuk',make:kadCanvas},t6:{title:'Poster Majlis T6',make:t6Canvas}}[mode],a=item;
   const token=++posterState.token;
-  Object.assign(posterState,{mode:'kad',performance:{id:a.id,nama:a.nama},student:null,kat:null,canvas:null,focus:trigger||document.activeElement});
-  document.getElementById('posterTitle').textContent='Kad tajuk';
+  Object.assign(posterState,{mode,performance:item,student:null,kat:null,canvas:null,focus:trigger||document.activeElement});
+  document.getElementById('posterTitle').textContent=title;
   document.getElementById('posterNote').textContent='1920 × 1080';
   document.getElementById('posterTabs').replaceChildren();
   const view=document.getElementById('posterView'),download=document.getElementById('posterDownload');
-  view.textContent='Menjana kad tajuk…';view.setAttribute('aria-busy','true');download.setAttribute('aria-disabled','true');
+  view.textContent='Menjana '+title.toLowerCase()+'…';view.setAttribute('aria-busy','true');download.setAttribute('aria-disabled','true');
   document.getElementById('posterDialog').showModal();download.focus();
   try{
-    const canvas=await kadCanvas(posterState.performance);if(token!==posterState.token)return;
-    posterState.canvas=canvas;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Kad tajuk — '+a.nama);view.replaceChildren(canvas);download.setAttribute('aria-disabled','false');
-  }catch(e){if(token===posterState.token)view.textContent='Kad tajuk tidak dapat dijana. Sila cuba semula.';console.error(e)}
+    const canvas=await make(item);if(token!==posterState.token)return;
+    posterState.canvas=canvas;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',title+' — '+a.nama);view.replaceChildren(canvas);download.setAttribute('aria-disabled','false');
+  }catch(e){if(token===posterState.token)view.textContent=title+' tidak dapat dijana. Sila cuba semula.';console.error(e)}
   finally{if(token===posterState.token)view.setAttribute('aria-busy','false')}
 }
 let posterState={token:0,canvas:null,student:null,kat:null,focus:null,mode:'poster',performance:null};
@@ -2031,20 +2186,20 @@ function closePoster(){
 async function downloadPoster(){
   const {canvas,student,kat,mode,performance}=posterState;if(!canvas)return;
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim().replace(/\s+/g,'-');
-  try{const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG gagal dijana.')),'image/png'));saveBlob(mode==='kad'?'Kad-Tajuk-'+clean(performance.nama)+'.png':'Poster-'+clean(student.nama)+'-'+clean(POSTER_STYLE[kat].title)+'.png',blob)}
+  try{const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG gagal dijana.')),'image/png'));saveBlob(mode==='kad'?'Kad-Tajuk-'+clean(performance.nama)+'.png':mode==='t6'?'Poster-T6-'+clean(performance.nama)+'.png':'Poster-'+clean(student.nama)+'-'+clean(POSTER_STYLE[kat].title)+'.png',blob)}
   catch(e){document.getElementById('posterNote').textContent='Muat turun gagal. Sila buka aplikasi melalui http(s) dan cuba semula.';console.error(e)}
 }
 // every poster of the pupils shown in Senarai Murid, one ZIP with a folder per kategori;
 // JPEG because 300 PNGs at ~3 MB each would not fit in the browser's memory
 async function downloadAllPosters(jobs,sel,zipName){
   const label=$(sel).querySelector('span').textContent;
-  const set=t=>{if(sel==='#msPoster')PZIP=t;const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
+  const set=t=>{if(sel==='#msPoster')PZIP=t;if(sel==='#t6Poster')T6ZIP=t;const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim(),files=[];
   try{
     for(const [i,[s,k]] of jobs.entries()){
-      const kad=k==='KAD';set(`Menjana ${kad?'kad':'poster'} ${i+1} / ${jobs.length}…`);
-      const c=await (kad?kadCanvas(s):posterCanvas(s,k)),b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(Error('Poster gagal dijana')),kad?'image/png':'image/jpeg',.92));
-      files.push({name:kad?`${String(i+1).padStart(2,'0')} - ${clean(s.nama.replace(/[\/\\]/g,'-'))}.png`:`${POSTER_STYLE[k].title}/${clean(s.kelas)} - ${clean(s.nama)}.jpg`,data:new Uint8Array(await b.arrayBuffer())});
+      const kad=k==='KAD',t6=k==='T6';set(`Menjana ${kad?'kad':'poster'} ${i+1} / ${jobs.length}…`);
+      const c=await (kad?kadCanvas(s):t6?t6Canvas(s):posterCanvas(s,k)),b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(Error('Poster gagal dijana')),kad?'image/png':'image/jpeg',.92));
+      files.push({name:kad?`${String(i+1).padStart(2,'0')} - ${clean(s.nama.replace(/[\/\\]/g,'-'))}.png`:t6?`${String(i+1).padStart(3,'0')} - ${clean(s.kelas)} - ${clean(s.nama)}.jpg`:`${POSTER_STYLE[k].title}/${clean(s.kelas)} - ${clean(s.nama)}.jpg`,data:new Uint8Array(await b.arrayBuffer())});
     }
     saveBlob(zipName,zipBlob(files));toast(`${files.length} ${jobs[0]?.[1]==='KAD'?'kad tajuk':'poster'} dimuat turun (ZIP)`);
   }catch(e){toast(e.message,true)}finally{set('')}
