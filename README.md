@@ -22,4 +22,4 @@ No student data is stored in this repository. Recipient lists are imported in th
 
 | File | Source |
 |---|---|
-| `img/poster-k.jpg`, `img/poster-h.jpg`, `img/poster-ko.jpg` | Poster Pencapaian backgrounds (Kurikulum / HEM / Kokurikulum). AI-generated with OpenAI image generation via Codex CLI on the school owner's ChatGPT Plus account, 2026-11-16, then resized/compressed with Pillow. No text, people or logos. Under OpenAI's terms the output belongs to the user. |
+| `img/poster-k.jpg`, `img/poster-h.jpg`, `img/poster-ko.jpg`, `img/poster-p.jpg` | Poster backgrounds (Kurikulum / HEM / Kokurikulum / Persembahan). AI-generated with OpenAI image generation via Codex CLI on the school owner's ChatGPT Plus account, 2026-11-16, then resized/compressed with Pillow. No text, people or logos. Under OpenAI's terms the output belongs to the user. |

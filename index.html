@@ -505,7 +505,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <section class="view" id="v-persembahan">
       <div class="tools">
         <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="psQ" placeholder="Cari persembahan…" aria-label="Cari persembahan"></label>
-        <div id="psTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="psSel" style="width:auto;max-width:240px;min-height:36px" aria-label="Pilih persembahan untuk surat dan sijil"></select><button class="btn ghost sm" id="psXls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button><button class="btn ghost sm" id="psSurat"><svg class="i"><use href="#i-dl"/></svg>Surat pemakluman</button><button class="btn ghost sm" id="psSijil"><svg class="i"><use href="#i-dl"/></svg>Sijil penghargaan</button><button class="btn ghost sm" id="psSijilW"><svg class="i"><use href="#i-dl"/></svg>Sijil (Word)</button></div>
+        <div id="psTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"><select class="fi" id="psSel" style="width:auto;max-width:240px;min-height:36px" aria-label="Pilih persembahan untuk surat dan sijil"></select><button class="btn ghost sm" id="psXls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button><button class="btn ghost sm" id="psSurat"><svg class="i"><use href="#i-dl"/></svg>Surat pemakluman</button><button class="btn ghost sm" id="psSijil"><svg class="i"><use href="#i-dl"/></svg>Sijil penghargaan</button><button class="btn ghost sm" id="psSijilW"><svg class="i"><use href="#i-dl"/></svg>Sijil (Word)</button><button class="btn ghost sm" id="psPoster" title="Poster setiap murid persembahan yang dipilih, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>Semua poster</span></button></div>
       </div>
       <div class="grid awards" id="psGrid"></div>
       <div id="psAdm"></div>
@@ -943,7 +943,7 @@ function renderAwList(){
     preview('Pemetaan Penerima',`CSV · ${list.length} murid`,rowsHTML(rows),()=>downloadCSV('Pemetaan-Penerima-Sri-Bitara-2026.csv',rows))};
   $('#msPoster').onclick=()=>{
     const jobs=list.flatMap(s=>Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>i.a.kat===k)).map(k=>[s,k]));
-    if(jobs.length&&confirm(`Jana ${jobs.length} poster untuk ${list.length} murid dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(jobs)};
+    if(jobs.length&&confirm(`Jana ${jobs.length} poster untuk ${list.length} murid dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(jobs,'#msPoster',`Poster-Sri-Bitara-2026${AWKLS?'-'+AWKLS.replace(/\s+/g,'-'):''}.zip`)};
   $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
 }
 function renderAw(){
@@ -987,9 +987,14 @@ $('#psXls').onclick=()=>{
   const rows=[['Bil','Persembahan','Nama','Kelas','Tahun','Peranan','Tarikh']].concat(list.map(({p,a},i)=>[i+1,a.nama,p.nama,p.kelas,p.tahun,p.catatan,tarikhHari(hariOf(a,p))]));
   preview('Senarai Murid Persembahan',`Excel · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Senarai-Murid-Persembahan'+psTag(),rows,'xlsx'));
 };
+// one entry per pupil with all their persembahan (same shape as studentMap, so posters work too)
+const psMurid=()=>{const m=new Map();psRows().forEach(({p,a})=>{const k=p.nama+'|'+p.kelas,x=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[]};x.items.push({a,p,ps:[p]});m.set(k,x)});return [...m.values()]};
+$('#psPoster').onclick=()=>{
+  const list=psMurid();if(!list.length)return toast('Tiada murid untuk dijana poster',true);
+  if(confirm(`Jana ${list.length} poster persembahan dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(list.map(s=>[s,'P']),'#psPoster','Poster-Persembahan-Sri-Bitara-2026'+psTag()+'.zip');
+};
 $('#psSurat').onclick=()=>{
-  const m=new Map();psRows().forEach(({p,a})=>{const k=p.nama+'|'+p.kelas,x=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[]};x.items.push({a,p});m.set(k,x)});
-  const list=[...m.values()];if(!list.length)return toast('Tiada murid untuk dijana surat',true);
+  const list=psMurid();if(!list.length)return toast('Tiada murid untuk dijana surat',true);
   const html=suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{const ps=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
     return `<p><b>MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
@@ -1812,7 +1817,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now(
 const POSTER_STYLE={
   K:{title:'Kurikulum',ink:'#071222',mid:'#162e4d',asset:'k'},
   H:{title:'Hal Ehwal Murid',ink:'#21090f',mid:'#4a1520',asset:'h'},
-  KO:{title:'Kokurikulum',ink:'#041d17',mid:'#124737',asset:'ko'}
+  KO:{title:'Kokurikulum',ink:'#041d17',mid:'#124737',asset:'ko'},
+  P:{title:'Persembahan',head:'PENGHARGAAN PERSEMBAHAN',sub:'Terima kasih atas sumbangan bakat',ink:'#150a22',mid:'#3a1f55',asset:'p'}
 };
 const posterImages=new Map();
 function posterImage(url){
@@ -1860,6 +1866,7 @@ function posterMotif(ctx,kat,x,y,scale=1){
   ctx.beginPath();
   if(kat==='H'){ctx.moveTo(-25,-29);ctx.lineTo(0,-38);ctx.lineTo(25,-29);ctx.lineTo(23,8);ctx.quadraticCurveTo(16,27,0,34);ctx.quadraticCurveTo(-16,27,-23,8);ctx.closePath();ctx.stroke();}
   else if(kat==='KO'){ctx.moveTo(-23,-29);ctx.lineTo(23,-29);ctx.quadraticCurveTo(23,9,0,15);ctx.quadraticCurveTo(-23,9,-23,-29);ctx.moveTo(0,15);ctx.lineTo(0,32);ctx.moveTo(-18,33);ctx.lineTo(18,33);ctx.moveTo(-23,-23);ctx.bezierCurveTo(-48,-30,-42,3,-17,3);ctx.moveTo(23,-23);ctx.bezierCurveTo(48,-30,42,3,17,3);ctx.stroke();}
+  else if(kat==='P'){for(let i=0;i<10;i++){const r=i%2?13:32,t=-Math.PI/2+i*Math.PI/5;ctx.lineTo(Math.cos(t)*r,Math.sin(t)*r)}ctx.closePath();ctx.stroke()}
   else{ctx.moveTo(0,26);ctx.lineTo(0,-22);ctx.quadraticCurveTo(-15,-34,-29,-22);ctx.lineTo(-29,21);ctx.quadraticCurveTo(-14,13,0,26);ctx.quadraticCurveTo(14,13,29,21);ctx.lineTo(29,-22);ctx.quadraticCurveTo(15,-34,0,-22);ctx.stroke()}
   ctx.restore();
 }
@@ -1927,9 +1934,9 @@ async function posterCanvas(s,kat){
     ctx.save();ctx.translate(x,y);ctx.scale(dx,dy);ctx.strokeStyle=posterGold(ctx,0,0,65,65);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-7,53);ctx.lineTo(-7,-7);ctx.lineTo(53,-7);ctx.stroke();ctx.beginPath();ctx.moveTo(9,33);ctx.quadraticCurveTo(42,42,33,9);ctx.quadraticCurveTo(9,9,9,33);ctx.stroke();ctx.restore();
   }
   posterMotif(ctx,kat,1764,292,.75);
-  posterWrite(ctx,posterFit(ctx,'ANUGERAH '+style.title.toUpperCase(),905,58,{size:41,family:'Cormorant SC',weight:'700',maxLines:1}),755,256,'#e4bb61');
+  posterWrite(ctx,posterFit(ctx,style.head||'ANUGERAH '+style.title.toUpperCase(),905,58,{size:41,family:'Cormorant SC',weight:'700',maxLines:1}),755,256,'#e4bb61');
   const items=s.items.filter(i=>i.a.kat===kat),dense=items.reduce((n,i)=>n+1+(i.ps?.length?i.ps:[i.p]).reduce((m,p)=>m+String(p?.catatan||'').split(/;|\n/).filter(t=>t.trim()).length,0),0)>10;
-  if(!dense)posterWrite(ctx,posterFit(ctx,'Meraikan kecemerlangan',920,43,{size:29,family:'Cormorant Garamond',weight:'italic',maxLines:1}),755,317,'#cdbb96');
+  if(!dense)posterWrite(ctx,posterFit(ctx,style.sub||'Meraikan kecemerlangan',920,43,{size:29,family:'Cormorant Garamond',weight:'italic',maxLines:1}),755,317,'#cdbb96');
 
   const name=posterFit(ctx,String(s.nama||'').toUpperCase(),1060,dense?112:164,{size:dense?52:68,min:38,family:'Cormorant SC',weight:'700',maxLines:2,leading:1.04});
   posterWrite(ctx,name,752,dense?327:377,'#fff1d6');
@@ -1976,8 +1983,9 @@ async function downloadPoster(){
 }
 // every poster of the pupils shown in Senarai Murid, one ZIP with a folder per kategori;
 // JPEG because 300 PNGs at ~3 MB each would not fit in the browser's memory
-async function downloadAllPosters(jobs){
-  const set=t=>{PZIP=t;const b=$('#msPoster');if(b){b.disabled=!!t||!jobs.length;b.querySelector('span').textContent=t||'Semua poster'}};
+async function downloadAllPosters(jobs,sel,zipName){
+  const label=$(sel).querySelector('span').textContent;
+  const set=t=>{if(sel==='#msPoster')PZIP=t;const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim(),files=[];
   try{
     for(const [i,[s,k]] of jobs.entries()){
@@ -1985,8 +1993,8 @@ async function downloadAllPosters(jobs){
       const c=await posterCanvas(s,k),b=await new Promise((ok,no)=>c.toBlob(x=>x?ok(x):no(Error('Poster gagal dijana')),'image/jpeg',.92));
       files.push({name:`${POSTER_STYLE[k].title}/${clean(s.kelas)} - ${clean(s.nama)}.jpg`,data:new Uint8Array(await b.arrayBuffer())});
     }
-    saveBlob(`Poster-Sri-Bitara-2026${AWKLS?'-'+clean(AWKLS):''}.zip`,zipBlob(files));toast(`${files.length} poster dimuat turun (ZIP)`);
-  }catch(e){toast(e.message,true)}finally{set('');if($('#msPoster'))renderAwList()}
+    saveBlob(zipName,zipBlob(files));toast(`${files.length} poster dimuat turun (ZIP)`);
+  }catch(e){toast(e.message,true)}finally{set('')}
 }
 // store-only ZIP (JPEG is already compressed). shortcut: no ZIP64, so max 65535 files / 4 GB — far above one school's posters
 const CRC_T=[...Array(256)].map((_,n)=>{for(let k=0;k<8;k++)n=n&1?0xEDB88320^(n>>>1):n>>>1;return n>>>0});
