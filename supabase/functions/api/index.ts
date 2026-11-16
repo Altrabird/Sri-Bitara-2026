@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     // owner's choice (2026-10-29): Anugerah needs no PIN (pick, add, remove pupils, tick Diterima); Tetapan still does.
     // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
     // owner's choice (2026-11-12): locking and unlocking an anugerah (setKunci) both need the PIN
-    // owner's choice (2026-11-16): Majlis T6 (hobi, cita-cita, photo) is filled like Anugerah, without a PIN
+    // owner's choice (2026-11-16): Majlis T6 (hobi, cita-cita) and pupil photos (any recipient) are filled like Anugerah, without a PIN
     const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'setT6', 'delT6Foto'].includes(r.action) || (r.action === 'upload' && r.purpose === 't6');
     if (!open || r.pin) await checkPin(r.pin);
     else await checkKunci(r);
@@ -116,13 +116,13 @@ async function handle(r: any) {
       extra.item = await upload(r);
       break;
     case 'setT6': { // only the fields sent are changed
-      const m = await murid6(r), v: Record<string, string> = {};
+      const m = await murid(r, true), v: Record<string, string> = {};
       for (const f of ['hobi', 'cita']) if (f in r) v[f] = cell(r[f]).trim().toUpperCase().replace(/\s+/g, ' ').slice(0, 60);
       await q(db.from('murid_t6').upsert({ ...m, ...v }, { onConflict: 'k' }));
       break;
     }
     case 'delT6Foto': {
-      const m = await murid6(r), old = (await q(db.from('murid_t6').select('fid').eq('k', m.k)))[0]?.fid;
+      const m = await murid(r, false), old = (await q(db.from('murid_t6').select('fid').eq('k', m.k)))[0]?.fid;
       if (old) {
         await q(db.from('murid_t6').update({ fid: '' }).eq('k', m.k));
         await db.storage.from('foto').remove([old]);
@@ -241,12 +241,15 @@ async function rosterGas(pin: unknown) {
   return j.roster;
 }
 
-// a Year 6 pupil on the school list (Hadir@SKBT), so PIN-less Majlis T6 writes can't add anyone else
-async function murid6(r: any) {
+// PIN-less writes can't add anyone: hobi/cita-cita (t6) only for a Year 6 pupil on the school list (Hadir@SKBT);
+// a photo for any pupil who is already a recipient/peserta or on the school list
+async function murid(r: any, t6: boolean) {
   const n = (v: unknown) => cell(v).trim().toUpperCase().replace(/\s+/g, ' ');
   const nama = n(r.nama), kelas = n(r.kelas);
-  if (!/^6\b/.test(kelas) || !(await roster(r.pin)).some((x: any) => n(x.nama) === nama && n(x.kelas) === kelas))
-    throw new Error('Murid Tahun 6 ini tiada dalam senarai murid');
+  const listed = async () => (await roster(r.pin)).some((x: any) => n(x.nama) === nama && n(x.kelas) === kelas);
+  const ok = t6 ? /^6\b/.test(kelas) && await listed()
+    : (await q(db.from('penerima').select('id').eq('nama', nama).eq('kelas', kelas).limit(1))).length > 0 || await listed();
+  if (!ok) throw new Error(t6 ? 'Murid Tahun 6 ini tiada dalam senarai murid' : 'Murid ini tiada dalam senarai murid atau senarai penerima');
   return { k: nama + '|' + kelas, nama, kelas };
 }
 
@@ -262,8 +265,8 @@ async function upload(r: any) {
   // foto AJK is matched by the teacher's name, e.g. "Harsidi Bin Junick"
   const nama = foto ? cell(r.nama).replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 80) : '';
   if (foto && !nama) throw new Error('Nama AJK tidak sah');
-  // Majlis T6 photos are uploaded without a PIN: only a real Year 6 pupil, one small photo each
-  const t6 = r.purpose === 't6' ? await murid6(r) : null;
+  // pupil photos (purpose 't6', kept in murid_t6.fid) are uploaded without a PIN: only a real pupil, one small photo each
+  const t6 = r.purpose === 't6' ? await murid(r, false) : null;
   if (t6 && bytes.length > 1.5 * 1024 * 1024) throw new Error('Foto terlalu besar (maks 1.5MB)');
   const path = `${r.purpose === 'logo' ? 'logo' : foto ? 'ajk' : t6 ? 't6' : 'galeri'}/${id}.${ext}`;
   await q(db.storage.from('foto').upload(path, bytes, { contentType: r.mime, cacheControl: '31536000' }));

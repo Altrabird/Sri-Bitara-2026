@@ -209,10 +209,12 @@ span.tg{display:inline-flex;align-items:center}
 .del-p.ed:hover{color:var(--gold);border-color:var(--gold)}
 .t6-row{display:grid;grid-template-columns:28px 52px minmax(190px,1.3fr) minmax(160px,1fr) minmax(160px,1fr) 34px;gap:12px;align-items:center;padding:10px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--line);margin-bottom:8px}
 .t6-row.ok{border-color:rgba(63,182,139,.45)}.t6-i{color:var(--muted);font-size:12px;text-align:right}
-.t6-foto{width:52px;height:68px;border-radius:6px;border:1px dashed rgba(var(--gold-rgb),.55);display:grid;place-items:center;color:var(--gold);overflow:hidden;padding:0}
-.t6-foto img{width:100%;height:100%;object-fit:cover}.t6-foto:hover{border-style:solid}
+.t6-foto,.rcp-foto{position:relative;flex:none;display:inline-block}
+[data-mfoto]{width:52px;height:68px;border-radius:6px;border:1px dashed rgba(var(--gold-rgb),.55);display:grid;place-items:center;color:var(--gold);overflow:hidden;padding:0}
+.rcp-foto [data-mfoto]{width:30px;height:40px;border-radius:4px}.rcp-foto [data-mfoto] .i{width:15px;height:15px}
+[data-mfoto] img{width:100%;height:100%;object-fit:cover}[data-mfoto]:hover{border-style:solid}
+.foto-x{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1;display:grid;place-items:center;padding:0}.foto-x:hover{color:var(--bad);border-color:var(--bad)}
 .t6-f{display:flex;flex-direction:column;gap:6px}.t6-f .fi{min-height:38px;font-size:13px}.t6-f input{text-transform:uppercase}
-.t6-del{color:var(--muted);text-decoration:underline;font-size:11px;letter-spacing:0;margin-left:4px}.t6-del:hover{color:var(--bad)}
 @media (max-width:980px){.t6-row{grid-template-columns:52px 1fr auto}.t6-i{display:none}.t6-f{grid-column:1/-1}}
 .ed-c{display:flex;gap:6px;margin-top:6px}.ed-c .fi{min-height:34px;padding:6px 10px;font-size:12.5px}
 .addp{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(var(--gold-rgb),.05)}
@@ -691,6 +693,19 @@ function publicView(db){
   return {ok:true,t:Date.now(),settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,t6:db.settings.showNames?(db.t6||[]):null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
 }
 const t6n=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' '),t6Key=s=>t6n(s.nama)+'|'+t6n(s.kelas);
+// one photo per pupil (kept with Majlis T6 data), shared by Majlis T6, the award/persembahan lists and every poster
+const fotoOf=s=>(D.t6||[]).find(t=>t6Key(t)===t6Key(s))?.src||'';
+const fotoBtn=(s,cls='rcp-foto')=>{const k=esc(t6Key(s)),src=fotoOf(s);
+  return `<span class="${cls}"><button type="button" data-mfoto="${k}" title="${src?'Tukar foto':'Muat naik foto'}" aria-label="${src?'Tukar':'Muat naik'} foto ${esc(s.nama)}">${src?`<img src="${esc(src)}" alt="" loading="lazy">`:'<svg class="i"><use href="#i-cam"/></svg>'}</button>${src?`<button type="button" class="foto-x" data-mfotodel="${k}" title="Padam foto" aria-label="Padam foto ${esc(s.nama)}">×</button>`:''}</span>`};
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-mfoto],[data-mfotodel]');if(!b)return;
+  const k=b.dataset.mfoto||b.dataset.mfotodel,i=k.lastIndexOf('|'),s={nama:k.slice(0,i),kelas:k.slice(i+1)};
+  if(b.dataset.mfotodel){if(confirm('Padam foto '+s.nama+'?'))call('delT6Foto',s,{quiet:true}).then(()=>toast('Foto '+s.nama+' dipadam'),err=>toast(err.message,true));return}
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
+    try{toast('Memuat naik foto '+s.nama+'…');const data=await compress(f,900,'image/jpeg',.85);await call('upload',{purpose:'t6',...s,mime:'image/jpeg',data},{quiet:true});toast('Foto '+s.nama+' disimpan')}catch(err){toast(err.message,true)}};
+  inp.click();
+});
 function t6Row(db,r){db.t6=db.t6||[];let x=db.t6.find(t=>t6Key(t)===t6Key(r));if(!x)db.t6.push(x={nama:t6n(r.nama),kelas:t6n(r.kelas),hobi:'',cita:'',src:''});return x}
 function localCall(r){
   const db=ldb();
@@ -1148,11 +1163,10 @@ async function renderT6(fromPoll){
     return `<button class="btn ghost sm" data-t6zip="${esc(k)}" ${T6ZIP?'disabled':''} title="Semua poster ${esc(k)}, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${T6ZIP.sel===sel?T6ZIP.t:`${esc(k)} (${n})`}</span></button>`}).join('')}</div>`:''}
   ${!all.length?'<div class="empty"><p>Tiada murid Tahun 6 dalam senarai murid.</p></div>':!list.length?'<div class="empty"><p>Tiada murid sepadan.</p></div>'
    :list.map((s,i)=>{const k=esc(t6Key(s));return `<div class="t6-row ${s.hobi&&s.cita?'ok':''}"><span class="t6-i">${i+1}</span>
-    <button class="t6-foto" data-foto="${k}" title="${s.src?'Tukar foto':'Muat naik foto'}" aria-label="${s.src?'Tukar':'Muat naik'} foto ${esc(s.nama)}">${s.src?`<img src="${esc(s.src)}" alt="" loading="lazy">`:'<svg class="i"><use href="#i-cam"/></svg>'}</button>
-    <div class="ms-n"><b>${esc(s.nama)}</b><small>${esc(s.kelas)}${s.src?`<button type="button" class="t6-del" data-delfoto="${k}">padam foto</button>`:''}</small></div>
+    ${fotoBtn(s,'t6-foto')}
+    <div class="ms-n"><b>${esc(s.nama)}</b><small>${esc(s.kelas)}</small></div>
     ${field(s,'hobi')}${field(s,'cita')}
-    <button class="del-p ed" data-t6poster="${k}" title="Poster" aria-label="Poster ${esc(s.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button></div>`}).join('')}
-  <input type="file" id="t6File" accept="image/*" hidden>`;
+    <button class="del-p ed" data-t6poster="${k}" title="Poster" aria-label="Poster ${esc(s.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button></div>`}).join('')}`;
   const el=sel&&box.querySelector(sel);
   if(el){el.focus();if(el.tagName==='INPUT'){el.value=val;try{el.setSelectionRange(caret,caret)}catch{}}}
   $('#t6Kls').onchange=e=>{T6KLS=e.target.value;store.set('t6kls',T6KLS,sessionStorage);renderT6()};
@@ -1164,12 +1178,6 @@ async function renderT6(fromPoll){
     T6LAIN.delete(id);save(c.dataset.k,c.dataset.f,c.value)});
   $$('#t6 input[data-f]').forEach(c=>{c.onkeydown=e=>{if(e.key==='Enter')c.blur()};
     c.onchange=()=>{if(t6n(c.value)){T6LAIN.delete(c.dataset.f+'|'+c.dataset.k);save(c.dataset.k,c.dataset.f,c.value)}}});
-  let fk='';
-  $$('#t6 [data-foto]').forEach(b=>b.onclick=()=>{fk=b.dataset.foto;$('#t6File').click()});
-  $('#t6File').onchange=async e=>{const f=e.target.files[0],s=find(fk);e.target.value='';if(!f||!s)return;
-    try{toast('Memuat naik foto '+s.nama+'…');const data=await compress(f,900,'image/jpeg',.85);await call('upload',{purpose:'t6',nama:s.nama,kelas:s.kelas,mime:'image/jpeg',data},{quiet:true});toast('Foto '+s.nama+' disimpan')}catch(err){toast(err.message,true)}};
-  $$('#t6 [data-delfoto]').forEach(b=>b.onclick=async()=>{const s=find(b.dataset.delfoto);if(!s||!confirm('Padam foto '+s.nama+'?'))return;
-    try{await call('delT6Foto',{nama:s.nama,kelas:s.kelas},{quiet:true});toast('Foto '+s.nama+' dipadam')}catch(e){toast(e.message,true)}});
   $$('#t6 [data-t6poster]').forEach(b=>b.onclick=()=>openCard('t6',find(b.dataset.t6poster),b));
   $('#t6Xls').onclick=()=>{if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
     const rows=[['Bil','Nama','Kelas','Hobi','Cita-cita','Foto']].concat(list.map((s,i)=>[i+1,s.nama,s.kelas,s.hobi,s.cita,s.src?'ADA':'TIADA']));
@@ -1192,7 +1200,7 @@ function openAw(id){
   if(canNames()){
     const ps=PL.filter(p=>p.aid===id).sort(byKelas);
     const groups={};ps.forEach(p=>(groups[p.tahun||'-']=groups[p.tahun||'-']||[]).push(p));
-    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${ADD.ed===p.id&&!ro?`<form class="ed-c" data-id="${esc(p.id)}"><input class="fi" maxlength="80" value="${esc(p.catatan)}" placeholder="${a.kat==='KO'?'Aktiviti – pencapaian – peringkat':'Catatan'}" aria-label="Catatan ${esc(p.nama)}"><button class="btn sm">Simpan</button></form>`:p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span><span class="rcp-act">${isP?`<button class="del-p ed poster-open" data-ps-key="${esc(p.nama+'|'+p.kelas)}" title="Poster" aria-label="Poster ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button>`:''}${isP&&ro?'':ro?`<span class="tg ${p.status==='Diterima'?'ok':''}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</span>`:`${isP?'':`<button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button>`}<button class="del-p ed" data-ed="${esc(p.id)}" aria-label="Ubah catatan ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-pen"/></svg></button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button>`}</span></div>`).join('')}</div>`).join(''):`<div class="empty"><p>Tiada ${isP?'murid':'penerima'} untuk ${W} ini.</p></div>`;
+    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${ADD.ed===p.id&&!ro?`<form class="ed-c" data-id="${esc(p.id)}"><input class="fi" maxlength="80" value="${esc(p.catatan)}" placeholder="${a.kat==='KO'?'Aktiviti – pencapaian – peringkat':'Catatan'}" aria-label="Catatan ${esc(p.nama)}"><button class="btn sm">Simpan</button></form>`:p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span><span class="rcp-act">${fotoBtn(p)}${isP?`<button class="del-p ed poster-open" data-ps-key="${esc(p.nama+'|'+p.kelas)}" title="Poster" aria-label="Poster ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button>`:''}${isP&&ro?'':ro?`<span class="tg ${p.status==='Diterima'?'ok':''}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</span>`:`${isP?'':`<button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button>`}<button class="del-p ed" data-ed="${esc(p.id)}" aria-label="Ubah catatan ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-pen"/></svg></button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button>`}</span></div>`).join('')}</div>`).join(''):`<div class="empty"><p>Tiada ${isP?'murid':'penerima'} untuk ${W} ini.</p></div>`;
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
   $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((isP?'Persembahan':CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n}${+a.sasaran?` / ${+a.sasaran}`:''} ${isP?'murid terlibat':'penerima'}${+a.sasaran&&c.n>+a.sasaran?' (melebihi sasaran)':''}${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
   <div class="body">${isP?`<button class="btn" style="width:100%;margin-top:12px" id="toKad"><svg class="i"><use href="#i-img"/></svg>Kad tajuk</button>`:''}${PIN&&c.n&&!isP?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}<div class="lockbar">${locked?`<p class="warnmsg" style="margin:12px 0 6px"><svg class="i" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"/></svg> ${isP?'Persembahan':'Anugerah'} ini dikunci.${PIN?' Admin masih boleh mengubah.':' Masukkan PIN admin untuk membuka kunci.'}</p>`:''}${PIN?`<button class="btn ghost sm" id="awKunci" style="${locked?'':'margin-top:12px'}"><svg class="i"><use href="#i-lock"/></svg>${locked?'Buka kunci':'Kunci '+W+' ini'}</button>`:`<details class="bulk" ${locked?'open':''} style="${locked?'':'margin-top:12px'}"><summary>${locked?'Buka kunci':'Kunci '+W+' ini'} (PIN admin)</summary><form class="addrow" id="awKunciF" autocomplete="off"><input class="fi" id="awKunciPin" type="password" maxlength="32" autocomplete="off" placeholder="PIN admin" aria-label="PIN admin"><button class="btn">${locked?'Buka kunci':'Kunci'}</button></form></details>`}</div>${ro?'':'<div class="addp" id="addp"></div>'}${body}</div>`;
@@ -1916,6 +1924,8 @@ const POSTER_STYLE={
   P:{title:'Persembahan',head:'PENGHARGAAN PERSEMBAHAN',sub:'Terima kasih atas sumbangan bakat',ink:'#150a22',mid:'#3a1f55',asset:'p'}
 };
 const posterImages=new Map();
+// draw im to fill x,y,w,h (cover), cropped a little towards the top so faces stay in
+function posterCover(ctx,im,x,y,w,h){const k=Math.max(w/im.naturalWidth,h/im.naturalHeight),sw=w/k,sh=h/k;ctx.drawImage(im,(im.naturalWidth-sw)/2,(im.naturalHeight-sh)*.32,sw,sh,x,y,w,h)}
 function posterImage(url){
   if(!posterImages.has(url))posterImages.set(url,new Promise(resolve=>{
     const im=new Image();let done=false;
@@ -2012,7 +2022,7 @@ async function posterCanvas(s,kat){
   const style=POSTER_STYLE[kat];if(!style)throw new Error('Kategori poster tidak sah.');
   const settings={...D.settings};
   await Promise.all([document.fonts.load('700 64px "Cormorant SC"'),document.fonts.load('600 40px "Cormorant SC"'),document.fonts.load('italic 32px "Cormorant Garamond"'),document.fonts.load('600 32px "Plus Jakarta Sans"'),document.fonts.load('400 26px "Plus Jakarta Sans"')]);
-  const [bg,logo]=await Promise.all([posterImage('img/poster-'+style.asset+'.jpg'),posterImage('img/logo-sekolah.jpg')]);
+  const foto=fotoOf(s),[bg,logo,photo]=await Promise.all([posterImage('img/poster-'+style.asset+'.jpg'),posterImage('img/logo-sekolah.jpg'),foto?posterImage(foto):null]);
   const canvas=document.createElement('canvas');canvas.width=1920;canvas.height=1080;
   const ctx=canvas.getContext('2d');posterBackground(ctx,style,bg);
   // School seal: white JPG stays fully inside the circular gold medallion.
@@ -2025,7 +2035,7 @@ async function posterCanvas(s,kat){
   ctx.save();ctx.shadowColor='#000b';ctx.shadowBlur=35;ctx.shadowOffsetY=14;ctx.fillStyle=posterGold(ctx,105,239,582,760);ctx.fillRect(105,239,582,760);ctx.restore();
   ctx.fillStyle=style.ink;ctx.fillRect(113,247,566,744);ctx.strokeStyle=posterGold(ctx,115,249,560,740);ctx.lineWidth=2;ctx.strokeRect(117,251,558,736);
   const inner=ctx.createLinearGradient(126,267,666,987);inner.addColorStop(0,style.mid);inner.addColorStop(1,style.ink);ctx.fillStyle=inner;ctx.fillRect(126,267,540,720);
-  ctx.save();ctx.beginPath();ctx.rect(126,267,540,720);ctx.clip();ctx.globalAlpha=.09;posterMotif(ctx,kat,396,620,2.6);ctx.restore();
+  ctx.save();ctx.beginPath();ctx.rect(126,267,540,720);ctx.clip();if(photo?.naturalWidth)posterCover(ctx,photo,126,267,540,720);else{ctx.globalAlpha=.09;posterMotif(ctx,kat,396,620,2.6)}ctx.restore();
   for(const [x,y,dx,dy] of [[105,239,1,1],[687,239,-1,1],[105,999,1,-1],[687,999,-1,-1]]){
     ctx.save();ctx.translate(x,y);ctx.scale(dx,dy);ctx.strokeStyle=posterGold(ctx,0,0,65,65);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-7,53);ctx.lineTo(-7,-7);ctx.lineTo(53,-7);ctx.stroke();ctx.beginPath();ctx.moveTo(9,33);ctx.quadraticCurveTo(42,42,33,9);ctx.quadraticCurveTo(9,9,9,33);ctx.stroke();ctx.restore();
   }
@@ -2112,8 +2122,7 @@ async function t6Canvas(m){
   ctx.save();ctx.beginPath();ctx.rect(154,274,510,680);ctx.clip();
   const inner=ctx.createLinearGradient(154,274,664,954);inner.addColorStop(0,'#1d3b62');inner.addColorStop(1,'#091a34');ctx.fillStyle=inner;ctx.fillRect(154,274,510,680);
   if(photo&&photo.naturalWidth&&photo.naturalHeight){
-    const scale=Math.max(510/photo.naturalWidth,680/photo.naturalHeight),sw=510/scale,sh=680/scale;
-    ctx.drawImage(photo,(photo.naturalWidth-sw)/2,(photo.naturalHeight-sh)*.32,sw,sh,154,274,510,680);
+    posterCover(ctx,photo,154,274,510,680);
   }else{
     ctx.fillStyle='#c8d5e21f';ctx.beginPath();ctx.arc(409,553,57,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(292,715);ctx.bezierCurveTo(292,591,526,591,526,715);ctx.closePath();ctx.fill();
     ctx.strokeStyle='#e0c58a50';ctx.lineWidth=1;ctx.beginPath();ctx.arc(409,618,150,0,Math.PI*2);ctx.stroke();
@@ -2185,7 +2194,7 @@ function openPoster(s,trigger){
   posterState.mode='poster';posterState.performance=null;
   document.getElementById('posterTitle').textContent='Poster Pencapaian';
   posterState.student=s;posterState.focus=trigger||document.activeElement;
-  document.getElementById('posterNote').textContent='1920 × 1080 · Letakkan foto murid pada ruang potret dalam PowerPoint atau Canva.';
+  document.getElementById('posterNote').textContent='1920 × 1080 · '+(fotoOf(s)?'Foto murid dari senarai penerima.':'Tiada foto: muat naik foto murid dalam senarai penerima, atau letak sendiri dalam PowerPoint/Canva.');
   const tabs=document.getElementById('posterTabs');tabs.replaceChildren();
   cats.forEach(k=>{const b=document.createElement('button');b.type='button';b.className='btn ghost sm';b.dataset.kat=k;b.textContent=POSTER_STYLE[k].title;b.onclick=()=>posterSelect(k);tabs.append(b)});
   document.getElementById('posterDialog').showModal();posterSelect(cats[0]);document.getElementById('posterDownload').focus();
