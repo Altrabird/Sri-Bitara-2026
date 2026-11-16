@@ -1143,7 +1143,9 @@ async function renderT6(fromPoll){
     <input class="fi" id="t6Q" type="search" style="width:auto;min-width:200px;flex:1" placeholder="Cari nama…" value="${esc(T6Q)}" aria-label="Cari nama murid">
     <button class="btn ghost sm" id="t6Xls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button>
     <button class="btn ghost sm" id="t6XlsFoto" title="Excel dengan foto setiap murid yang dipaparkan"><svg class="i"><use href="#i-dl"/></svg><span>Excel + foto</span></button>
-    <button class="btn ghost sm" id="t6Poster" ${T6ZIP?'disabled':''} title="Poster setiap murid yang dipaparkan, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${T6ZIP||'Semua poster'}</span></button></div>
+    <button class="btn ghost sm" id="t6Poster" ${T6ZIP?'disabled':''} title="Poster setiap murid yang dipaparkan, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${T6ZIP.sel==='#t6Poster'?T6ZIP.t:'Semua poster'}</span></button></div>
+  ${classes.length?`<div class="tools" style="margin-top:-8px"><span class="muted" style="font-size:12.5px">Poster ikut kelas (ZIP):</span>${classes.map(k=>{const sel=`#t6 [data-t6zip="${k}"]`,n=all.filter(s=>s.kelas===k).length;
+    return `<button class="btn ghost sm" data-t6zip="${esc(k)}" ${T6ZIP?'disabled':''} title="Semua poster ${esc(k)}, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${T6ZIP.sel===sel?T6ZIP.t:`${esc(k)} (${n})`}</span></button>`}).join('')}</div>`:''}
   ${!all.length?'<div class="empty"><p>Tiada murid Tahun 6 dalam senarai murid.</p></div>':!list.length?'<div class="empty"><p>Tiada murid sepadan.</p></div>'
    :list.map((s,i)=>{const k=esc(t6Key(s));return `<div class="t6-row ${s.hobi&&s.cita?'ok':''}"><span class="t6-i">${i+1}</span>
     <button class="t6-foto" data-foto="${k}" title="${s.src?'Tukar foto':'Muat naik foto'}" aria-label="${s.src?'Tukar':'Muat naik'} foto ${esc(s.nama)}">${s.src?`<img src="${esc(s.src)}" alt="" loading="lazy">`:'<svg class="i"><use href="#i-cam"/></svg>'}</button>
@@ -1172,6 +1174,8 @@ async function renderT6(fromPoll){
   $('#t6Xls').onclick=()=>{if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
     const rows=[['Bil','Nama','Kelas','Hobi','Cita-cita','Foto']].concat(list.map((s,i)=>[i+1,s.nama,s.kelas,s.hobi,s.cita,s.src?'ADA':'TIADA']));
     preview('Majlis T6 · Hobi & Cita-cita',`Excel · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Majlis-T6'+tag,rows,'xlsx'))};
+  $$('#t6 [data-t6zip]').forEach(b=>b.onclick=()=>{const k=b.dataset.t6zip,c=all.filter(s=>s.kelas===k);
+    if(confirm(`Jana ${c.length} poster Majlis T6 ${k} dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(c.map(s=>[s,'T6']),`#t6 [data-t6zip="${k}"]`,'Poster-T6-'+k.replace(/\s+/g,'-')+'.zip')});
   $('#t6XlsFoto').onclick=async e=>{if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
     const b=e.currentTarget,label=b.querySelector('span');b.disabled=true;label.textContent='Menyediakan…';
     try{saveBlob('Majlis-T6-Foto'+tag+'.xlsx',await xlsxFoto('Majlis T6',['Bil','Foto','Nama','Kelas','Hobi','Cita-cita'],list.map((s,i)=>[i+1,'',s.nama,s.kelas,s.hobi,s.cita]),list.map(s=>s.src)));toast(`Excel ${list.length} murid dimuat turun`)}
@@ -2128,14 +2132,16 @@ async function t6Canvas(m){
   ctx.fillStyle='#d8b97516';ctx.fillRect(762,627,kw,58);ctx.strokeStyle='#d6b56d80';ctx.lineWidth=1;ctx.strokeRect(762,627,kw,58);
   posterWrite(ctx,kelas,786,639,'#efd294');
   const badge=(x,label,value,target)=>{
-    const y=734,w=492,h=176;
+    // big enough to read from the back of the hall
+    const y=706,w=492,h=232;
     const panel=ctx.createLinearGradient(x,y,x+w,y+h);panel.addColorStop(0,'#1a3659e8');panel.addColorStop(1,'#0a1b36dc');ctx.fillStyle=panel;ctx.fillRect(x,y,w,h);ctx.strokeStyle='#bfa36a66';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
-    ctx.save();ctx.translate(x+42,y+42);ctx.strokeStyle=gold;ctx.fillStyle=gold;ctx.lineWidth=2;
+    ctx.save();ctx.translate(x+48,y+48);ctx.scale(1.35,1.35);ctx.strokeStyle=gold;ctx.fillStyle=gold;ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(0,0,23,0,Math.PI*2);ctx.stroke();ctx.beginPath();
     if(target){ctx.arc(0,0,13,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(19,-19);ctx.moveTo(11,-19);ctx.lineTo(19,-19);ctx.lineTo(19,-11);ctx.stroke();}
     else{for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?6:14;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.stroke();}ctx.restore();
-    write(label,x+80,y+27,w-104,32,{size:22,maxLines:1},'#e6c988');
-    write(upper(value),x+25,y+86,w-50,74,{size:31,min:20,weight:'600',maxLines:2,leading:1.12});
+    write(label,x+96,y+26,w-120,46,{size:34,weight:'700',maxLines:1},'#f0d08f');
+    const v=posterFit(ctx,upper(value),w-52,128,{size:58,min:32,weight:'700',maxLines:2,leading:1.05});
+    posterWrite(ctx,v,x+26,y+94+(128-v.height)/2,cream);
   };
   badge(762,T6_TEKS.hobi,pupil.hobi,false);badge(1282,T6_TEKS.cita,pupil.cita,true);
   line(762,952,1012,.6);
@@ -2198,7 +2204,7 @@ async function downloadPoster(){
 // JPEG because 300 PNGs at ~3 MB each would not fit in the browser's memory
 async function downloadAllPosters(jobs,sel,zipName){
   const label=$(sel).querySelector('span').textContent;
-  const set=t=>{if(sel==='#msPoster')PZIP=t;if(sel==='#t6Poster')T6ZIP=t;const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
+  const set=t=>{if(sel==='#msPoster')PZIP=t;if(sel.startsWith('#t6'))T6ZIP=t?{sel,t}:'';const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim(),files=[];
   try{
     for(const [i,[s,k]] of jobs.entries()){
