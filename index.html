@@ -389,6 +389,20 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   #stage .bar select{max-width:100%}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}#invite.open .door{opacity:0}.anim .rise,#stage .name .w>span{opacity:1;transform:none;filter:none}}
+
+/* Poster pencapaian */
+.ms-c .poster-open{margin:8px auto 0;padding:5px 9px;font-size:11px}
+#posterDialog{margin:auto;width:min(1440px,96vw);max-width:96vw;max-height:96dvh;padding:18px;border:1px solid var(--gold);border-radius:14px;background:#170b0e;color:var(--cream);box-shadow:0 30px 100px #000b;overflow:auto}
+#posterDialog::backdrop{background:#080609df;backdrop-filter:blur(8px)}
+.poster-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.poster-toolbar h2{font:700 24px var(--hf);margin:0 auto 0 0}
+#posterTabs{display:flex;gap:8px;flex-wrap:wrap}
+#posterTabs [aria-pressed="true"]{background:var(--gold);color:#241108}
+#posterView{display:flex;align-items:center;justify-content:center;min-height:120px;background:#08090b;aspect-ratio:16/9;max-height:calc(96dvh - 170px);margin:auto}
+#posterView canvas{display:block;width:100%;height:100%;object-fit:contain}
+.poster-note{font-size:12px;color:var(--muted);margin:10px 0 0}
+@media(max-width:600px){#posterDialog{padding:12px}.poster-toolbar h2{width:100%}#posterTabs{width:100%}}
+
 </style>
 </head>
 <body>
@@ -575,6 +589,13 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   <div class="slide" id="stSlide"></div>
   <div class="ctrl"><button onclick="stageGo(-1)" aria-label="Sebelum"><svg class="i"><use href="#i-l"/></svg></button><span id="stP"></span><button onclick="stageGo(1)" aria-label="Seterusnya"><svg class="i"><use href="#i-r"/></svg></button><span style="margin-left:8px">← → / klik pembentang · F · Esc</span></div>
 </div>
+
+
+<dialog id="posterDialog" role="dialog" aria-modal="true" aria-labelledby="posterTitle" aria-describedby="posterNote">
+  <div class="poster-toolbar"><h2 id="posterTitle">Poster Pencapaian</h2><div id="posterTabs" role="group" aria-label="Kategori poster"></div><button class="btn" id="posterDownload" autofocus>Muat turun PNG</button><button class="btn ghost" id="posterClose" aria-label="Tutup pratonton poster">Tutup ×</button></div>
+  <div id="posterView" aria-live="polite" aria-busy="false"></div>
+  <p class="poster-note" id="posterNote">1920 × 1080 · Letakkan foto murid pada ruang potret dalam PowerPoint atau Canva.</p>
+</dialog>
 
 <script>
 /* ================= KONFIGURASI ================= */
@@ -912,7 +933,7 @@ function renderAwList(){
     <button class="btn ghost sm" id="msCsv" style="margin-left:auto"><svg class="i"><use href="#i-dl"/></svg>CSV</button>
   </div>
   <div class="tools" style="margin-top:-6px">${Object.entries(CAT).map(([k,n])=>`<span class="lg"><i style="background:${COL[k]}"></i>${n}</span>`).join('')}<span class="lg">· ${list.length} murid dipaparkan</span></div>
-  ${list.length?list.map(s=>`<div class="ms ${s.items.length>2?'hi':''}"><div class="ms-n"><b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf" title="Kelas berbeza dalam senarai anugerah — sila semak">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b ${p.status==='Diterima'?'ok':''}" data-aid="${esc(a.id)}" title="${esc(CAT[a.kat]||'')} · ${esc(p.kelas||'tiada kelas')}${p.status==='Diterima'?' · Diterima':''}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}${p.status==='Diterima'?' ✓':''}</button>`).join('')}</div><div class="ms-c"><b>${s.items.length}</b><small>anugerah</small></div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan tapisan.':'Tiada penerima.'}</p></div>`}`;
+  ${list.length?list.map(s=>`<div class="ms ${s.items.length>2?'hi':''}"><div class="ms-n"><b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf" title="Kelas berbeza dalam senarai anugerah — sila semak">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b ${p.status==='Diterima'?'ok':''}" data-aid="${esc(a.id)}" title="${esc(CAT[a.kat]||'')} · ${esc(p.kelas||'tiada kelas')}${p.status==='Diterima'?' · Diterima':''}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}${p.status==='Diterima'?' ✓':''}</button>`).join('')}</div><div class="ms-c"><b>${s.items.length}</b><small>anugerah</small>${s.items.some(i=>['K','H','KO'].includes(i.a.kat))?`<button class="btn ghost sm poster-open" data-poster-name="${esc(s.nama)}" aria-label="Poster ${esc(s.nama)}">Poster</button>`:''}</div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan tapisan.':'Tiada penerima.'}</p></div>`}`;
   $('#msMulti').onchange=e=>{AWMULTI=e.target.checked;renderAwList()};
   $('#msKls').onchange=e=>{AWKLS=e.target.value;renderAwList()};
   if($('#msConf'))$('#msConf').onclick=()=>{AWCONF=!AWCONF;renderAwList()};
@@ -1780,6 +1801,180 @@ show(location.hash.slice(1)||'dashboard');
 refresh();
 setInterval(()=>{if(!document.hidden)refresh(true)},PIN?15000:25000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-LAST>10000)refresh(true)});
+
+
+/* ---------- poster pencapaian ---------- */
+const POSTER_STYLE={
+  K:{title:'Kurikulum',ink:'#071222',mid:'#162e4d',asset:'k'},
+  H:{title:'Hal Ehwal Murid',ink:'#21090f',mid:'#4a1520',asset:'h'},
+  KO:{title:'Kokurikulum',ink:'#041d17',mid:'#124737',asset:'ko'}
+};
+const posterImages=new Map();
+function posterImage(url){
+  if(!posterImages.has(url))posterImages.set(url,new Promise(resolve=>{
+    const im=new Image();let done=false;
+    const finish=value=>{if(done)return;done=true;clearTimeout(timer);resolve(value)};
+    const timer=setTimeout(()=>finish(null),12000);
+    im.onload=()=>finish(im);im.onerror=()=>finish(null);im.src=url;
+  }));
+  return posterImages.get(url);
+}
+// One fitting helper for all typography. Also breaks unusually long unspaced names.
+function posterFit(ctx,text,width,height,{size=48,min=12,family='Plus Jakarta Sans',weight='600',maxLines=Infinity,leading=1.22}={}){
+  text=String(text||'').trim();
+  for(let px=size;px>=1;px--){
+    ctx.font=weight+' '+px+'px "'+family+'"';
+    const lines=[];let line='';
+    for(const word of text.split(/\s+/)){
+      if(ctx.measureText(word).width>width){
+        if(line){lines.push(line);line=''}
+        for(const ch of word){if(ctx.measureText(line+ch).width>width&&line){lines.push(line);line=''}line+=ch}
+      }else if(line&&ctx.measureText(line+' '+word).width>width){lines.push(line);line=word}
+      else line+=(line?' ':'')+word;
+    }
+    if(line)lines.push(line);
+    const h=lines.length*px*leading;
+    if(lines.length<=maxLines&&h<=height)return {lines,size:px,lineHeight:px*leading,height:h,font:ctx.font,belowPreferred:px<min};
+  }
+  throw new Error('Kandungan poster terlalu panjang.');
+}
+function posterWrite(ctx,fit,x,y,color){
+  ctx.font=fit.font;ctx.fillStyle=color;ctx.textBaseline='top';
+  fit.lines.forEach((line,i)=>ctx.fillText(line,x,y+i*fit.lineHeight));
+}
+function posterGold(ctx,x=0,y=0,w=1920,h=1080){
+  const g=ctx.createLinearGradient(x,y,x+w,y+h);
+  [[0,'#8f631e'],[.22,'#f7dda0'],[.43,'#c79536'],[.53,'#fff2c3'],[.74,'#b78428'],[1,'#edcf85']].forEach(([p,c])=>g.addColorStop(p,c));return g;
+}
+function posterMotif(ctx,kat,x,y,scale=1){
+  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.strokeStyle=posterGold(ctx,-60,-60,120,120);ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=2;
+  for(const side of [-1,1]){
+    ctx.beginPath();ctx.moveTo(side*10,48);ctx.quadraticCurveTo(side*68,10,side*38,-48);ctx.stroke();
+    for(let i=0;i<7;i++){ctx.save();ctx.translate(side*(24+16*Math.sin(i/7*Math.PI)),34-i*11);ctx.rotate(side*(.7+i*.12));ctx.beginPath();ctx.ellipse(0,0,5,12,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+  }
+  ctx.beginPath();
+  if(kat==='H'){ctx.moveTo(-25,-29);ctx.lineTo(0,-38);ctx.lineTo(25,-29);ctx.lineTo(23,8);ctx.quadraticCurveTo(16,27,0,34);ctx.quadraticCurveTo(-16,27,-23,8);ctx.closePath();ctx.stroke();}
+  else if(kat==='KO'){ctx.moveTo(-23,-29);ctx.lineTo(23,-29);ctx.quadraticCurveTo(23,9,0,15);ctx.quadraticCurveTo(-23,9,-23,-29);ctx.moveTo(0,15);ctx.lineTo(0,32);ctx.moveTo(-18,33);ctx.lineTo(18,33);ctx.moveTo(-23,-23);ctx.bezierCurveTo(-48,-30,-42,3,-17,3);ctx.moveTo(23,-23);ctx.bezierCurveTo(48,-30,42,3,17,3);ctx.stroke();}
+  else{ctx.moveTo(0,26);ctx.lineTo(0,-22);ctx.quadraticCurveTo(-15,-34,-29,-22);ctx.lineTo(-29,21);ctx.quadraticCurveTo(-14,13,0,26);ctx.quadraticCurveTo(14,13,29,21);ctx.lineTo(29,-22);ctx.quadraticCurveTo(15,-34,0,-22);ctx.stroke()}
+  ctx.restore();
+}
+function posterBackground(ctx,style,im){
+  ctx.fillStyle=style.ink;ctx.fillRect(0,0,1920,1080);
+  if(im)ctx.drawImage(im,0,0,1920,1080);
+  else{
+    const glow=ctx.createRadialGradient(300,180,0,300,180,1400);glow.addColorStop(0,style.mid);glow.addColorStop(1,style.ink);ctx.fillStyle=glow;ctx.fillRect(0,0,1920,1080);
+    ctx.strokeStyle='#dab36720';ctx.lineWidth=1;
+    for(let x=20;x<1920;x+=64)for(let y=20;y<1080;y+=64){if(x>90&&x<1830&&y>100&&y<980)continue;ctx.beginPath();ctx.moveTo(x,y-22);ctx.lineTo(x+22,y);ctx.lineTo(x,y+22);ctx.lineTo(x-22,y);ctx.closePath();ctx.stroke()}
+  }
+  // Quiet the typography area without erasing the textured perimeter.
+  const shade=ctx.createLinearGradient(650,0,1850,0);shade.addColorStop(0,style.ink+'00');shade.addColorStop(.15,style.ink+'d9');shade.addColorStop(.9,style.ink+'c9');shade.addColorStop(1,style.ink+'00');ctx.fillStyle=shade;ctx.fillRect(650,205,1210,770);
+  ctx.strokeStyle=posterGold(ctx);ctx.lineWidth=2;ctx.strokeRect(34,34,1852,1012);ctx.globalAlpha=.45;ctx.lineWidth=1;ctx.strokeRect(44,44,1832,992);ctx.globalAlpha=1;
+  for(const [x,y,dx,dy] of [[54,54,1,1],[1866,54,-1,1],[54,1026,1,-1],[1866,1026,-1,-1]]){
+    ctx.save();ctx.translate(x,y);ctx.scale(dx,dy);ctx.strokeStyle=posterGold(ctx,0,0,100,100);ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,75);ctx.lineTo(0,0);ctx.lineTo(75,0);ctx.moveTo(12,48);ctx.lineTo(12,12);ctx.lineTo(48,12);ctx.stroke();ctx.restore();
+  }
+}
+function posterAwards(ctx,items,box){
+  const records=items.map(({a,p,ps})=>({title:String(a.nama||'').replace(/^Anugerah\s+/i,''),notes:(ps?.length?ps:[p]).flatMap(row=>String(row?.catatan||'').split(/\s*;\s*|\r?\n/)).map(s=>s.trim()).filter(Boolean)}));
+  const layout=(columns,size)=>{
+    const width=(box.w-(columns-1)*42)/columns;
+    const blocks=records.map(r=>{
+      const title=posterFit(ctx,r.title,width-26,10000,{size, min:size});
+      const notes=r.notes.map(n=>posterFit(ctx,n,width-40,10000,{size:Math.round(size*.78),min:18,weight:'400'}));
+      return {title,notes,h:title.height+notes.reduce((s,n)=>s+n.height+5,0)+12};
+    });
+    if(columns===1)return {columns,width,groups:[blocks],height:blocks.reduce((s,b)=>s+b.h,0)};
+    let split=1,best=Infinity;
+    for(let i=1;i<blocks.length;i++){const h=Math.max(blocks.slice(0,i).reduce((s,b)=>s+b.h,0),blocks.slice(i).reduce((s,b)=>s+b.h,0));if(h<best){best=h;split=i}}
+    return {columns,width,groups:[blocks.slice(0,split),blocks.slice(split)],height:best};
+  };
+  let result;
+  for(let size=records.length<=2?43:36;size>=28;size--){const l=layout(1,size);if(l.height<=box.h){result=l;break}}
+  if(!result)for(let size=34;size>=1;size--){const l=layout(records.length>1?2:1,size);if(l.height<=box.h){result=l;break}}
+  if(!result)throw new Error('Terlalu banyak kandungan untuk poster.');
+  result.groups.forEach((group,col)=>{
+    const x=box.x+col*(result.width+42);let y=box.y;
+    group.forEach(b=>{
+      ctx.fillStyle=posterGold(ctx,x,y,20,20);ctx.save();ctx.translate(x+5,y+b.title.size*.45);ctx.rotate(Math.PI/4);ctx.fillRect(-4,-4,8,8);ctx.restore();
+      posterWrite(ctx,b.title,x+26,y,'#f8e7bd');y+=b.title.height;
+      b.notes.forEach(n=>{y+=5;posterWrite(ctx,n,x+40,y,'#e2d9c6');y+=n.height});y+=12;
+    });
+  });
+}
+async function posterCanvas(s,kat){
+  const style=POSTER_STYLE[kat];if(!style)throw new Error('Kategori poster tidak sah.');
+  const settings={...D.settings};
+  await Promise.all([document.fonts.load('700 64px "Cormorant SC"'),document.fonts.load('600 40px "Cormorant SC"'),document.fonts.load('italic 32px "Cormorant Garamond"'),document.fonts.load('600 32px "Plus Jakarta Sans"'),document.fonts.load('400 26px "Plus Jakarta Sans"')]);
+  const [bg,logo]=await Promise.all([posterImage('img/poster-'+style.asset+'.jpg'),posterImage('img/logo-sekolah.jpg')]);
+  const canvas=document.createElement('canvas');canvas.width=1920;canvas.height=1080;
+  const ctx=canvas.getContext('2d');posterBackground(ctx,style,bg);
+  // School seal: white JPG stays fully inside the circular gold medallion.
+  ctx.save();ctx.shadowColor='#0009';ctx.shadowBlur=24;ctx.fillStyle=posterGold(ctx,99,70,126,126);ctx.beginPath();ctx.arc(162,133,65,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fffdf3';ctx.beginPath();ctx.arc(162,133,57,0,Math.PI*2);ctx.fill();ctx.clip();if(logo)ctx.drawImage(logo,120,90,84,86);ctx.restore();
+  const headShade=ctx.createLinearGradient(240,0,1300,0);headShade.addColorStop(0,style.ink+'e6');headShade.addColorStop(.75,style.ink+'b3');headShade.addColorStop(1,style.ink+'00');ctx.save();ctx.filter='blur(22px)';ctx.fillStyle=headShade;ctx.fillRect(250,86,1040,100);ctx.restore();
+  posterWrite(ctx,posterFit(ctx,String(settings.nama||'Majlis Anugerah Sri Bitara 2026').toUpperCase(),1430,64,{size:47,family:'Cormorant SC',weight:'700',maxLines:1}),260,88,'#f6dfaa');
+  posterWrite(ctx,posterFit(ctx,'SK BANDAR TAWAU',1300,38,{size:24}),262,153,'#d9c6a1');
+  ctx.strokeStyle=posterGold(ctx);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(100,217);ctx.lineTo(1820,217);ctx.stroke();
+  // Photo placement: exact rectangular inner opening, 540 × 720 (3:4).
+  ctx.save();ctx.shadowColor='#000b';ctx.shadowBlur=35;ctx.shadowOffsetY=14;ctx.fillStyle=posterGold(ctx,105,239,582,760);ctx.fillRect(105,239,582,760);ctx.restore();
+  ctx.fillStyle=style.ink;ctx.fillRect(113,247,566,744);ctx.strokeStyle=posterGold(ctx,115,249,560,740);ctx.lineWidth=2;ctx.strokeRect(117,251,558,736);
+  const inner=ctx.createLinearGradient(126,267,666,987);inner.addColorStop(0,style.mid);inner.addColorStop(1,style.ink);ctx.fillStyle=inner;ctx.fillRect(126,267,540,720);
+  ctx.save();ctx.beginPath();ctx.rect(126,267,540,720);ctx.clip();ctx.globalAlpha=.09;posterMotif(ctx,kat,396,620,2.6);ctx.restore();
+  for(const [x,y,dx,dy] of [[105,239,1,1],[687,239,-1,1],[105,999,1,-1],[687,999,-1,-1]]){
+    ctx.save();ctx.translate(x,y);ctx.scale(dx,dy);ctx.strokeStyle=posterGold(ctx,0,0,65,65);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-7,53);ctx.lineTo(-7,-7);ctx.lineTo(53,-7);ctx.stroke();ctx.beginPath();ctx.moveTo(9,33);ctx.quadraticCurveTo(42,42,33,9);ctx.quadraticCurveTo(9,9,9,33);ctx.stroke();ctx.restore();
+  }
+  posterMotif(ctx,kat,1764,292,.75);
+  posterWrite(ctx,posterFit(ctx,'ANUGERAH '+style.title.toUpperCase(),905,58,{size:41,family:'Cormorant SC',weight:'700',maxLines:1}),755,256,'#e4bb61');
+  const items=s.items.filter(i=>i.a.kat===kat),dense=items.reduce((n,i)=>n+1+(i.ps?.length?i.ps:[i.p]).reduce((m,p)=>m+String(p?.catatan||'').split(/;|\n/).filter(t=>t.trim()).length,0),0)>10;
+  if(!dense)posterWrite(ctx,posterFit(ctx,'Meraikan kecemerlangan',920,43,{size:29,family:'Cormorant Garamond',weight:'italic',maxLines:1}),755,317,'#cdbb96');
+
+  const name=posterFit(ctx,String(s.nama||'').toUpperCase(),1060,dense?112:164,{size:dense?52:68,min:38,family:'Cormorant SC',weight:'700',maxLines:2,leading:1.04});
+  posterWrite(ctx,name,752,dense?327:377,'#fff1d6');
+  posterWrite(ctx,posterFit(ctx,String(s.kelas||'').toUpperCase(),1000,40,{size:27,maxLines:1}),757,dense?452:551,'#e7c679');
+  ctx.strokeStyle='#d9b66775';ctx.beginPath();ctx.moveTo(755,dense?499:612);ctx.lineTo(1815,dense?499:612);ctx.stroke();
+  posterAwards(ctx,items,{x:755,y:dense?520:641,w:1060,h:dense?458:337});
+  const days=[...new Set(items.map(({a,p})=>hariOf(a,p)))].sort();
+  const footer=[days.map(d=>tarikhHari(d).replace(/\s*\(.*\)$/,'')).join(' & '),hariInfo(days[0]).tempat||settings.lokasi].filter(Boolean).join('  ·  ');
+  const footerShade=ctx.createLinearGradient(250,0,1670,0);footerShade.addColorStop(0,style.ink+'00');footerShade.addColorStop(.15,style.ink+'ef');footerShade.addColorStop(.85,style.ink+'ef');footerShade.addColorStop(1,style.ink+'00');ctx.fillStyle=footerShade;ctx.fillRect(250,1003,1420,32);
+  const foot=posterFit(ctx,footer,1650,28,{size:21,min:16,weight:'400',maxLines:1});ctx.textAlign='center';posterWrite(ctx,foot,960,1011,'#d9c7a4');ctx.textAlign='left';
+  return canvas;
+}
+let posterState={token:0,canvas:null,student:null,kat:null,focus:null};
+async function posterSelect(kat){
+  const token=++posterState.token;posterState.kat=kat;posterState.canvas=null;
+  const view=document.getElementById('posterView'),download=document.getElementById('posterDownload');
+  download.setAttribute('aria-disabled','true');view.setAttribute('aria-busy','true');view.textContent='Menjana poster…';
+  document.querySelectorAll('#posterTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kat===kat)));
+  try{
+    const canvas=await posterCanvas(posterState.student,kat);if(token!==posterState.token)return;
+    posterState.canvas=canvas;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Poster '+POSTER_STYLE[kat].title+' — '+posterState.student.nama);view.replaceChildren(canvas);download.setAttribute('aria-disabled','false');
+  }catch(e){if(token===posterState.token)view.textContent='Poster tidak dapat dijana. Sila cuba semula.';console.error(e)}
+  finally{if(token===posterState.token)view.setAttribute('aria-busy','false')}
+}
+function openPoster(nama,trigger){
+  if(!canNames())return;
+  const s=studentMap('ALL').find(s=>s.nama===nama);if(!s)return;
+  const cats=Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>i.a.kat===k));if(!cats.length)return;
+  posterState.student=s;posterState.focus=trigger||document.activeElement;
+  document.getElementById('posterNote').textContent='1920 × 1080 · Letakkan foto murid pada ruang potret dalam PowerPoint atau Canva.';
+  const tabs=document.getElementById('posterTabs');tabs.replaceChildren();
+  cats.forEach(k=>{const b=document.createElement('button');b.type='button';b.className='btn ghost sm';b.dataset.kat=k;b.textContent=POSTER_STYLE[k].title;b.onclick=()=>posterSelect(k);tabs.append(b)});
+  document.getElementById('posterDialog').showModal();posterSelect(cats[0]);document.getElementById('posterDownload').focus();
+}
+function closePoster(){
+  ++posterState.token;document.getElementById('posterDialog').close();posterState.canvas=null;
+  if(posterState.focus?.isConnected)posterState.focus.focus();
+}
+async function downloadPoster(){
+  const {canvas,student,kat}=posterState;if(!canvas)return;
+  const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim().replace(/\s+/g,'-');
+  try{const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG gagal dijana.')),'image/png'));saveBlob('Poster-'+clean(student.nama)+'-'+clean(POSTER_STYLE[kat].title)+'.png',blob)}
+  catch(e){document.getElementById('posterNote').textContent='Muat turun gagal. Sila buka aplikasi melalui http(s) dan cuba semula.';console.error(e)}
+}
+document.getElementById('posterClose').onclick=closePoster;
+document.getElementById('posterDownload').onclick=downloadPoster;
+document.getElementById('posterDialog').addEventListener('cancel',e=>{e.preventDefault();closePoster()});
+document.getElementById('posterDialog').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();closePoster()}});
+document.addEventListener('click',e=>{const b=e.target.closest('.poster-open');if(b)openPoster(b.dataset.posterName,b)});
+
 </script>
 </body>
 </html>

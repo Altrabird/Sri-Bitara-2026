@@ -17,3 +17,9 @@ Web app for managing the **Majlis Anugerah Sri Bitara 2026** at SK Bandar Tawau:
 | `tests/e2e.py` | Playwright end-to-end tests, demo + remote mode (`python tests/e2e.py [awards.xlsx]`). |
 
 No student data is stored in this repository. Recipient lists are imported in the browser from the school's Excel file and saved only to the school's Supabase database.
+
+## Image credits
+
+| File | Source |
+|---|---|
+| `img/poster-k.jpg`, `img/poster-h.jpg`, `img/poster-ko.jpg` | Poster Pencapaian backgrounds (Kurikulum / HEM / Kokurikulum). AI-generated with OpenAI image generation via Codex CLI on the school owner's ChatGPT Plus account, 2026-11-16, then resized/compressed with Pillow. No text, people or logos. Under OpenAI's terms the output belongs to the user. |

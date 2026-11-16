@@ -404,6 +404,7 @@ with sync_playwright() as p:
     pg.evaluate("call('setCatatan',{ids:['k2'],catatan:' olahraga – johan – negeri '},{quiet:true})")
     s = pg.evaluate(f"(()=>{{const s=studentMap('ALL').find(s=>s.nama==='MURID KOKO');const i=s.items.find(i=>i.a.id==='{ko}');return [i.p.catatan,i.ps.length,counts(i.a).n]}})()")
     assert s == ['BOLA SEPAK – JOHAN – DAERAH; OLAHRAGA – JOHAN – NEGERI', 2, pg.evaluate(f"new Set(D.penerima.filter(p=>p.aid==='{ko}').map(p=>p.nama+'|'+p.kelas)).size")], s
+    assert pg.evaluate("posterCanvas(studentMap('ALL').find(s=>s.nama==='MURID KOKO'),'KO').then(c=>[c.width,c.height])") == [1920, 1080]
     pg.evaluate(f"PIN='123456';openAw('{ko}')")  # names are hidden from visitors here, so edit as admin
     pg.click('#drawer [data-ed=k1]')
     pg.fill('#drawer .ed-c input', 'Bola sepak – johan – zon')
