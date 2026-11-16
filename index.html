@@ -1142,6 +1142,7 @@ async function renderT6(fromPoll){
   <div class="tools"><select class="fi" id="t6Kls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Semua kelas Tahun 6 (${done(all)}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>s.kelas===k);return `<option value="${esc(k)}" ${k===T6KLS?'selected':''}>${esc(k)} (${done(c)}/${c.length})</option>`}).join('')}</select>
     <input class="fi" id="t6Q" type="search" style="width:auto;min-width:200px;flex:1" placeholder="Cari nama…" value="${esc(T6Q)}" aria-label="Cari nama murid">
     <button class="btn ghost sm" id="t6Xls"><svg class="i"><use href="#i-dl"/></svg>Senarai (Excel)</button>
+    <button class="btn ghost sm" id="t6XlsFoto" title="Excel dengan foto setiap murid yang dipaparkan"><svg class="i"><use href="#i-dl"/></svg><span>Excel + foto</span></button>
     <button class="btn ghost sm" id="t6Poster" ${T6ZIP?'disabled':''} title="Poster setiap murid yang dipaparkan, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${T6ZIP||'Semua poster'}</span></button></div>
   ${!all.length?'<div class="empty"><p>Tiada murid Tahun 6 dalam senarai murid.</p></div>':!list.length?'<div class="empty"><p>Tiada murid sepadan.</p></div>'
    :list.map((s,i)=>{const k=esc(t6Key(s));return `<div class="t6-row ${s.hobi&&s.cita?'ok':''}"><span class="t6-i">${i+1}</span>
@@ -1171,6 +1172,10 @@ async function renderT6(fromPoll){
   $('#t6Xls').onclick=()=>{if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
     const rows=[['Bil','Nama','Kelas','Hobi','Cita-cita','Foto']].concat(list.map((s,i)=>[i+1,s.nama,s.kelas,s.hobi,s.cita,s.src?'ADA':'TIADA']));
     preview('Majlis T6 · Hobi & Cita-cita',`Excel · ${list.length} murid`,rowsHTML(rows),()=>saveRows('Majlis-T6'+tag,rows,'xlsx'))};
+  $('#t6XlsFoto').onclick=async e=>{if(!list.length)return toast('Tiada murid untuk dimuat turun',true);
+    const b=e.currentTarget,label=b.querySelector('span');b.disabled=true;label.textContent='Menyediakan…';
+    try{saveBlob('Majlis-T6-Foto'+tag+'.xlsx',await xlsxFoto('Majlis T6',['Bil','Foto','Nama','Kelas','Hobi','Cita-cita'],list.map((s,i)=>[i+1,'',s.nama,s.kelas,s.hobi,s.cita]),list.map(s=>s.src)));toast(`Excel ${list.length} murid dimuat turun`)}
+    catch(err){toast(err.message,true)}finally{b.disabled=false;label.textContent='Excel + foto'}};
   $('#t6Poster').onclick=()=>{if(!list.length)return toast('Tiada murid untuk dijana poster',true);
     if(confirm(`Jana ${list.length} poster Majlis T6 dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(list.map(s=>[s,'T6']),'#t6Poster','Poster-T6-Sri-Bitara-2026'+tag+'.zip')};
 }
@@ -2219,6 +2224,37 @@ function zipBlob(files){
   const size=dir.reduce((t,x)=>t+x.byteLength,0),e=new DataView(new ArrayBuffer(22));
   [[0,0x06054b50,4],[8,files.length],[10,files.length],[12,size,4],[16,off,4]].forEach(([o,v,w])=>w?e.setUint32(o,v,true):e.setUint16(o,v,true));
   return new Blob([...parts,...dir,e],{type:'application/zip'});
+}
+// .xlsx with a photo in column B of each row (SheetJS CE can't write images), packed with zipBlob.
+// head = header row, rows = data rows (column B left empty), photos[i] = image src of rows[i] or ''
+async function xlsxFoto(sheetName,head,rows,photos){
+  const x=v=>String(v??'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const W=75,H=100,emu=px=>Math.round(px*9525),col=i=>String.fromCharCode(65+i),media=[];
+  for(const [i,src] of photos.entries()){
+    const im=src&&await posterImage(src);if(!im||!im.naturalWidth)continue;
+    const c=document.createElement('canvas');c.width=W*2;c.height=H*2; // 2x for sharp print, cover-cropped like the poster
+    const k=Math.max(c.width/im.naturalWidth,c.height/im.naturalHeight),sw=c.width/k,sh=c.height/k;
+    c.getContext('2d').drawImage(im,(im.naturalWidth-sw)/2,(im.naturalHeight-sh)*.32,sw,sh,0,0,c.width,c.height);
+    const b=await new Promise(ok=>c.toBlob(ok,'image/jpeg',.85));if(b)media.push({row:i+1,data:new Uint8Array(await b.arrayBuffer())});
+  }
+  const NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"',
+    REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships',X='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    rels=list=>X+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${list.map(([id,t,to])=>`<Relationship Id="${id}" Type="${REL}/${t}" Target="${to}"/>`).join('')}</Relationships>`;
+  const cell=(v,r,c,st)=>typeof v==='number'?`<c r="${col(c)}${r}" s="${st}"><v>${v}</v></c>`:`<c r="${col(c)}${r}" s="${st}" t="inlineStr"><is><t>${x(v)}</t></is></c>`;
+  const width=i=>i===1?12:Math.min(50,Math.max(...[head,...rows].map(r=>String(r[i]??'').length))+3);
+  const sheet=X+`<worksheet ${NS}><cols>${head.map((_,i)=>`<col min="${i+1}" max="${i+1}" width="${width(i)}" customWidth="1"/>`).join('')}</cols><sheetData>${[head,...rows].map((r,ri)=>`<row r="${ri+1}"${ri?' ht="80" customHeight="1"':''}>${r.map((v,ci)=>cell(v,ri+1,ci,ri?1:2)).join('')}</row>`).join('')}</sheetData>${media.length?'<drawing r:id="rId1"/>':''}</worksheet>`;
+  const drawing=X+`<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL}">${media.map((m,i)=>`<xdr:oneCellAnchor><xdr:from><xdr:col>1</xdr:col><xdr:colOff>${emu(6)}</xdr:colOff><xdr:row>${m.row}</xdr:row><xdr:rowOff>${emu(3)}</xdr:rowOff></xdr:from><xdr:ext cx="${emu(W)}" cy="${emu(H)}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${i+2}" name="Foto ${i+1}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${i+1}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${emu(W)}" cy="${emu(H)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`).join('')}</xdr:wsDr>`;
+  const styles=X+`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const T='application/vnd.openxmlformats-officedocument.',enc=new TextEncoder(),f=(name,v)=>({name,data:typeof v==='string'?enc.encode(v):v});
+  return zipBlob([
+    f('[Content_Types].xml',X+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="${T}spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${T}spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="${T}spreadsheetml.styles+xml"/>${media.length?`<Override PartName="/xl/drawings/drawing1.xml" ContentType="${T}drawing+xml"/>`:''}</Types>`),
+    f('_rels/.rels',rels([['rId1','officeDocument','xl/workbook.xml']])),
+    f('xl/workbook.xml',X+`<workbook ${NS}><sheets><sheet name="${x(sheetName).slice(0,31)}" sheetId="1" r:id="rId1"/></sheets></workbook>`),
+    f('xl/_rels/workbook.xml.rels',rels([['rId1','worksheet','worksheets/sheet1.xml'],['rId2','styles','styles.xml']])),
+    f('xl/styles.xml',styles),f('xl/worksheets/sheet1.xml',sheet),
+    ...(media.length?[f('xl/worksheets/_rels/sheet1.xml.rels',rels([['rId1','drawing','../drawings/drawing1.xml']])),f('xl/drawings/drawing1.xml',drawing),
+      f('xl/drawings/_rels/drawing1.xml.rels',rels(media.map((_,i)=>[`rId${i+1}`,'image',`../media/image${i+1}.jpeg`]))),...media.map((m,i)=>f(`xl/media/image${i+1}.jpeg`,m.data))]:[])
+  ]);
 }
 document.getElementById('posterClose').onclick=closePoster;
 document.getElementById('posterDownload').onclick=downloadPoster;

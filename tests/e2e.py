@@ -422,6 +422,11 @@ with sync_playwright() as p:
     assert pg.evaluate(f"t6Canvas({t6}).then(c=>[c.width,c.height])") == [1920, 1080]
     pg.evaluate("call('delT6Foto',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF'},{quiet:true})")
     assert pg.evaluate(f"{t6}.src") == ''
+    # 'Excel + foto': a real .xlsx with the photo anchored in column B of its row
+    import openpyxl
+    xb = pg.evaluate("(async()=>{const c=document.createElement('canvas');c.width=30;c.height=40;c.getContext('2d').fillRect(0,0,30,40);const b=await xlsxFoto('Majlis T6',['Bil','Foto','Nama'],[[1,'','A & <B>'],[2,'','C']],[c.toDataURL('image/png'),'']);return [...new Uint8Array(await b.arrayBuffer())]})()")
+    ws = openpyxl.load_workbook(io.BytesIO(bytes(xb))).active
+    assert [c.value for c in ws[2]][::2] == [1, 'A & <B>'] and [(i.anchor._from.row, i.anchor._from.col) for i in ws._images] == [(1, 1)]
     pg.evaluate(f"PIN='123456';openAw('{ko}')")  # names are hidden from visitors here, so edit as admin
     pg.click('#drawer [data-ed=k1]')
     pg.fill('#drawer .ed-c input', 'Bola sepak – johan – zon')
