@@ -396,6 +396,22 @@ with sync_playwright() as p:
     expect(pg.locator('#addp')).to_be_visible()
     assert not pg.evaluate('PIN'), 'unlocking does not log the visitor in'
     pg.keyboard.press('Escape')
+    # Kokurikulum: same pupil again for another achievement; the exact same achievement is skipped; other kategori stay one row per pupil
+    ko = pg.evaluate("D.anugerah.find(a=>a.kat==='KO').id")
+    row = lambda i, aid, cat: f"{{id:'{i}',aid:'{aid}',kelas:'5 KREATIF',tahun:'5',nama:'MURID KOKO',catatan:'{cat}'}}"
+    assert pg.evaluate(f"call('addPenerima',{{rows:[{row('k1', ko, 'BOLA SEPAK – JOHAN – DAERAH')},{row('k2', ko, 'OLAHRAGA – NAIB JOHAN – NEGERI')},{row('k3', ko, 'BOLA SEPAK – JOHAN – DAERAH')}]}},{{quiet:true}}).then(j=>j.added)") == 2
+    assert pg.evaluate(f"call('addPenerima',{{rows:[{row('k4', other, 'A')},{row('k5', other, 'B')}]}},{{quiet:true}}).then(j=>j.added)") == 1, 'non-Kokurikulum keeps one row per pupil'
+    pg.evaluate("call('setCatatan',{ids:['k2'],catatan:' olahraga – johan – negeri '},{quiet:true})")
+    s = pg.evaluate(f"(()=>{{const s=studentMap('ALL').find(s=>s.nama==='MURID KOKO');const i=s.items.find(i=>i.a.id==='{ko}');return [i.p.catatan,i.ps.length,counts(i.a).n]}})()")
+    assert s == ['BOLA SEPAK – JOHAN – DAERAH; OLAHRAGA – JOHAN – NEGERI', 2, pg.evaluate(f"new Set(D.penerima.filter(p=>p.aid==='{ko}').map(p=>p.nama+'|'+p.kelas)).size")], s
+    pg.evaluate(f"PIN='123456';openAw('{ko}')")  # names are hidden from visitors here, so edit as admin
+    pg.click('#drawer [data-ed=k1]')
+    pg.fill('#drawer .ed-c input', 'Bola sepak – johan – zon')
+    pg.click('#drawer .ed-c button')
+    expect(pg.locator('#toast')).to_contain_text('Catatan disimpan')
+    assert pg.evaluate("D.penerima.find(p=>p.id==='k1').catatan") == 'BOLA SEPAK – JOHAN – ZON'
+    pg.evaluate("PIN=''")
+    pg.keyboard.press('Escape')
     pg.click('.nav[data-v=dashboard]')
     if XLSX:
         pg.click('.nav[data-v=anugerah]')
@@ -450,7 +466,7 @@ with sync_playwright() as p:
         assert pg.evaluate("D.penerima.every(p=>p.kelas==='4 KREATIF'&&p.tahun==='4')")
         assert pg.evaluate("D.penerima.some(p=>p.nama==='MURID BAHARU')")
         shot(pg, 'remote-add')
-        pg.locator('#drawer .del-p').first.click()
+        pg.locator('#drawer [data-del]').first.click()
         expect(pg.locator('#drawer .rcp')).to_have_count(2, timeout=8000)
         pg.keyboard.press('Escape')
         # bulk paste: comma / Excel tab / numbered lines; class anywhere; no class and no class chosen → skipped

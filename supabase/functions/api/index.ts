@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     // owner's choice (2026-10-29): Anugerah needs no PIN (pick, add, remove pupils, tick Diterima); Tetapan still does.
     // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
     // owner's choice (2026-11-12): locking and unlocking an anugerah (setKunci) both need the PIN
-    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus'].includes(r.action);
+    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan'].includes(r.action);
     if (!open || r.pin) await checkPin(r.pin);
     else await checkKunci(r);
     if (r.action === 'login') return out({ ok: true });
@@ -81,9 +81,12 @@ async function handle(r: any) {
       });
       const aids = [...new Set(rows.map((x: any) => x.aid))];
       // shortcut: no lock as in Code.gs — two admins adding the same pupil at the same second can both succeed
-      const cur = aids.length ? await q(db.from('penerima').select('aid,nama,kelas').in('aid', aids)) : [];
-      const have = new Set(cur.map((p: any) => p.aid + '|' + p.nama + '|' + p.kelas));
-      const add = rows.filter((x: any) => x.id && x.aid && x.nama && !have.has(x.aid + '|' + x.nama + '|' + x.kelas));
+      const cur = aids.length ? await q(db.from('penerima').select('aid,nama,kelas,catatan').in('aid', aids)) : [];
+      // owner's choice (2026-11-16): Kokurikulum awards take the same pupil again for a different achievement (catatan)
+      const ko = new Set(aids.length ? (await q(db.from('anugerah').select('id').eq('kat', 'KO').in('id', aids))).map((a: any) => a.id) : []);
+      const key = (x: any) => x.aid + '|' + x.nama + '|' + x.kelas + (ko.has(x.aid) ? '|' + x.catatan : '');
+      const have = new Set(cur.map(key));
+      const add = rows.filter((x: any) => x.id && x.aid && x.nama && !have.has(key(x)) && have.add(key(x)));
       if (add.length) await q(db.from('penerima').insert(add));
       extra.added = add.length;
       break;
@@ -93,6 +96,9 @@ async function handle(r: any) {
       break;
     case 'setStatus':
       await q(db.from('penerima').update({ status: r.status === 'Diterima' ? 'Diterima' : '' }).in('id', (r.ids || []).map(String)));
+      break;
+    case 'setCatatan':
+      await q(db.from('penerima').update({ catatan: cell(r.catatan).trim().toUpperCase() }).in('id', (r.ids || []).map(String)));
       break;
     case 'setHadir': { // ids = one day's award rows of a pupil; nama (older pages) = every row with that name
       const v = { hadir: r.hadir ? new Date().toISOString() : '' };
@@ -142,7 +148,7 @@ async function dikunci(): Promise<string[]> {
 
 // PIN-less entry (add, remove, tick Diterima) is refused on a locked anugerah; the admin PIN bypasses it
 async function checkKunci(r: any) {
-  if (!['addPenerima', 'delPenerima', 'setStatus'].includes(r.action)) return;
+  if (!['addPenerima', 'delPenerima', 'setStatus', 'setCatatan'].includes(r.action)) return;
   const k = await dikunci();
   if (!k.length) return;
   const aids = r.action === 'addPenerima' ? (r.rows || []).map((x: any) => cell(x.aid))
@@ -163,11 +169,14 @@ const pub = (path: string) => `${SB_URL}/storage/v1/object/public/foto/${path}`;
 /* ---------- data ---------- */
 async function publicPayload() {
   const d = await allData();
-  const cnt: Record<string, { n: number; d: number }> = {};
+  // one pupil counts once per anugerah, even with several Kokurikulum achievements in it
+  const got: Record<string, Map<string, boolean>> = {};
   d.penerima.forEach((p: any) => {
-    const k = cnt[p.aid] || (cnt[p.aid] = { n: 0, d: 0 });
-    k.n++; if (p.status === 'Diterima') k.d++;
+    const m = got[p.aid] || (got[p.aid] = new Map()), k = p.nama + '|' + p.kelas;
+    m.set(k, m.get(k) || p.status === 'Diterima');
   });
+  const cnt: Record<string, { n: number; d: number }> = {};
+  Object.entries(got).forEach(([aid, m]) => { cnt[aid] = { n: m.size, d: [...m.values()].filter(Boolean).length }; });
   const { catatan: _c, ...settings } = d.settings;
   return {
     ok: true, t: Date.now(), settings,
