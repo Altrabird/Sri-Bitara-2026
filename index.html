@@ -1098,11 +1098,12 @@ function openAw(id){
   if(canNames()){
     const ps=PL.filter(p=>p.aid===id).sort(byKelas);
     const groups={};ps.forEach(p=>(groups[p.tahun||'-']=groups[p.tahun||'-']||[]).push(p));
-    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${ADD.ed===p.id&&!ro?`<form class="ed-c" data-id="${esc(p.id)}"><input class="fi" maxlength="80" value="${esc(p.catatan)}" placeholder="${a.kat==='KO'?'Aktiviti – pencapaian – peringkat':'Catatan'}" aria-label="Catatan ${esc(p.nama)}"><button class="btn sm">Simpan</button></form>`:p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span><span class="rcp-act">${isP&&ro?'':ro?`<span class="tg ${p.status==='Diterima'?'ok':''}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</span>`:`${isP?'':`<button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button>`}<button class="del-p ed" data-ed="${esc(p.id)}" aria-label="Ubah catatan ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-pen"/></svg></button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button>`}</span></div>`).join('')}</div>`).join(''):`<div class="empty"><p>Tiada ${isP?'murid':'penerima'} untuk ${W} ini.</p></div>`;
+    body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(p=>`<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${ADD.ed===p.id&&!ro?`<form class="ed-c" data-id="${esc(p.id)}"><input class="fi" maxlength="80" value="${esc(p.catatan)}" placeholder="${a.kat==='KO'?'Aktiviti – pencapaian – peringkat':'Catatan'}" aria-label="Catatan ${esc(p.nama)}"><button class="btn sm">Simpan</button></form>`:p.catatan?`<small>${esc(p.catatan)}</small>`:''}</span><span class="rcp-act">${isP?`<button class="del-p ed poster-open" data-ps-key="${esc(p.nama+'|'+p.kelas)}" title="Poster" aria-label="Poster ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button>`:''}${isP&&ro?'':ro?`<span class="tg ${p.status==='Diterima'?'ok':''}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</span>`:`${isP?'':`<button class="tg ${p.status==='Diterima'?'ok':''}" data-id="${esc(p.id)}" aria-pressed="${p.status==='Diterima'}">${p.status==='Diterima'?'✓ Diterima':'Belum'}</button>`}<button class="del-p ed" data-ed="${esc(p.id)}" aria-label="Ubah catatan ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-pen"/></svg></button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button>`}</span></div>`).join('')}</div>`).join(''):`<div class="empty"><p>Tiada ${isP?'murid':'penerima'} untuk ${W} ini.</p></div>`;
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
   $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((isP?'Persembahan':CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n}${+a.sasaran?` / ${+a.sasaran}`:''} ${isP?'murid terlibat':'penerima'}${+a.sasaran&&c.n>+a.sasaran?' (melebihi sasaran)':''}${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
-  <div class="body">${PIN&&c.n&&!isP?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}<div class="lockbar">${locked?`<p class="warnmsg" style="margin:12px 0 6px"><svg class="i" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"/></svg> ${isP?'Persembahan':'Anugerah'} ini dikunci.${PIN?' Admin masih boleh mengubah.':' Masukkan PIN admin untuk membuka kunci.'}</p>`:''}${PIN?`<button class="btn ghost sm" id="awKunci" style="${locked?'':'margin-top:12px'}"><svg class="i"><use href="#i-lock"/></svg>${locked?'Buka kunci':'Kunci '+W+' ini'}</button>`:`<details class="bulk" ${locked?'open':''} style="${locked?'':'margin-top:12px'}"><summary>${locked?'Buka kunci':'Kunci '+W+' ini'} (PIN admin)</summary><form class="addrow" id="awKunciF" autocomplete="off"><input class="fi" id="awKunciPin" type="password" maxlength="32" autocomplete="off" placeholder="PIN admin" aria-label="PIN admin"><button class="btn">${locked?'Buka kunci':'Kunci'}</button></form></details>`}</div>${ro?'':'<div class="addp" id="addp"></div>'}${body}</div>`;
+  <div class="body">${isP?`<button class="btn" style="width:100%;margin-top:12px" id="toKad"><svg class="i"><use href="#i-img"/></svg>Kad tajuk</button>`:''}${PIN&&c.n&&!isP?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}<div class="lockbar">${locked?`<p class="warnmsg" style="margin:12px 0 6px"><svg class="i" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"/></svg> ${isP?'Persembahan':'Anugerah'} ini dikunci.${PIN?' Admin masih boleh mengubah.':' Masukkan PIN admin untuk membuka kunci.'}</p>`:''}${PIN?`<button class="btn ghost sm" id="awKunci" style="${locked?'':'margin-top:12px'}"><svg class="i"><use href="#i-lock"/></svg>${locked?'Buka kunci':'Kunci '+W+' ini'}</button>`:`<details class="bulk" ${locked?'open':''} style="${locked?'':'margin-top:12px'}"><summary>${locked?'Buka kunci':'Kunci '+W+' ini'} (PIN admin)</summary><form class="addrow" id="awKunciF" autocomplete="off"><input class="fi" id="awKunciPin" type="password" maxlength="32" autocomplete="off" placeholder="PIN admin" aria-label="PIN admin"><button class="btn">${locked?'Buka kunci':'Kunci'}</button></form></details>`}</div>${ro?'':'<div class="addp" id="addp"></div>'}${body}</div>`;
   $('#drawer .x').onclick=closeDrawer;
+  $('#toKad')&&($('#toKad').onclick=e=>openKad(a,e.currentTarget));
   $('#toStage')&&($('#toStage').onclick=()=>{closeDrawer();openStage(id)});
   $$('#drawer .tg[data-id]').forEach(b=>b.onclick=()=>toggleGot(b.dataset.id));
   $$('#drawer [data-ed]').forEach(b=>b.onclick=()=>{ADD.ed=ADD.ed===b.dataset.ed?'':b.dataset.ed;openAw(id);$('#drawer .ed-c input')?.focus()});
@@ -1949,7 +1950,54 @@ async function posterCanvas(s,kat){
   const foot=posterFit(ctx,footer,1650,28,{size:21,min:16,weight:'400',maxLines:1});ctx.textAlign='center';posterWrite(ctx,foot,960,1011,'#d9c7a4');ctx.textAlign='left';
   return canvas;
 }
-let posterState={token:0,canvas:null,student:null,kat:null,focus:null};
+const KAD_TEKS={label:'PERSEMBAHAN',majlis:()=>D.settings?.nama||'Majlis Anugerah Sri Bitara 2026'};
+const KAD_TEMA=[
+  {id:'silat',re:/SILAT|GAYUNG|PENCAK/i,accent:'#dc3647'},
+  {id:'nasyid',re:/NASYID|QASIDAH|MARHABAN|SELAWAT|BERZANJI|DIKIR/i,accent:'#16bfa7'},
+  {id:'bicara',re:/BICARA|BERIRAMA|SAJAK|PUISI|DEKLAMASI|PANTUN|SYAIR|CHORAL|PIDATO/i,accent:'#7564ef'},
+  {id:'tari',re:/TARI|TARIAN|SENAMTARI|SUMAZAU|ZAPIN|JOGET|MAGUNATIP|DANCE/i,accent:'#ed699f'},
+  {id:'muzik',re:/KOIR|NYANYI|VOKAL|LAGU|PANCARAGAM|MUZIK|KOMPANG|GAMELAN|CARAGAM|BAND|ORKESTRA/i,accent:'#ee8a31'},
+  {id:'umum',re:/.*/,accent:'#c85adc'}
+];
+function kadTema(nama){return KAD_TEMA.find(t=>t.re.test(String(nama||'')))||KAD_TEMA[KAD_TEMA.length-1]}
+async function kadCanvas(a){
+  await Promise.all([document.fonts.load('700 150px "Cormorant SC"'),document.fonts.load('600 34px "Plus Jakarta Sans"'),document.fonts.load('500 30px "Plus Jakarta Sans"')]);
+  const tema=kadTema(a.nama),bg=await posterImage('img/kad-'+tema.id+'.jpg');
+  const canvas=document.createElement('canvas');canvas.width=1920;canvas.height=1080;
+  const ctx=canvas.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,1920,1080);g.addColorStop(0,tema.accent);g.addColorStop(.42,'#101022');g.addColorStop(.64,'#221331');g.addColorStop(1,tema.accent);
+  ctx.fillStyle=g;ctx.fillRect(0,0,1920,1080);if(bg)ctx.drawImage(bg,0,0,1920,1080);
+  const shade=ctx.createRadialGradient(960,540,100,960,540,790);shade.addColorStop(0,'#070614aa');shade.addColorStop(.7,'#07061455');shade.addColorStop(1,'#07061400');ctx.fillStyle=shade;ctx.fillRect(0,0,1920,1080);
+  ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=18;ctx.shadowOffsetY=3;
+  posterWrite(ctx,posterFit(ctx,KAD_TEKS.label,1120,52,{size:34,maxLines:1}),960,280,'#ffe9b6');
+  ctx.font='700 150px "Cormorant SC"';
+  const widest=Math.max(1,...String(a.nama||'').split(/\s+/).map(w=>ctx.measureText(w).width));
+  const size=Math.max(1,Math.min(150,Math.floor(150*1200/widest)));
+  const fit=posterFit(ctx,a.nama,1200,400,{size,min:32,family:'Cormorant SC',weight:'700',maxLines:3,leading:1.08});
+  const y=540-fit.height/2;
+  posterWrite(ctx,fit,960,y,posterGold(ctx,360,y,1200,fit.height));
+  ctx.shadowOffsetY=0;ctx.shadowBlur=12;ctx.shadowColor=tema.accent;
+  ctx.strokeStyle=posterGold(ctx,640,795,640,2);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(640,795);ctx.lineTo(1280,795);ctx.stroke();
+  ctx.shadowColor='#000';ctx.shadowBlur=14;
+  posterWrite(ctx,posterFit(ctx,KAD_TEKS.majlis(),1200,70,{size:30,min:14,maxLines:2,weight:'500'}),960,835,'#fff0cd');
+  return canvas;
+}
+async function openKad(a,trigger){
+  const token=++posterState.token;
+  Object.assign(posterState,{mode:'kad',performance:{id:a.id,nama:a.nama},student:null,kat:null,canvas:null,focus:trigger||document.activeElement});
+  document.getElementById('posterTitle').textContent='Kad tajuk';
+  document.getElementById('posterNote').textContent='1920 × 1080';
+  document.getElementById('posterTabs').replaceChildren();
+  const view=document.getElementById('posterView'),download=document.getElementById('posterDownload');
+  view.textContent='Menjana kad tajuk…';view.setAttribute('aria-busy','true');download.setAttribute('aria-disabled','true');
+  document.getElementById('posterDialog').showModal();download.focus();
+  try{
+    const canvas=await kadCanvas(posterState.performance);if(token!==posterState.token)return;
+    posterState.canvas=canvas;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Kad tajuk — '+a.nama);view.replaceChildren(canvas);download.setAttribute('aria-disabled','false');
+  }catch(e){if(token===posterState.token)view.textContent='Kad tajuk tidak dapat dijana. Sila cuba semula.';console.error(e)}
+  finally{if(token===posterState.token)view.setAttribute('aria-busy','false')}
+}
+let posterState={token:0,canvas:null,student:null,kat:null,focus:null,mode:'poster',performance:null};
 async function posterSelect(kat){
   const token=++posterState.token;posterState.kat=kat;posterState.canvas=null;
   const view=document.getElementById('posterView'),download=document.getElementById('posterDownload');
@@ -1961,10 +2009,11 @@ async function posterSelect(kat){
   }catch(e){if(token===posterState.token)view.textContent='Poster tidak dapat dijana. Sila cuba semula.';console.error(e)}
   finally{if(token===posterState.token)view.setAttribute('aria-busy','false')}
 }
-function openPoster(nama,trigger){
-  if(!canNames())return;
-  const s=studentMap('ALL').find(s=>s.nama===nama);if(!s)return;
+function openPoster(s,trigger){
+  if(!canNames()||!s)return;
   const cats=Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>i.a.kat===k));if(!cats.length)return;
+  posterState.mode='poster';posterState.performance=null;
+  document.getElementById('posterTitle').textContent='Poster Pencapaian';
   posterState.student=s;posterState.focus=trigger||document.activeElement;
   document.getElementById('posterNote').textContent='1920 × 1080 · Letakkan foto murid pada ruang potret dalam PowerPoint atau Canva.';
   const tabs=document.getElementById('posterTabs');tabs.replaceChildren();
@@ -1976,9 +2025,9 @@ function closePoster(){
   if(posterState.focus?.isConnected)posterState.focus.focus();
 }
 async function downloadPoster(){
-  const {canvas,student,kat}=posterState;if(!canvas)return;
+  const {canvas,student,kat,mode,performance}=posterState;if(!canvas)return;
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim().replace(/\s+/g,'-');
-  try{const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG gagal dijana.')),'image/png'));saveBlob('Poster-'+clean(student.nama)+'-'+clean(POSTER_STYLE[kat].title)+'.png',blob)}
+  try{const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG gagal dijana.')),'image/png'));saveBlob(mode==='kad'?'Kad-Tajuk-'+clean(performance.nama)+'.png':'Poster-'+clean(student.nama)+'-'+clean(POSTER_STYLE[kat].title)+'.png',blob)}
   catch(e){document.getElementById('posterNote').textContent='Muat turun gagal. Sila buka aplikasi melalui http(s) dan cuba semula.';console.error(e)}
 }
 // every poster of the pupils shown in Senarai Murid, one ZIP with a folder per kategori;
@@ -2016,7 +2065,10 @@ document.getElementById('posterClose').onclick=closePoster;
 document.getElementById('posterDownload').onclick=downloadPoster;
 document.getElementById('posterDialog').addEventListener('cancel',e=>{e.preventDefault();closePoster()});
 document.getElementById('posterDialog').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();closePoster()}});
-document.addEventListener('click',e=>{const b=e.target.closest('.poster-open');if(b)openPoster(b.dataset.posterName,b)});
+// a persembahan pupil (data-ps-key = nama|kelas) gets every persembahan they are in, whatever the dropdown says
+const psPupil=key=>{const ps=(D.peserta||[]).filter(p=>p.nama+'|'+p.kelas===key),items=ps.map(p=>({a:D.persembahan.find(a=>a.id===p.aid),p,ps:[p]})).filter(i=>i.a);
+  return items.length?{nama:ps[0].nama,kelas:ps[0].kelas,items}:null};
+document.addEventListener('click',e=>{const b=e.target.closest('.poster-open');if(b)openPoster(b.dataset.psKey?psPupil(b.dataset.psKey):studentMap('ALL').find(s=>s.nama===b.dataset.posterName),b)});
 
 </script>
 </body>
