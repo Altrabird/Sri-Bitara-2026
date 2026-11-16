@@ -904,7 +904,7 @@ let awCat='ALL',DRAWER=null;
 $('#awCats').innerHTML=[['ALL','Semua'],...Object.entries(CAT)].map(([k,n])=>`<button class="chip ${k==='ALL'?'on':''}" data-c="${k}">${n}</button>`).join('');
 $$('#awCats .chip').forEach(b=>b.onclick=()=>{awCat=b.dataset.c;$$('#awCats .chip').forEach(x=>x.classList.toggle('on',x===b));renderAw()});
 $('#awQ').oninput=renderAw;
-let AWMODE=store.get('awmode','kad',sessionStorage),AWMULTI=true,AWKLS='',AWCONF=false;
+let AWMODE=store.get('awmode','kad',sessionStorage),AWMULTI=false,AWKLS='',AWCONF=false; // every pupil by default: "> 1 anugerah" hid single-award pupils (e.g. a Ketua Kelas)
 let PZIP=''; // 'download all posters' progress; renderAwList (re-run by the poll) shows it on the button
 $$('#awMode button').forEach(b=>b.onclick=()=>{AWMODE=b.dataset.m;store.set('awmode',AWMODE,sessionStorage);$('#awQ').value='';renderAw()});
 // one entry per pupil name; if the source lists the same name under different classes we flag it instead of splitting
