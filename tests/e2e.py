@@ -108,9 +108,9 @@ with sync_playwright() as p:
         # drawer + status toggle
         pg.click('.nav[data-v=anugerah]')
         pg.locator('#awGrid .aw').first.click()
-        btn = pg.locator('#drawer .tg[data-id]').first
+        btn = pg.locator('#drawer .tg[data-ids]').first
         btn.click()
-        expect(pg.locator('#drawer .tg[data-id]').first).to_have_text('✓ Diterima')
+        expect(pg.locator('#drawer .tg[data-ids]').first).to_have_text('✓ Diterima')
         shot(pg, 'demo-drawer')
         # mod pentas: title → name → auto-mark
         pg.click('#toStage')
@@ -433,6 +433,24 @@ with sync_playwright() as p:
     pg.click('#drawer .ed-c button')
     expect(pg.locator('#toast')).to_contain_text('Catatan disimpan')
     assert pg.evaluate("D.penerima.find(p=>p.id==='k1').catatan") == 'BOLA SEPAK – JOHAN – ZON'
+    # one row per pupil in the panel, each achievement listed; Diterima marks all of the pupil's rows
+    koko = pg.locator('#drawer .rcp', has_text='MURID KOKO')
+    expect(koko).to_have_count(1)
+    expect(koko.locator('.ach')).to_have_count(2)
+    expect(pg.locator('#drawer header')).to_contain_text('pencapaian')
+    koko.locator('.tg').click()
+    assert pg.evaluate("D.penerima.filter(p=>['k1','k2'].includes(p.id)).map(p=>p.status)") == ['Diterima', 'Diterima']
+    # Trofi Kokum: the same pupil in a second trophy award is still 1 trophy, with all 3 achievements
+    sukan = pg.evaluate("D.anugerah.find(a=>/sukan dan permainan/i.test(a.nama)).id")
+    pg.evaluate(f"call('addPenerima',{{rows:[{row('k6', sukan, 'BOLA JARING – JOHAN – ZON')}]}},{{quiet:true}})")
+    assert pg.evaluate("(()=>{const s=trofiList().all.find(s=>s.nama==='MURID KOKO');return [s.items.length,s.n,trofiList().all.filter(s=>s.nama==='MURID KOKO').length]})()") == [2, 3, 1]
+    pg.keyboard.press('Escape')
+    pg.click('.nav[data-v=anugerah]')
+    pg.click('#awMode [data-m=trofi]')
+    expect(pg.locator('#awList .ms', has_text='MURID KOKO')).to_have_count(1)
+    expect(pg.locator('#awList .ms-kpi .n').first).to_have_text(str(pg.evaluate('trofiList().all.length')))
+    shot(pg, 'trofi-kokum')
+    pg.click('#awMode [data-m=kad]')
     pg.evaluate("PIN=''")
     pg.keyboard.press('Escape')
     pg.click('.nav[data-v=dashboard]')
