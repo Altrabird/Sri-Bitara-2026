@@ -331,6 +331,7 @@ select.fi option{background:var(--navy)}
 .re-foot{display:flex;gap:10px;justify-content:space-between;margin-top:12px;flex-wrap:wrap}
 .hint{font-size:12.5px;color:var(--muted);margin:-4px 0 12px}
 .tbl{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:8px;margin:12px 0}
+.trofi th{position:static;vertical-align:bottom}.trofi td{vertical-align:top;font-size:12.5px}.trofi tr>td:first-child{color:var(--muted)}.trofi td:nth-child(2){min-width:150px}.trofi td:nth-child(n+4){min-width:130px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
 th{position:sticky;top:0;background:var(--navy);color:var(--gold2);font-size:11.5px;letter-spacing:.1em}
@@ -977,46 +978,53 @@ function renderAwList(){
       list.map((s,i)=>[i+1,'',s.nama,s.kelas,s.items.length,s.items.map(t=>t.a.nama+(t.p.catatan?` (${t.p.catatan})`:'')).join('; ')]),list.map(fotoOf)));toast(`Excel ${list.length} murid dimuat turun`)}
     catch(err){toast(err.message,true)}finally{b.disabled=false;label.textContent='Excel + foto'}};
   $('#msPoster').onclick=()=>{
-    const jobs=list.flatMap(s=>Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>i.a.kat===k)).map(k=>[s,k]));
+    const jobs=list.flatMap(s=>Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>posterKat(i.a)===k)).map(k=>[s,k]));
     if(jobs.length&&confirm(`Jana ${jobs.length} poster untuk ${list.length} murid dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))downloadAllPosters(jobs,'#msPoster',`Poster-Sri-Bitara-2026${AWKLS?'-'+AWKLS.replace(/\s+/g,'-'):''}.zip`)};
   $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
 }
 // owner's rule (2026-11-17): 1 trophy per pupil across these awards, however many achievements; pupils matched by name
 // shortcut: awards found by name, a renamed award drops out; add a flag on the anugerah if that happens
-const isTrofi=a=>a.kat==='KO'&&/cemerlang kokurikulum|penglibatan luar/i.test(a.nama);
+// column order of the Pencapaian Kokurikulum table; a pupil's trophy is counted under their first column
+const TROFI=[[/sukan/i,'Sukan & Permainan'],[/kelab/i,'Kelab & Persatuan'],[/beruniform/i,'Badan Beruniform'],[/penglibatan luar/i,'Penglibatan Luar Aktif']];
+const trofiIdx=a=>a.kat!=='KO'||/ikon/i.test(a.nama)?-1:TROFI.findIndex(([r])=>r.test(a.nama));
+const isTrofi=a=>trofiIdx(a)>=0;
 function trofiList(){
-  const aws=D.anugerah.filter(isTrofi),ord=new Map(aws.map((a,i)=>[a.id,i]));
-  // items in award order: a pupil's trophy is counted under the first of these awards they appear in
-  return {aws,all:studentMap(isTrofi).map(s=>{const items=[...s.items].sort((x,y)=>ord.get(x.a.id)-ord.get(y.a.id));return {...s,items,n:items.reduce((t,i)=>t+i.ps.length,0)}})};
+  const aws=D.anugerah.filter(isTrofi).sort((x,y)=>trofiIdx(x)-trofiIdx(y)),ord=new Map(aws.map((a,i)=>[a.id,i]));
+  return {aws,cols:aws.map(a=>({a,label:TROFI[trofiIdx(a)][1]})),all:studentMap(isTrofi).map(s=>{const items=[...s.items].sort((x,y)=>ord.get(x.a.id)-ord.get(y.a.id));return {...s,items,n:items.reduce((t,i)=>t+i.ps.length,0)}})};
 }
+// one pupil's achievements in one award, one per line ('✓' when the teacher left the catatan empty)
+const trofiAch=(s,a)=>(s.items.find(i=>i.a.id===a.id)?.ps||[]).map(p=>p.catatan||'✓');
+// Bil / Nama / Kelas / Pencapaian Kokurikulum split into one sub column per award; the screen and the Word file share it
+const trofiTable=(list,cols,nama=s=>esc(s.nama))=>`<table class="trofi"><tr><th rowspan="2" style="width:40px">Bil</th><th rowspan="2">Nama</th><th rowspan="2" style="width:110px">Kelas</th><th colspan="${cols.length}" style="text-align:center">Pencapaian Kokurikulum</th></tr><tr>${cols.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr>${list.map((s,i)=>`<tr><td>${i+1}</td><td>${nama(s)}</td><td>${esc(s.kelas)}</td>${cols.map(c=>`<td>${trofiAch(s,c.a).map(esc).join('<br>')}</td>`).join('')}</tr>`).join('')}</table>`;
 function renderTrofi(){
   const box=$('#awList');
   if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;return}
-  const {aws,all}=trofiList(),q=$('#awQ').value.trim().toUpperCase(),short=n=>n.replace(/^Anugerah\s+/i,'');
+  const {aws,cols,all}=trofiList(),q=$('#awQ').value.trim().toUpperCase();
   if(!aws.length){box.innerHTML='<div class="empty"><p>Tiada anugerah Cemerlang Kokurikulum atau Penglibatan Luar Aktif Kokurikulum ditemui.</p></div>';return}
   const list=all.filter(s=>!q||s.nama.includes(q)||s.kelas.includes(q)).sort((a,b)=>classSort(a.kelas||'9',b.kelas||'9')||a.nama.localeCompare(b.nama));
   const nAch=all.reduce((t,s)=>t+s.n,0),nconf=all.filter(s=>s.conf).length;
-  const ach=s=>s.items.map(i=>i.p.catatan).filter(Boolean).join('; ');
-  const rows=list.map((s,i)=>[i+1,s.nama,s.kelas,s.items.map(t=>t.a.nama).join('; '),ach(s),s.n]);
+  const flat=sep=>list.map((s,i)=>[i+1,s.nama,s.kelas,...cols.map(c=>trofiAch(s,c.a).join(sep))]),head=['Bil','Nama','Kelas',...cols.map(c=>c.label)];
   box.innerHTML=`<div class="grid ms-kpi">
     <div class="card"><div class="n">${all.length}</div><div class="l">Trofi perlu dibeli (1 murid = 1 trofi)</div></div>
     <div class="card"><div class="n">${nAch}</div><div class="l">Pencapaian direkod</div></div>
     <div class="card"><div class="n">${all.filter(s=>s.items.length>1).length}</div><div class="l">Murid dalam lebih daripada 1 anugerah</div></div>
   </div>
   <div class="tools">
-    ${aws.map(a=>`<span class="chip" style="white-space:normal;max-width:100%" title="${esc(a.nama)}">${esc(short(a.nama))}: <b>${all.filter(s=>s.items[0].a.id===a.id).length}</b> trofi · ${all.filter(s=>s.items.some(i=>i.a.id===a.id)).length} murid</span>`).join('')}
+    ${cols.map(({a,label})=>`<span class="chip" style="white-space:normal;max-width:100%" title="${esc(a.nama)}">${esc(label)}: <b>${all.filter(s=>s.items[0].a.id===a.id).length}</b> trofi · ${all.filter(s=>s.items.some(i=>i.a.id===a.id)).length} murid</span>`).join('')}
     ${nconf?`<span class="chip warn" title="Nama sama tersenarai dengan kelas berbeza — sila semak">⚠ ${nconf} murid: kelas tidak konsisten</span>`:''}
-    <button class="btn ghost sm" id="trCsv" style="margin-left:auto"><svg class="i"><use href="#i-dl"/></svg>CSV</button>
+    <button class="btn ghost sm" id="trWord" style="margin-left:auto" ${list.length?'':'disabled'}><svg class="i"><use href="#i-dl"/></svg>Word</button>
     <button class="btn ghost sm" id="trXlsFoto" ${list.length?'':'disabled'} title="Senarai trofi dengan foto murid, satu fail Excel"><svg class="i"><use href="#i-dl"/></svg><span>Excel + foto</span></button>
+    <button class="btn ghost sm" id="trCsv" ${list.length?'':'disabled'}><svg class="i"><use href="#i-dl"/></svg>CSV</button>
   </div>
-  <p class="muted" style="font-size:12.5px;margin:-6px 0 12px">Setiap murid dikira sekali di bawah anugerah pertama dalam senarai yang mereka sertai, jadi jumlah trofi setiap anugerah sama dengan ${all.length}. ${list.length} murid dipaparkan.</p>
-  ${list.length?list.map(s=>`<div class="ms"><div class="ms-n"><b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b" data-aid="${esc(a.id)}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</button>`).join('')}</div><div class="ms-c"><b>${s.n}</b><small>pencapaian</small></div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan carian.':'Tiada penerima.'}</p></div>`}`;
-  $('#trCsv').onclick=()=>{const r=[['Bil','Nama','Kelas','Anugerah','Pencapaian','Bil. Pencapaian']].concat(rows);
-    preview('Trofi Kokurikulum',`CSV · ${rows.length} trofi`,rowsHTML(r),()=>downloadCSV('Trofi-Kokurikulum-Sri-Bitara-2026.csv',r))};
+  <p class="muted" style="font-size:12.5px;margin:-6px 0 12px">Satu baris setiap murid. Setiap murid dikira sekali di bawah lajur pertama yang mereka sertai, jadi jumlah trofi semua lajur sama dengan ${all.length}. ${list.length} murid dipaparkan.</p>
+  ${list.length?`<div class="tbl" style="max-height:none">${trofiTable(list,cols,s=>`<b>${hl(s.nama,q)}</b>${s.conf?`<small class="cf" style="display:block;color:var(--warn)">⚠ ${esc(s.conf.join(' / '))}</small>`:''}`)}</div>`:`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan carian.':'Tiada penerima.'}</p></div>`}`;
+  const title='Senarai Trofi Kokurikulum';
+  $('#trWord').onclick=()=>{const body=`<div class="lap"><h1>${esc(title.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU · ${list.length} TROFI</div>${trofiTable(list,cols)}</div>`;
+    preview(title,`Word · ${list.length} murid = ${list.length} trofi`,body,()=>wordDoc('Trofi-Kokurikulum-Sri-Bitara-2026.doc',title,body))};
+  $('#trCsv').onclick=()=>{const r=[head,...flat('; ')];preview(title,`CSV · ${list.length} trofi`,rowsHTML(r),()=>downloadCSV('Trofi-Kokurikulum-Sri-Bitara-2026.csv',r))};
   $('#trXlsFoto').onclick=async e=>{const b=e.currentTarget,label=b.querySelector('span');b.disabled=true;label.textContent='Menyediakan…';
-    try{saveBlob('Trofi-Kokurikulum-Foto.xlsx',await xlsxFoto('Trofi Kokurikulum',['Bil','Foto','Nama','Kelas','Anugerah','Pencapaian','Bil. Pencapaian'],rows.map(([n,...x])=>[n,'',...x]),list.map(fotoOf)));toast(`Excel ${list.length} trofi dimuat turun`)}
+    try{saveBlob('Trofi-Kokurikulum-Foto.xlsx',await xlsxFoto('Trofi Kokurikulum',['Bil','Foto',...head.slice(1)],flat('\n').map(([n,...x])=>[n,'',...x]),list.map(fotoOf)));toast(`Excel ${list.length} trofi dimuat turun`)}
     catch(err){toast(err.message,true)}finally{b.disabled=false;label.textContent='Excel + foto'}};
-  $$('#awList .b').forEach(b=>b.onclick=()=>openAw(b.dataset.aid));
 }
 function renderAw(){
   $('#awTools').style.display=canNames()?'flex':'none'; // AJK download lists without the PIN whenever names are public
@@ -1764,9 +1772,11 @@ function wordSenarai(cat){
     return preview('Senarai Penerima '+tajuk,`${fmtName()} · ${rows.length-1} penerima`,rowsHTML(rows),()=>saveRows(base,rows))}
   const body=`<div class="lap"><h1>SENARAI PENERIMA ANUGERAH · ${esc(tajuk.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU</div>${cats.map((k,ci)=>{
     const aws=D.anugerah.filter(a=>a.kat===k&&(!tag||pen.some(p=>p.aid===a.id)));if(!aws.length)return '';
-    return `${cat==='ALL'?`<h2 class="${ci?'pb':''}">${esc(CAT[k])}</h2>`:''}${aws.map(a=>{const ps=pen.filter(p=>p.aid===a.id).sort(byKelas);
-      return `<h3>${esc(a.nama)} (${ps.length} penerima)</h3><table><tr><th style="width:40px">Bil</th><th>Nama</th><th style="width:130px">Kelas</th><th style="width:160px">Catatan</th></tr>${ps.map((p,i)=>`<tr><td class="n">${i+1}</td><td>${esc(p.nama)}</td><td>${esc(p.kelas)}</td><td>${esc(p.catatan)}</td></tr>`).join('')||'<tr><td colspan="4">Tiada penerima</td></tr>'}</table>`}).join('')}`}).join('')}</div>`;
-  preview('Senarai Penerima '+tajuk,`Word · ${pen.filter(p=>cats.includes(D.anugerah.find(a=>a.id===p.aid)?.kat)).length} penerima`,body,()=>wordDoc(base+'.doc','Senarai Penerima '+tajuk,body));
+    return `${cat==='ALL'?`<h2 class="${ci?'pb':''}">${esc(CAT[k])}</h2>`:''}${aws.map(a=>{
+      // Kokurikulum: a pupil with several achievements in one award is one row, achievements one per line
+      const g=new Map();pen.filter(p=>p.aid===a.id).sort(byKelas).forEach(p=>{const key=p.nama+'|'+p.kelas;g.has(key)?g.get(key).push(p):g.set(key,[p])});const ps=[...g.values()];
+      return `<h3>${esc(a.nama)} (${ps.length} penerima)</h3><table><tr><th style="width:40px">Bil</th><th>Nama</th><th style="width:130px">Kelas</th><th style="width:200px">Catatan</th></tr>${ps.map((r,i)=>`<tr><td class="n">${i+1}</td><td>${esc(r[0].nama)}</td><td>${esc(r[0].kelas)}</td><td>${r.map(p=>esc(p.catatan)).filter(Boolean).join('<br>')}</td></tr>`).join('')||'<tr><td colspan="4">Tiada penerima</td></tr>'}</table>`}).join('')}`}).join('')}</div>`;
+  preview('Senarai Penerima '+tajuk,`Word · ${new Set(pen.filter(p=>cats.includes(D.anugerah.find(a=>a.id===p.aid)?.kat)).map(p=>p.aid+'|'+p.nama+'|'+p.kelas)).size} penerima`,body,()=>wordDoc(base+'.doc','Senarai Penerima '+tajuk,body));
 }
 function printDoc(title,body){
   const w=open('','_blank');if(!w)return toast('Benarkan tetingkap pop-up untuk mencetak',true);
@@ -1975,8 +1985,12 @@ const POSTER_STYLE={
   K:{title:'Kurikulum',ink:'#071222',mid:'#162e4d',asset:'k'},
   H:{title:'Hal Ehwal Murid',ink:'#21090f',mid:'#4a1520',asset:'h'},
   KO:{title:'Kokurikulum',ink:'#041d17',mid:'#124737',asset:'ko'},
+  IKO:{title:'Ikon Kokurikulum',head:'IKON KOKURIKULUM',ink:'#041d17',mid:'#124737',asset:'ko',motif:'KO'},
+  IKH:{title:'Ikon Harapan Kokurikulum',head:'IKON HARAPAN KOKURIKULUM',ink:'#041d17',mid:'#124737',asset:'ko',motif:'KO'},
   P:{title:'Persembahan',head:'PENGHARGAAN PERSEMBAHAN',sub:'Terima kasih atas sumbangan bakat',ink:'#150a22',mid:'#3a1f55',asset:'p'}
 };
+// owner's rule (2026-11-17): Ikon awards get their own poster and stay off the Kokurikulum achievement poster
+const posterKat=a=>a.kat!=='KO'?a.kat:/ikon\s+harapan/i.test(a.nama)?'IKH':/ikon/i.test(a.nama)?'IKO':'KO';
 const posterImages=new Map();
 // draw im to fill x,y,w,h (cover), cropped a little towards the top so faces stay in
 function posterCover(ctx,im,x,y,w,h){const k=Math.max(w/im.naturalWidth,h/im.naturalHeight),sw=w/k,sh=h/k;ctx.drawImage(im,(im.naturalWidth-sw)/2,(im.naturalHeight-sh)*.32,sw,sh,x,y,w,h)}
@@ -2089,13 +2103,13 @@ async function posterCanvas(s,kat){
   ctx.save();ctx.shadowColor='#000b';ctx.shadowBlur=35;ctx.shadowOffsetY=14;ctx.fillStyle=posterGold(ctx,105,239,582,760);ctx.fillRect(105,239,582,760);ctx.restore();
   ctx.fillStyle=style.ink;ctx.fillRect(113,247,566,744);ctx.strokeStyle=posterGold(ctx,115,249,560,740);ctx.lineWidth=2;ctx.strokeRect(117,251,558,736);
   const inner=ctx.createLinearGradient(126,267,666,987);inner.addColorStop(0,style.mid);inner.addColorStop(1,style.ink);ctx.fillStyle=inner;ctx.fillRect(126,267,540,720);
-  ctx.save();ctx.beginPath();ctx.rect(126,267,540,720);ctx.clip();if(photo?.naturalWidth)posterCover(ctx,photo,126,267,540,720);else{ctx.globalAlpha=.09;posterMotif(ctx,kat,396,620,2.6)}ctx.restore();
+  ctx.save();ctx.beginPath();ctx.rect(126,267,540,720);ctx.clip();if(photo?.naturalWidth)posterCover(ctx,photo,126,267,540,720);else{ctx.globalAlpha=.09;posterMotif(ctx,style.motif||kat,396,620,2.6)}ctx.restore();
   for(const [x,y,dx,dy] of [[105,239,1,1],[687,239,-1,1],[105,999,1,-1],[687,999,-1,-1]]){
     ctx.save();ctx.translate(x,y);ctx.scale(dx,dy);ctx.strokeStyle=posterGold(ctx,0,0,65,65);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-7,53);ctx.lineTo(-7,-7);ctx.lineTo(53,-7);ctx.stroke();ctx.beginPath();ctx.moveTo(9,33);ctx.quadraticCurveTo(42,42,33,9);ctx.quadraticCurveTo(9,9,9,33);ctx.stroke();ctx.restore();
   }
-  posterMotif(ctx,kat,1764,292,.75);
+  posterMotif(ctx,style.motif||kat,1764,292,.75);
   posterWrite(ctx,posterFit(ctx,style.head||'ANUGERAH '+style.title.toUpperCase(),905,58,{size:41,family:'Cormorant SC',weight:'700',maxLines:1}),755,256,'#e4bb61');
-  const items=s.items.filter(i=>i.a.kat===kat),dense=items.reduce((n,i)=>n+1+(i.ps?.length?i.ps:[i.p]).reduce((m,p)=>m+String(p?.catatan||'').split(/;|\n/).filter(t=>t.trim()).length,0),0)>10;
+  const items=s.items.filter(i=>posterKat(i.a)===kat),dense=items.reduce((n,i)=>n+1+(i.ps?.length?i.ps:[i.p]).reduce((m,p)=>m+String(p?.catatan||'').split(/;|\n/).filter(t=>t.trim()).length,0),0)>10;
   if(!dense)posterWrite(ctx,posterFit(ctx,style.sub||'Meraikan kecemerlangan',920,43,{size:29,family:'Cormorant Garamond',weight:'italic',maxLines:1}),755,317,'#cdbb96');
 
   const name=posterFit(ctx,String(s.nama||'').toUpperCase(),1060,dense?112:164,{size:dense?52:68,min:38,family:'Cormorant SC',weight:'700',maxLines:2,leading:1.04});
@@ -2244,7 +2258,7 @@ async function posterSelect(kat){
 }
 function openPoster(s,trigger){
   if(!canNames()||!s)return;
-  const cats=Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>i.a.kat===k));if(!cats.length)return;
+  const cats=Object.keys(POSTER_STYLE).filter(k=>s.items.some(i=>posterKat(i.a)===k));if(!cats.length)return;
   posterState.mode='poster';posterState.performance=null;
   document.getElementById('posterTitle').textContent='Poster Pencapaian';
   posterState.student=s;posterState.focus=trigger||document.activeElement;

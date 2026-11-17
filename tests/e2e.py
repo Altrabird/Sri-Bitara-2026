@@ -444,10 +444,27 @@ with sync_playwright() as p:
     sukan = pg.evaluate("D.anugerah.find(a=>/sukan dan permainan/i.test(a.nama)).id")
     pg.evaluate(f"call('addPenerima',{{rows:[{row('k6', sukan, 'BOLA JARING – JOHAN – ZON')}]}},{{quiet:true}})")
     assert pg.evaluate("(()=>{const s=trofiList().all.find(s=>s.nama==='MURID KOKO');return [s.items.length,s.n,trofiList().all.filter(s=>s.nama==='MURID KOKO').length]})()") == [2, 3, 1]
+    # Ikon awards: own poster, never on the Kokurikulum achievement poster, never a Trofi Kokum trophy
+    ikon = pg.evaluate("D.anugerah.find(a=>/^ikon kokurikulum/i.test(a.nama)).id")
+    pg.evaluate(f"call('addPenerima',{{rows:[{row('k7', ikon, 'PENGAKAP')}]}},{{quiet:true}})")
+    koko_s = "studentMap('ALL').find(s=>s.nama==='MURID KOKO')"
+    assert pg.evaluate(f"Object.keys(POSTER_STYLE).filter(k=>{koko_s}.items.some(i=>posterKat(i.a)===k))") == ['K', 'KO', 'IKO']
+    assert pg.evaluate("posterKat({kat:'KO',nama:'Anugerah Ikon Harapan Kokurikulum'})") == 'IKH'
+    assert pg.evaluate(f"posterCanvas({koko_s},'IKO').then(c=>[c.width,c.height])") == [1920, 1080]
+    assert pg.evaluate("trofiList().all.find(s=>s.nama==='MURID KOKO').n") == 3
     pg.keyboard.press('Escape')
     pg.click('.nav[data-v=anugerah]')
     pg.click('#awMode [data-m=trofi]')
-    expect(pg.locator('#awList .ms', has_text='MURID KOKO')).to_have_count(1)
+    koko_tr = pg.locator('#awList table.trofi tr', has_text='MURID KOKO')
+    expect(koko_tr).to_have_count(1)
+    # Pencapaian Kokurikulum sub columns: Sukan & Permainan first, the pupil's other award's achievements in their own cell
+    cells = koko_tr.locator('td').all_inner_texts()
+    heads = pg.locator('#awList table.trofi tr').nth(1).locator('th').all_inner_texts()
+    assert heads[0].upper().startswith('SUKAN') and cells[3 + heads.index(next(h for h in heads if 'SUKAN' in h.upper()))] == 'BOLA JARING – JOHAN – ZON', (heads, cells)
+    assert 'OLAHRAGA – JOHAN – NEGERI' in cells[3 + [h.upper() for h in heads].index('BADAN BERUNIFORM')], cells
+    pg.click('#trWord')
+    expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('PENCAPAIAN KOKURIKULUM', ignore_case=True)
+    pg.click('#pvC')
     expect(pg.locator('#awList .ms-kpi .n').first).to_have_text(str(pg.evaluate('trofiList().all.length')))
     shot(pg, 'trofi-kokum')
     pg.click('#awMode [data-m=kad]')
