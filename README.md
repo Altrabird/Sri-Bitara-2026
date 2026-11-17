@@ -22,4 +22,4 @@ No student data is stored in this repository. Recipient lists are imported in th
 
 | File | Source |
 |---|---|
-| `img/poster-*.jpg`, `img/kad-*.jpg` | Poster backgrounds (Kurikulum / HEM / Kokurikulum / Persembahan / Majlis T6 Sijil Berhenti Sekolah) and Kad Tajuk Persembahan theme backgrounds (silat, nasyid, bicara, tari, muzik, umum). AI-generated with OpenAI image generation via Codex CLI on the school owner's ChatGPT Plus account, 2026-11-16, then resized/compressed with Pillow. No text, people or logos. Under OpenAI's terms the output belongs to the user. |
+| `img/poster-*.jpg`, `img/kad-*.jpg` | Poster backgrounds (Kurikulum / HEM / Kokurikulum / Persembahan / Majlis T6 Sijil Tamat Persekolahan Tahun 6) and Kad Tajuk Persembahan theme backgrounds (silat, nasyid, bicara, tari, muzik, umum). AI-generated with OpenAI image generation via Codex CLI on the school owner's ChatGPT Plus account, 2026-11-16, then resized/compressed with Pillow. No text, people or logos. Under OpenAI's terms the output belongs to the user. |

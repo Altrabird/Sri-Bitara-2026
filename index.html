@@ -820,7 +820,7 @@ const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' '
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
 /* ---------- navigasi ---------- */
-const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Berhenti Sekolah'],kehadiran:['Kehadiran','Pendaftaran murid penerima pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
+const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Tamat Persekolahan Tahun 6'],kehadiran:['Kehadiran','Pendaftaran murid penerima pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
 function go(v){if(!TITLES[v])v='dashboard';if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);show(v)}
 function show(v){
   VIEW=v;
@@ -1174,7 +1174,7 @@ function renderHadir(){
     D.penerima.forEach(p=>{if(ids.includes(p.id))p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
     try{await call('setHadir',{ids,hadir:on},{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
 }
-/* ---------- Majlis T6 (Sijil Berhenti Sekolah): hobi, cita-cita & foto murid Tahun 6 ---------- */
+/* ---------- Majlis T6 (Sijil Tamat Persekolahan Tahun 6): hobi, cita-cita & foto murid Tahun 6 ---------- */
 // ten presets each; anything else goes in through LAIN-LAIN
 const T6_PILIHAN={
   hobi:['MEMBACA','MELUKIS','BERMAIN BOLA SEPAK','BERMAIN BADMINTON','BERENANG','MENYANYI','MEMASAK','BERKEBUN','MENARI','BERBASIKAL'],
@@ -2155,8 +2155,8 @@ async function kadCanvas(a){
   posterWrite(ctx,posterFit(ctx,KAD_TEKS.majlis(),1200,70,{size:30,min:14,maxLines:2,weight:'500'}),960,835,'#fff0cd');
   return canvas;
 }
-// Majlis T6 (Sijil Berhenti Sekolah) poster: one per Year 6 pupil, with photo, hobi and cita-cita
-const T6_TEKS={head:'SIJIL BERHENTI SEKOLAH',sub:'Selamat maju jaya, anak-anak Tahun 6',hobi:'HOBI',cita:'CITA-CITA',
+// Majlis T6 (Sijil Tamat Persekolahan Tahun 6) poster: one per Year 6 pupil, with photo, hobi and cita-cita
+const T6_TEKS={head:'SIJIL TAMAT PERSEKOLAHAN TAHUN 6',sub:'Selamat maju jaya, anak-anak Tahun 6',hobi:'HOBI',cita:'CITA-CITA',
   majlis:()=>D.settings?.nama||'Majlis Anugerah Sri Bitara 2026',sekolah:'SK BANDAR TAWAU',foto:'FOTO'};
 
 async function t6Canvas(m){

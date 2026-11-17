@@ -15,7 +15,7 @@ create table public.tetapan   (kunci text primary key, nilai jsonb);
 create table public.admin     (id int primary key check (id = 1), pin text not null, gagal int not null default 0, sejak timestamptz, pin_gas text);
 -- salinan senarai murid Hadir@SKBT (dari Code.gs), dikemas kini di latar belakang
 create table public.murid_cache (id int primary key check (id = 1), roster jsonb not null, masa timestamptz not null default now());
--- Majlis T6 (Sijil Berhenti Sekolah): hobi & cita-cita murid Tahun 6, dan foto SEMUA murid (poster anugerah juga). k = "NAMA|KELAS", fid = laluan foto dalam bucket "foto"
+-- Majlis T6 (Sijil Tamat Persekolahan Tahun 6): hobi & cita-cita murid Tahun 6, dan foto SEMUA murid (poster anugerah juga). k = "NAMA|KELAS", fid = laluan foto dalam bucket "foto"
 create table public.murid_t6  (k text primary key, nama text not null default '', kelas text not null default '', hobi text not null default '', cita text not null default '', fid text not null default '');
 
 create index on public.penerima (aid);
