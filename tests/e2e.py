@@ -317,6 +317,28 @@ with sync_playwright() as p:
     pg.click('#fcUse')
     pg.wait_for_function(f"fotoOf({{nama:'MURID HADIR',kelas:'4 KREATIF'}})!=={old!r}", timeout=8000)
     assert pg.evaluate('FC.stream===null'), 'camera turned off after use'
+    # delete, no PIN: Padam foto on the card, and Padam foto semasa in the photo window (both confirm first)
+    hadir = lambda: pg.locator('#gm .gm-card', has_text='MURID HADIR')
+    hadir().locator('.gm-del').click()
+    expect(hadir().locator('.gm-st')).to_have_text('BELUM ADA FOTO', timeout=8000)
+    expect(hadir().locator('.gm-del')).to_have_count(0)
+    hadir().locator('[data-mfoto]').click()
+    expect(pg.locator('#fcDel')).to_be_hidden()  # no photo yet, nothing to delete
+    pg.set_input_files('#fcFile', files=[IMG])
+    expect(hadir().locator('.gm-st')).to_have_text('✓ ADA FOTO', timeout=8000)
+    hadir().locator('[data-mfoto]').click()
+    pg.click('#fcDel')
+    expect(pg.locator('#fc')).not_to_have_class('lb on')
+    expect(hadir().locator('.gm-st')).to_have_text('BELUM ADA FOTO', timeout=8000)
+    hadir().locator('[data-mfoto]').click()
+    pg.set_input_files('#fcFile', files=[IMG])
+    expect(hadir().locator('.gm-st')).to_have_text('✓ ADA FOTO', timeout=8000)
+    assert pg.evaluate("localCall({action:'delT6Foto',nama:'MURID HADIR',kelas:'4 KREATIF'}).ok"), 'delete needs no PIN'
+    pg.evaluate("refresh()")
+    expect(hadir().locator('.gm-st')).to_have_text('BELUM ADA FOTO', timeout=8000)
+    hadir().locator('[data-mfoto]').click()
+    pg.set_input_files('#fcFile', files=[IMG])
+    expect(hadir().locator('.gm-st')).to_have_text('✓ ADA FOTO', timeout=8000)
     # upload many: "murid lain.png" matches MURID LAIN, an unknown name is left out; nothing saved before Simpan
     pg.set_input_files('#gmFiles', files=[{**IMG, 'name': 'murid lain.png'}, {**IMG, 'name': 'tiada nama ini.png'}])
     expect(pg.locator('#gm .gm-br')).to_have_count(2)

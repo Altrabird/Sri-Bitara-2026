@@ -238,7 +238,7 @@ span.tg{display:inline-flex;align-items:center}
 .del-p.ed:hover{color:var(--gold);border-color:var(--gold)}
 .t6-row{display:grid;grid-template-columns:28px 52px minmax(190px,1.3fr) minmax(160px,1fr) minmax(160px,1fr) 34px;gap:12px;align-items:center;padding:10px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--line);margin-bottom:8px}
 .t6-row.ok{border-color:rgba(63,182,139,.45)}.t6-i{color:var(--muted);font-size:12px;text-align:right}
-.t6-foto,.rcp-foto{position:relative;flex:none;display:inline-block}
+.t6-foto,.rcp-foto,.gm-foto{position:relative;flex:none;display:inline-block}
 [data-mfoto]{width:52px;height:68px;border-radius:6px;border:1px dashed rgba(var(--gold-rgb),.55);display:grid;place-items:center;color:var(--gold);overflow:hidden;padding:0}
 .rcp-foto [data-mfoto]{width:30px;height:40px;border-radius:4px}.rcp-foto [data-mfoto] .i{width:15px;height:15px}
 [data-mfoto] img{width:100%;height:100%;object-fit:cover}[data-mfoto]:hover{border-style:solid}
@@ -265,6 +265,7 @@ span.tg{display:inline-flex;align-items:center}
 .gm-card{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:8px;background:var(--glass);border:1px solid var(--line)}
 .gm-card.ok{border-color:rgba(63,182,139,.45)}.gm-card .ms-n{min-width:0}.gm-card .ms-n b{overflow-wrap:anywhere}
 .gm-foto [data-mfoto]{width:84px;height:112px}
+.gm-del{margin-top:8px}
 .gm-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.gm-tags .b{min-height:24px;padding:2px 8px;font-size:11px}
 .gm-st{font-size:11.5px;font-weight:700;letter-spacing:.04em;margin-top:4px}.gm-st.ok{color:var(--ok-text)}.gm-st.no{color:var(--warn)}
 .gm-chk{display:inline-flex;gap:8px;align-items:center;font-size:13px;min-height:44px;cursor:pointer}.gm-chk input{width:20px;height:20px;accent-color:var(--gold)}
@@ -653,6 +654,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <div class="fc-pick" id="fcPick">
       <button type="button" class="btn" id="fcCam"><svg class="i"><use href="#i-cam"/></svg>Kamera dengan bingkai</button>
       <label class="btn ghost" style="cursor:pointer"><svg class="i"><use href="#i-img"/></svg>Pilih dari galeri / fail<input type="file" id="fcFile" accept="image/*" class="sr"></label>
+      <button type="button" class="btn danger" id="fcDel" hidden>Padam foto semasa</button>
     </div>
     <div class="fc-view" id="fcView" hidden>
       <video id="fcVid" playsinline muted autoplay></video>
@@ -801,7 +803,7 @@ async function fotoUpload(s,src){
 }
 /* in-app camera with a framing guide (owner's request 2026-11-19): the phone's own camera app can't show one */
 const FC={s:null,stream:null,face:'environment'};
-function openFotoCam(s){FC.s=s;$('#fcT').textContent=s.nama;fcMode('pick');$('#fcMsg').textContent='Kamera dengan bingkai menunjukkan kedudukan muka dan bahu supaya foto murid seimbang dalam poster.';$('#fc').classList.add('on');$('#fcCam').focus()}
+function openFotoCam(s){FC.s=s;$('#fcT').textContent=s.nama;fcMode('pick');$('#fcDel').hidden=!fotoOf(s);$('#fcMsg').textContent='Kamera dengan bingkai menunjukkan kedudukan muka dan bahu supaya foto murid seimbang dalam poster.';$('#fc').classList.add('on');$('#fcCam').focus()}
 function fcStop(){FC.stream?.getTracks().forEach(t=>t.stop());FC.stream=null;$('#fcVid').srcObject=null}
 function closeFotoCam(){fcStop();$('#fc').classList.remove('on');FC.s=null}
 // pick: choose camera or gallery · live: camera with guide · shot: the taken photo, use it or take again
@@ -825,6 +827,9 @@ function fcSnap(){const v=$('#fcVid'),W=v.videoWidth,H=v.videoHeight;if(!W||!H)r
   $('#fcShot').getContext('2d').drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,900,1200);fcMode('shot');$('#fcUse').focus();
   $('#fcMsg').textContent='Semak foto: muka di tengah dan tidak terpotong? Tekan Guna foto, atau Ambil semula.'}
 $('#fcX').onclick=closeFotoCam;
+// owner's choice (2026-11-19): anyone may delete a pupil photo, no PIN; a confirm guards against a slip
+$('#fcDel').onclick=()=>{const s=FC.s;if(!s||!confirm('Padam foto '+s.nama+'?'))return;closeFotoCam();
+  call('delT6Foto',s,{quiet:true}).then(()=>toast('Foto '+s.nama+' dipadam'),err=>toast(err.message,true))};
 $('#fcCam').onclick=fcStart;
 $('#fcFlip').onclick=()=>{FC.face=FC.face==='user'?'environment':'user';fcStart()};
 $('#fcSnap').onclick=fcSnap;
@@ -1422,7 +1427,7 @@ function renderGambar(fromPoll){
    :!all.length?`<div class="empty"><p>Tiada ${esc(GM_JENIS[GMJ].toLowerCase())}.</p></div>`
    :!GMK&&!q?`<div class="empty"><svg class="i"><use href="#i-cam"/></svg><p>Pilih kelas untuk memuat naik foto murid. Satu foto bagi setiap murid digunakan dalam senarai anugerah, poster, Majlis T6, Kehadiran dan Dashboard.</p></div>`
    :!list.length?`<div class="empty"><p>${GMX?'Semua murid di sini sudah ada foto.':'Tiada murid sepadan.'}</p></div>`
-   :`<div class="gm-grid">${list.map(s=>`<div class="gm-card ${has(s)?'ok':''}">${fotoBtn(s,'gm-foto')}<div class="ms-n"><b>${esc(s.nama)}</b><small>${esc(s.kelas)}</small><div class="gm-st ${has(s)?'ok':'no'}">${has(s)?'✓ ADA FOTO':'BELUM ADA FOTO'}</div><div class="gm-tags">${[...s.tags].map(([l,c])=>`<span class="b"><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div></div></div>`).join('')}</div>`}`;
+   :`<div class="gm-grid">${list.map(s=>`<div class="gm-card ${has(s)?'ok':''}">${fotoBtn(s,'gm-foto')}<div class="ms-n"><b>${esc(s.nama)}</b><small>${esc(s.kelas)}</small><div class="gm-st ${has(s)?'ok':'no'}">${has(s)?'✓ ADA FOTO':'BELUM ADA FOTO'}</div>${has(s)?`<button type="button" class="btn danger sm gm-del" data-mfotodel="${esc(t6Key(s))}" aria-label="Padam foto ${esc(s.nama)}">Padam foto</button>`:''}<div class="gm-tags">${[...s.tags].map(([l,c])=>`<span class="b"><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div></div></div>`).join('')}</div>`}`;
   if(caret!=null){const el=$('#gmQ');el.focus();try{el.setSelectionRange(caret,caret)}catch{}}
   $('#gmJ').onchange=e=>{GMJ=e.target.value;store.set('gmjenis',GMJ,sessionStorage);gmClose();renderGambar()};
   $('#gmK').onchange=e=>{GMK=e.target.value;store.set('gmkls',GMK,sessionStorage);gmClose();renderGambar()};
