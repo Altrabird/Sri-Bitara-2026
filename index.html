@@ -1260,15 +1260,15 @@ $('#psKad').onclick=()=>{
 $('#psSurat').onclick=()=>{
   const list=psMurid();if(!list.length)return toast('Tiada murid untuk dijana surat',true);
   const html=suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{const ps=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
-    return `<p><b>MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
+    return `<p><b>MAKLUMAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
-    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih untuk terlibat dalam ${ps.length>1?`<b>${ps.length}</b> persembahan`:'persembahan'} berikut sempena Majlis Anugerah Sri Bitara:</p>
+    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih untuk terlibat dalam persembahan pada Majlis Anugerah Sri Bitara pada ketetapan berikut:</p>
     ${jadual(ps,'Persembahan')}
     ${lain(ps,'Seperti yang dimaklumkan oleh guru pembimbing')}
     <p>&nbsp;</p>
     <p style="text-align:justify">3. &nbsp; &nbsp; Sehubungan dengan itu, anak tuan/puan perlu menghadiri sesi latihan yang ditetapkan oleh guru pembimbing dan hadir awal pada hari majlis. ${(({ya,tak})=>ya.length
-      ?`Pihak sekolah juga amat berbesar hati menjemput tuan/puan hadir pada ${senaraiTarikh(ya)} bagi menyaksikan persembahan anak tuan/puan.${tak.length?` Kehadiran ibu bapa/penjaga tidak diperlukan pada ${senaraiTarikh(tak)}.`:''}`
-      :`Kehadiran ibu bapa/penjaga tidak diperlukan pada ${senaraiTarikh(tak)}.`)(jemputHari(ps))}</p>
+      ?`Pihak sekolah juga amat berbesar hati mengundang tuan/puan hadir pada ${senaraiTarikh(ya)} bagi menyaksikan persembahan anak tuan/puan.${tak.length?` Ibu bapa tidak perlu hadir pada ${senaraiTarikh(tak)}.`:''}`
+      :`Ibu bapa tidak perlu hadir pada ${senaraiTarikh(tak)}.`)(jemputHari(ps))}</p>
     <p style="text-align:justify">Kerjasama dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`});
   preview('Surat Pemakluman Persembahan',`Word · ${list.length} surat (satu bagi setiap murid)`,html,()=>wordDoc('Surat-Pemakluman-Persembahan'+psTag()+'.doc','Surat Pemakluman Persembahan',html));
 };
@@ -2102,7 +2102,7 @@ function suratHTML(){
     ${lain(aw,'Pakaian Rasmi Sekolah')}
     <p>&nbsp;</p>
     <p style="text-align:justify">3. &nbsp; &nbsp; ${(({ya,tak})=>ya.length
-      ?`Sehubungan dengan itu, pihak sekolah amat berbesar hati mengundang tuan/puan hadir bersama anak pada ${senaraiTarikh(ya)} bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.${tak.length?` Ibu bapa tidak perlu hadir pada ${senaraiTarikh(tak)}.`:''}`
+      ?`Sehubungan dengan itu, pihak sekolah amat berbesar hati mengundang tuan/puan hadir bersama anak pada ${senaraiTarikh(ya)} bagi memeriahkan majlis tersebut (1 murid, 1 penjaga) dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.${tak.length?` Ibu bapa tidak perlu hadir pada ${senaraiTarikh(tak)}.`:''}`
       :`Majlis penyampaian anugerah pada ${senaraiTarikh(tak)} melibatkan murid sahaja. Oleh itu, ibu bapa tidak perlu hadir.`)(jemputHari(aw))}</p>
     <p style="text-align:justify">Keprihatinan dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`})};
 }

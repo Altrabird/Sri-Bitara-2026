@@ -382,7 +382,7 @@ with sync_playwright() as p:
     # parents are invited on hari 1 and 3 only; hari 2 (HEM) is for pupils
     hem = letter('MURID HEM')
     assert 'mengundang tuan/puan hadir bersama anak pada <b>21 November 2026 (Sabtu)</b>' in six[0] and 'Ibu bapa tidak perlu hadir pada <b>27 November 2026 (Jumaat)</b>' in six[0], six[0]
-    assert 'mengundang tuan/puan hadir bersama anak pada <b>28 November 2026 (Sabtu)</b>' in five[0] and 'tidak perlu hadir' not in five[0]
+    assert 'mengundang tuan/puan hadir bersama anak pada <b>28 November 2026 (Sabtu)</b>' in five[0] and 'tidak perlu hadir' not in five[0] and 'majlis tersebut (1 murid, 1 penjaga) dan' in five[0]
     assert len(hem) == 1 and 'mengundang' not in hem[0] and 'melibatkan murid sahaja' in hem[0] and 'ibu bapa tidak perlu hadir' in hem[0]
     assert 'MAKLUMAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU' in six[0] and 'PENERIMAAN ANUGERAH' not in six[0] and 'penerima pada Majlis Anugerah Sri Bitara pada ketetapan berikut:' in six[0] and 'Majlis Anugerah Apresiasi' not in six[0] and 'MAJLIS APRESIASI' not in six[0]
     # Tetapan › Hari Penyampaian: times per day and a per-anugerah override
@@ -478,7 +478,7 @@ with sync_playwright() as p:
     pg.evaluate("call('saveTable',{table:'anugerah',rows:D.anugerah},{quiet:true})")
     assert pg.evaluate('D.persembahan.length') == 2 and pg.evaluate('D.peserta.length') == 2
     pg.click('#psSurat')
-    expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('MAKLUMAN PENGLIBATAN MURID DALAM PERSEMBAHAN')
+    expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('telah terpilih untuk terlibat dalam persembahan pada Majlis Anugerah Sri Bitara pada ketetapan berikut:')
     expect(pg.frame_locator('#pvF').locator('body')).to_contain_text('Tarian Sabah (PENARI)')
     expect(pg.frame_locator('#pvF').locator('img[src$="tandatangan-guru-besar.png"]')).to_have_count(2)  # one letter per pupil, each signed
     pg.click('#pvC')
