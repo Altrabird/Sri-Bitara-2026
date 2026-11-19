@@ -78,7 +78,7 @@ def common_flow(pg, tag):
 
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(args=['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'])  # fake camera for the in-app photo camera
 
     # ---------- A: demo mode ----------
     ctx = b.new_context(viewport={'width': 1440, 'height': 900})
@@ -292,10 +292,31 @@ with sync_playwright() as p:
     pg.select_option('#gmK', '4 KREATIF')
     card = pg.locator('#gm .gm-card', has_text='MURID HADIR')
     expect(card.locator('.gm-st')).to_have_text('BELUM ADA FOTO')
-    with pg.expect_file_chooser() as fc:
-        card.locator('[data-mfoto]').click()
-    fc.value.set_files(files=[IMG])
+    card.locator('[data-mfoto]').click()  # choose: camera with a frame, or the gallery
+    expect(pg.locator('#fc')).to_have_class('lb on')
+    expect(pg.locator('#fcT')).to_have_text('MURID HADIR')
+    pg.set_input_files('#fcFile', files=[IMG])
+    expect(pg.locator('#fc')).not_to_have_class('lb on')
     expect(pg.locator('#gm .gm-card', has_text='MURID HADIR').locator('.gm-st')).to_have_text('✓ ADA FOTO', timeout=8000)
+    # in-app camera (fake device): the view is the poster's 3:4 box with face and shoulder guides; the shot replaces the photo
+    old = pg.evaluate("fotoOf({nama:'MURID HADIR',kelas:'4 KREATIF'})")
+    pg.locator('#gm .gm-card', has_text='MURID HADIR').locator('[data-mfoto]').click()
+    pg.click('#fcCam')
+    expect(pg.locator('#fcSnap')).to_be_enabled(timeout=8000)
+    box = pg.locator('#fcView').bounding_box()
+    assert abs(box['width'] / box['height'] - 0.75) < 0.01, box
+    expect(pg.locator('#fcView .fc-oval')).to_be_visible()
+    expect(pg.locator('#fcView .fc-sh')).to_be_visible()
+    pg.click('#fcSnap')
+    expect(pg.locator('#fcUse')).to_be_visible()
+    expect(pg.locator('#fcView .fc-oval')).to_be_hidden()  # guides off to check the shot
+    pg.click('#fcAgain')
+    expect(pg.locator('#fcSnap')).to_be_visible()
+    pg.click('#fcSnap')
+    assert pg.evaluate("[$('#fcShot').width,$('#fcShot').height]") == [900, 1200]
+    pg.click('#fcUse')
+    pg.wait_for_function(f"fotoOf({{nama:'MURID HADIR',kelas:'4 KREATIF'}})!=={old!r}", timeout=8000)
+    assert pg.evaluate('FC.stream===null'), 'camera turned off after use'
     # upload many: "murid lain.png" matches MURID LAIN, an unknown name is left out; nothing saved before Simpan
     pg.set_input_files('#gmFiles', files=[{**IMG, 'name': 'murid lain.png'}, {**IMG, 'name': 'tiada nama ini.png'}])
     expect(pg.locator('#gm .gm-br')).to_have_count(2)

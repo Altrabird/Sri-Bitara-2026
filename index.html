@@ -246,6 +246,21 @@ span.tg{display:inline-flex;align-items:center}
 /* Gambar Murid panel, and the small view-only photo used in other lists */
 .foto-mini{float:left;width:36px;height:48px;margin-right:10px;border-radius:5px;overflow:hidden;border:1px solid var(--line);background:var(--soft);display:grid;place-items:center;color:var(--muted)}
 .foto-mini img{width:100%;height:100%;object-fit:cover}.foto-mini .i{width:16px;height:16px}
+/* in-app camera: the view is the poster's 3:4 photo box, so the frame shows exactly what the poster will show */
+.fc-box{width:min(460px,96vw)}#fc [hidden]{display:none!important}
+.fc-pick{display:flex;flex-direction:column;gap:10px}
+.fc-view{position:relative;flex:none;width:min(100%,calc((100dvh - 270px)*.75));aspect-ratio:3/4;margin:0 auto;border-radius:10px;overflow:hidden;background:#000}
+.fc-view video,.fc-view canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;max-width:none;max-height:none;border-radius:0}
+.fc-view.mirror video{transform:scaleX(-1)}
+.fc-guide{position:absolute;inset:0;pointer-events:none;border:2px solid var(--gold2);border-radius:10px}
+.fc-guide i{position:absolute;display:block}
+.fc-mid{left:50%;top:0;bottom:0;border-left:1px dashed rgba(244,213,141,.4)}
+.fc-oval{left:28%;width:44%;top:10%;height:42%;border:2px dashed rgba(244,213,141,.95);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.fc-sh{left:6%;right:6%;top:76%;border-top:2px dashed rgba(244,213,141,.95)}
+.fc-guide span{position:absolute;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;letter-spacing:.15em;color:var(--gold2);text-shadow:0 1px 3px #000}
+.fc-l1{top:4%}.fc-l2{top:77.5%}
+.fc-view.shot .fc-guide>*{display:none}
+.fc-msg{font-size:12.5px;color:var(--muted);text-align:center;margin:0}
 .gm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .gm-card{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:8px;background:var(--glass);border:1px solid var(--line)}
 .gm-card.ok{border-color:rgba(63,182,139,.45)}.gm-card .ms-n{min-width:0}.gm-card .ms-n b{overflow-wrap:anywhere}
@@ -632,6 +647,27 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <div class="snip-act"><label class="btn ghost" style="cursor:pointer"><svg class="i"><use href="#i-cam"/></svg>Ambil semula<input type="file" id="camRetake" accept="image/*" capture="environment" class="sr"></label><button class="btn"><svg class="i"><use href="#i-up"/></svg>Muat naik</button></div>
   </form>
 </div>
+<div class="lb" id="fc" role="dialog" aria-modal="true" aria-labelledby="fcT">
+  <div class="snip-box fc-box">
+    <header><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">FOTO MURID</small><h3 id="fcT"></h3></div><button type="button" class="x" id="fcX" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="fc-pick" id="fcPick">
+      <button type="button" class="btn" id="fcCam"><svg class="i"><use href="#i-cam"/></svg>Kamera dengan bingkai</button>
+      <label class="btn ghost" style="cursor:pointer"><svg class="i"><use href="#i-img"/></svg>Pilih dari galeri / fail<input type="file" id="fcFile" accept="image/*" class="sr"></label>
+    </div>
+    <div class="fc-view" id="fcView" hidden>
+      <video id="fcVid" playsinline muted autoplay></video>
+      <canvas id="fcShot" width="900" height="1200" hidden></canvas>
+      <div class="fc-guide" aria-hidden="true"><i class="fc-mid"></i><i class="fc-oval"></i><i class="fc-sh"></i><span class="fc-l1">MUKA</span><span class="fc-l2">BAHU</span></div>
+    </div>
+    <p class="fc-msg" id="fcMsg">Kamera dengan bingkai menunjukkan kedudukan muka dan bahu supaya foto murid seimbang dalam poster.</p>
+    <div class="snip-act" id="fcAct" hidden>
+      <button type="button" class="btn ghost" id="fcFlip"><svg class="i"><use href="#i-cam"/></svg>Tukar kamera</button>
+      <button type="button" class="btn" id="fcSnap"><svg class="i"><use href="#i-cam"/></svg>Ambil gambar</button>
+      <button type="button" class="btn ghost" id="fcAgain" hidden>Ambil semula</button>
+      <button type="button" class="btn" id="fcUse" hidden><svg class="i"><use href="#i-check"/></svg>Guna foto</button>
+    </div>
+  </div>
+</div>
 <div class="lb" id="pv" role="dialog" aria-modal="true" aria-labelledby="pvT">
   <div class="snip-box pv-box">
     <header><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">PRATONTON</small><h3 id="pvT"></h3><small class="muted" id="pvS"></small></div><button class="x" id="pvX" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
@@ -757,11 +793,44 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-mfoto],[data-mfotodel]');if(!b)return;
   const k=b.dataset.mfoto||b.dataset.mfotodel,i=k.lastIndexOf('|'),s={nama:k.slice(0,i),kelas:k.slice(i+1)};
   if(b.dataset.mfotodel){if(confirm('Padam foto '+s.nama+'?'))call('delT6Foto',s,{quiet:true}).then(()=>toast('Foto '+s.nama+' dipadam'),err=>toast(err.message,true));return}
-  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
-  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
-    try{toast('Memuat naik foto '+s.nama+'…');const data=await compress(f,900,'image/jpeg',.85);await call('upload',{purpose:'t6',...s,mime:'image/jpeg',data},{quiet:true});toast('Foto '+s.nama+' disimpan')}catch(err){toast(err.message,true)}};
-  inp.click();
+  openFotoCam(s);
 });
+// the one place a single pupil photo is saved: a camera shot (base64 JPEG) or a chosen file
+async function fotoUpload(s,src){
+  try{toast('Memuat naik foto '+s.nama+'…');const data=typeof src==='string'?src:await compress(src,900,'image/jpeg',.85);await call('upload',{purpose:'t6',...s,mime:'image/jpeg',data},{quiet:true});toast('Foto '+s.nama+' disimpan')}catch(err){toast(err.message,true)}
+}
+/* in-app camera with a framing guide (owner's request 2026-11-19): the phone's own camera app can't show one */
+const FC={s:null,stream:null,face:'environment'};
+function openFotoCam(s){FC.s=s;$('#fcT').textContent=s.nama;fcMode('pick');$('#fcMsg').textContent='Kamera dengan bingkai menunjukkan kedudukan muka dan bahu supaya foto murid seimbang dalam poster.';$('#fc').classList.add('on');$('#fcCam').focus()}
+function fcStop(){FC.stream?.getTracks().forEach(t=>t.stop());FC.stream=null;$('#fcVid').srcObject=null}
+function closeFotoCam(){fcStop();$('#fc').classList.remove('on');FC.s=null}
+// pick: choose camera or gallery · live: camera with guide · shot: the taken photo, use it or take again
+function fcMode(m){$('#fcPick').hidden=m!=='pick';$('#fcView').hidden=$('#fcAct').hidden=m==='pick';$('#fcView').classList.toggle('shot',m==='shot');
+  $('#fcVid').hidden=m==='shot';$('#fcShot').hidden=m!=='shot';$('#fcSnap').hidden=$('#fcFlip').hidden=m!=='live';$('#fcAgain').hidden=$('#fcUse').hidden=m!=='shot'}
+async function fcStart(){
+  fcStop();fcMode('live');$('#fcSnap').disabled=true;$('#fcMsg').textContent='Membuka kamera…';
+  try{
+    if(!navigator.mediaDevices?.getUserMedia)throw Error('pelayar ini tidak menyokong kamera');
+    FC.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:FC.face},width:{ideal:1920},height:{ideal:1920}},audio:false});
+    if(!FC.s)return fcStop(); // closed while the permission prompt was open
+    const v=$('#fcVid');v.srcObject=FC.stream;await v.play();
+    $('#fcView').classList.toggle('mirror',FC.face==='user');$('#fcSnap').disabled=false;$('#fcSnap').focus();
+    $('#fcMsg').textContent='Letakkan muka murid di dalam bujur dan bahu pada garis BAHU. Pegang telefon tegak, separas mata.';
+  }catch(e){fcStop();fcMode('pick');
+    $('#fcMsg').textContent='Kamera tidak dapat dibuka ('+(e.name==='NotAllowedError'?'kebenaran kamera ditolak':e.message||e.name)+'). Benarkan kamera untuk laman ini dalam tetapan pelayar, atau pilih foto dari galeri.'}
+}
+// exactly what the 3:4 frame shows (centre of the camera picture) → 900 × 1200 JPEG, the poster's photo shape
+function fcSnap(){const v=$('#fcVid'),W=v.videoWidth,H=v.videoHeight;if(!W||!H)return;
+  const wide=W/H>3/4,sw=wide?H*3/4:W,sh=wide?H:W*4/3;
+  $('#fcShot').getContext('2d').drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,900,1200);fcMode('shot');$('#fcUse').focus();
+  $('#fcMsg').textContent='Semak foto: muka di tengah dan tidak terpotong? Tekan Guna foto, atau Ambil semula.'}
+$('#fcX').onclick=closeFotoCam;
+$('#fcCam').onclick=fcStart;
+$('#fcFlip').onclick=()=>{FC.face=FC.face==='user'?'environment':'user';fcStart()};
+$('#fcSnap').onclick=fcSnap;
+$('#fcAgain').onclick=()=>{fcMode('live');$('#fcMsg').textContent='Letakkan muka murid di dalam bujur dan bahu pada garis BAHU. Pegang telefon tegak, separas mata.'};
+$('#fcUse').onclick=()=>{const s=FC.s,data=$('#fcShot').toDataURL('image/jpeg',.85).split(',')[1];closeFotoCam();fotoUpload(s,data)};
+$('#fcFile').onchange=e=>{const f=e.target.files[0],s=FC.s;e.target.value='';if(f&&s){closeFotoCam();fotoUpload(s,f)}};
 function t6Row(db,r){db.t6=db.t6||[];let x=db.t6.find(t=>t6Key(t)===t6Key(r));if(!x)db.t6.push(x={nama:t6n(r.nama),kelas:t6n(r.kelas),hobi:'',cita:'',src:''});return x}
 function localCall(r){
   const db=ldb();
@@ -2151,6 +2220,7 @@ addEventListener('keydown',e=>{
   }
   if($('#snip').classList.contains('on')){if(e.key==='Escape')closeSnip();return}
   if($('#cam').classList.contains('on')){if(e.key==='Escape')closeCam();return}
+  if($('#fc').classList.contains('on')){if(e.key==='Escape')closeFotoCam();return}
   if($('#pv').classList.contains('on')){if(e.key==='Escape')closePv();return}
   if($('#lb').classList.contains('on')){if(e.key==='ArrowRight')openLb(lbI+1);if(e.key==='ArrowLeft')openLb(lbI-1);if(e.key==='Escape')$('#lb').classList.remove('on');return}
   if(e.key==='Escape')closeDrawer();
