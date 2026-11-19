@@ -44,14 +44,15 @@ Deno.serve(async (req) => {
     // An empty PIN is never checked, so visitors don't count as failed tries and lock the admin out.
     // owner's choice (2026-11-12): locking and unlocking an anugerah (setKunci) both need the PIN
     // owner's choice (2026-11-16): Majlis T6 (hobi, cita-cita) and pupil photos (any recipient) are filled like Anugerah, without a PIN
-    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'setT6', 'delT6Foto'].includes(r.action) || (r.action === 'upload' && r.purpose === 't6');
+    // owner's choice (2026-11-19): Kehadiran (setHadir, and setHadirT6 for Year 6 pupils on 21 Nov) needs no PIN
+    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'setT6', 'delT6Foto', 'setHadir', 'setHadirT6'].includes(r.action) || (r.action === 'upload' && r.purpose === 't6');
     if (!open || r.pin) await checkPin(r.pin);
     else await checkKunci(r);
     if (r.action === 'login') return out({ ok: true });
     if (r.action === 'admin') return out({ ok: true, data: await allData(), info: info() });
     if (r.action === 'roster') return out({ ok: true, roster: await roster(r.pin) });
     const res = await handle(r);
-    if (!r.pin) res.data = await publicPayload(); // no attendance or Catatan Pengarah for visitors
+    if (!r.pin) res.data = await publicPayload(); // no Catatan Pengarah for visitors
     return out({ ok: true, ...res });
   } catch (err) {
     return out({ ok: false, error: String((err as Error).message || err) });
@@ -121,6 +122,9 @@ async function handle(r: any) {
       await q(db.from('murid_t6').upsert({ ...m, ...v }, { onConflict: 'k' }));
       break;
     }
+    case 'setHadirT6': // a Year 6 pupil on the school list, with or without an award
+      await q(db.from('murid_t6').upsert({ ...(await murid(r, true)), hadir: r.hadir ? new Date().toISOString() : '' }, { onConflict: 'k' }));
+      break;
     case 'delT6Foto': {
       const m = await murid(r, false), old = (await q(db.from('murid_t6').select('fid').eq('k', m.k)))[0]?.fid;
       if (old) {
@@ -196,7 +200,7 @@ async function publicPayload() {
   return {
     ok: true, t: Date.now(), settings,
     anugerah: d.anugerah.map((a: any) => ({ ...a, ...(cnt[a.id] || { n: 0, d: 0 }) })),
-    penerima: d.settings.showNames ? d.penerima.map(({ hadir: _, ...p }: any) => p) : null, // attendance stays admin-only
+    penerima: d.settings.showNames ? d.penerima : null, // with attendance: Kehadiran is open to everyone
     t6: d.settings.showNames ? d.t6 : null,
     ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri
   };
@@ -209,7 +213,7 @@ async function allData() {
   delete d.tetapan;
   d.galeri.forEach((g: any) => (g.src = pub(g.fid)));
   d.fotoAjk.forEach((f: any) => (f.src = pub(f.fid)));
-  d.t6 = (await q(db.from('murid_t6').select('nama,kelas,hobi,cita,fid').order('k'))).map((x: any) => ({ ...x, src: x.fid ? pub(x.fid) : '' }));
+  d.t6 = (await q(db.from('murid_t6').select('nama,kelas,hobi,cita,fid,hadir').order('k'))).map((x: any) => ({ ...x, src: x.fid ? pub(x.fid) : '' }));
   return d;
 }
 

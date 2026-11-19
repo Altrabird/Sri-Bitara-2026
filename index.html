@@ -387,9 +387,11 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
 
 @media (max-width:980px){
   .app{grid-template-columns:1fr}
-  nav.side{position:fixed;top:auto;bottom:10px;left:10px;right:10px;height:auto;z-index:30;flex-direction:row;padding:6px;border:1px solid var(--line);border-radius:16px;justify-content:space-around;background:var(--side2)}
+  nav.side{position:fixed;top:auto;bottom:10px;left:10px;right:10px;height:auto;z-index:30;flex-direction:row;padding:6px;border:1px solid var(--line);border-radius:16px;justify-content:flex-start;background:var(--side2);overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+  nav.side::-webkit-scrollbar{display:none}
   .brand,.stage-btn,.nav .lock{display:none}
-  .nav{flex-direction:column;gap:2px;font-size:10px;padding:8px 2px;justify-content:center;text-align:center;flex:1;min-width:0}
+  /* 9 tabs don't fit a phone: fixed-width tabs and a sideways-scrolling bar instead of labels squeezed into each other */
+  .nav{flex-direction:column;gap:2px;font-size:10.5px;padding:8px 4px;justify-content:center;text-align:center;flex:1 0 66px;min-width:66px;white-space:nowrap}
   .hero,.dash2,.form{grid-template-columns:1fr}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .ti{grid-template-columns:64px 1fr}
@@ -398,6 +400,11 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   .rcp{grid-template-columns:1fr auto}.rcp .k{grid-column:1/-1}
   .ms{grid-template-columns:1fr auto;gap:8px 12px}.ms.hd{grid-template-columns:auto 1fr}.ms-aw{grid-column:1/-1;order:3}.ms-kpi .n{font-size:26px}
   #stage .bar select{max-width:100%}
+}
+@media (max-width:600px){
+  .ms-kpi{gap:8px}.ms-kpi .card{padding:12px 10px}.ms-kpi .n{font-size:20px;white-space:nowrap}.ms-kpi .l{font-size:11px;line-height:1.3}
+  .tools select.fi{min-width:0!important;width:100%!important}
+  .ms.hd{padding:12px}.ms-n b{overflow-wrap:anywhere}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}#invite.open .door{opacity:0}.anim .rise,#stage .name .w>span{opacity:1;transform:none;filter:none}}
 
@@ -485,7 +492,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <button class="nav" data-v="anugerah"><svg class="i"><use href="#i-award"/></svg>Anugerah</button>
     <button class="nav" data-v="persembahan"><svg class="i"><use href="#i-spark"/></svg>Persembahan</button>
     <button class="nav" data-v="t6"><svg class="i"><use href="#i-book"/></svg>Majlis T6</button>
-    <button class="nav adm" data-v="kehadiran"><svg class="i"><use href="#i-check"/></svg>Kehadiran</button>
+    <button class="nav" data-v="kehadiran"><svg class="i"><use href="#i-check"/></svg>Kehadiran</button>
     <button class="nav" data-v="ajk"><svg class="i"><use href="#i-users"/></svg>AJK</button>
     <button class="nav" data-v="tentatif"><svg class="i"><use href="#i-cal"/></svg>Tentatif</button>
     <button class="nav" data-v="galeri"><svg class="i"><use href="#i-img"/></svg>Galeri</button>
@@ -711,7 +718,7 @@ document.addEventListener('click',e=>{
 function t6Row(db,r){db.t6=db.t6||[];let x=db.t6.find(t=>t6Key(t)===t6Key(r));if(!x)db.t6.push(x={nama:t6n(r.nama),kelas:t6n(r.kelas),hobi:'',cita:'',src:''});return x}
 function localCall(r){
   const db=ldb();
-  const open=['roster','addPenerima','delPenerima','setStatus','setCatatan','setT6','delT6Foto'].includes(r.action)||(r.action==='upload'&&r.purpose==='t6'); // same as the server: Anugerah and Majlis T6 entry need no PIN, locking an anugerah does
+  const open=['roster','addPenerima','delPenerima','setStatus','setCatatan','setT6','delT6Foto','setHadir','setHadirT6'].includes(r.action)||(r.action==='upload'&&r.purpose==='t6'); // same as the server: Anugerah and Majlis T6 entry need no PIN, locking an anugerah does
   if(r.action!=='public'&&(!open||r.pin)&&String(r.pin)!==DEMO_PIN)throw Error('PIN salah');
   if(!r.pin&&['addPenerima','delPenerima','setStatus','setCatatan'].includes(r.action)){const k=db.settings.dikunci||[],aids=r.action==='addPenerima'?r.rows.map(x=>x.aid):db.penerima.filter(p=>r.ids.includes(p.id)).map(p=>p.aid);
     if(aids.some(a=>k.includes(a)))throw Error('Anugerah ini dikunci. Minta admin membuka kunci.')}
@@ -732,6 +739,7 @@ function localCall(r){
     case 'setCatatan':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.catatan=String(r.catatan||'').trim().toUpperCase()});break;
     case 'setT6':{const x=t6Row(db,r);['hobi','cita'].forEach(f=>{if(f in r)x[f]=t6n(r[f]).slice(0,60)});break}
     case 'delT6Foto':t6Row(db,r).src='';break;
+    case 'setHadirT6':if(!/^6\b/.test(t6n(r.kelas)))throw Error('Murid Tahun 6 ini tiada dalam senarai murid');t6Row(db,r).hadir=r.hadir?new Date().toISOString():'';break;
     case 'upload':if(r.purpose==='t6'){t6Row(db,r).src='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='logo'){db.settings.logo='data:'+r.mime+';base64,'+r.data}else if(r.purpose==='foto'){db.fotoAjk=(db.fotoAjk||[]).filter(f=>nameKey(f.n)!==nameKey(r.nama)).concat({n:r.nama,fid:'',src:'data:'+r.mime+';base64,'+r.data})}else{out.item={id:'g'+uid(),fid:'',src:'data:'+r.mime+';base64,'+r.data,kat:r.kat,kapsyen:r.kapsyen,masa:new Date().toISOString()};db.galeri.push(out.item)}break;
     case 'deletePhoto':db.galeri=db.galeri.filter(g=>g.id!==r.id);break;
     default:throw Error('Tindakan tidak dikenali');
@@ -820,11 +828,12 @@ const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' '
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
 /* ---------- navigasi ---------- */
-const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Tamat Persekolahan Tahun 6'],kehadiran:['Kehadiran','Pendaftaran murid penerima pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
+const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Tamat Persekolahan Tahun 6'],kehadiran:['Kehadiran','Pendaftaran murid pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
 function go(v){if(!TITLES[v])v='dashboard';if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);show(v)}
 function show(v){
   VIEW=v;
   $$('.nav').forEach(b=>{b.classList.toggle('on',b.dataset.v===v);b.setAttribute('aria-current',b.dataset.v===v?'page':'false')});
+  const on=$('.nav.on'),bar=on?.parentElement;if(on&&bar.scrollWidth>bar.clientWidth)bar.scrollLeft=on.offsetLeft-(bar.clientWidth-on.offsetWidth)/2; // phone nav scrolls: keep the open tab in view
   $$('section.view').forEach(s=>{const on=s.id==='v-'+v;s.classList.toggle('on',on);s.classList.toggle('anim',on&&!RM)});
   $('#vt').textContent=TITLES[v][0];$('#vs').textContent=v==='dashboard'?D.settings.nama:TITLES[v][1];
   render(false,true);
@@ -1146,13 +1155,19 @@ $('#psSijil').onclick=()=>{
 };
 /* ---------- kehadiran (AJK Pendaftaran) ---------- */
 let HDKLS=store.get('hdkls','',sessionStorage),HDHARI=store.get('hdhari','',sessionStorage);
-const hadirAt=s=>s.items.flatMap(i=>i.ps.map(p=>p.hadir||'')).sort().pop();
+// owner's choice (2026-11-19): every Year 6 pupil attends hari 1 (21 Nov), award or not; those without an award are ticked in murid_t6.hadir
+const T6_HARI='1';
+const hadirAt=s=>s.t6?s.t6.hadir||'':s.items.flatMap(i=>i.ps.map(p=>p.hadir||'')).sort().pop();
+// owner's choice (2026-11-19): Kehadiran is open to every user, no admin PIN
 function renderHadir(){
   const box=$('#hd');
-  if(!PIN){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Log masuk admin di Tetapan untuk merekod kehadiran.</p></div>`;return}
+  if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Nama murid belum dipaparkan. Admin perlu menghidupkan paparan nama penerima di Tetapan.</p></div>`;return}
   // one day at a time: today's day when the majlis is on, so a pupil ticked on 21 Nov is not also marked for 27 Nov
   const iso=new Date().toLocaleDateString('sv');if(!HDHARI)HDHARI=hariIds().find(h=>hariInfo(h).tarikh===iso)||hariIds()[0];
-  const all=studentMap('ALL').map(s=>({...s,items:s.items.filter(({a,p})=>hariOf(a,p)===HDHARI)})).filter(s=>s.items.length),inK=(s,k)=>s.kelas===k||s.conf?.includes(k);
+  const t6Day=HDHARI===T6_HARI;
+  if(t6Day&&!ROSTER&&!ROSTER_ERR){box.innerHTML='<div class="empty"><p>Memuatkan senarai murid Tahun 6…</p></div>';loadRoster().catch(e=>{ROSTER_ERR=e.message}).then(()=>{if(VIEW==='kehadiran')renderHadir()});return}
+  const rec=studentMap('ALL').map(s=>({...s,items:s.items.filter(({a,p})=>hariOf(a,p)===HDHARI)})).filter(s=>s.items.length),inK=(s,k)=>s.kelas===k||s.conf?.includes(k);
+  const got=new Set(rec.map(t6Key)),all=rec.concat(t6Day?t6List().filter(s=>!got.has(t6Key(s))).map(s=>({nama:s.nama,kelas:s.kelas,items:[],t6:s})):[]);
   const classes=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort);
   if(HDKLS&&HDKLS!=='SEMUA'&&!classes.includes(HDKLS))HDKLS='';
   const ALL=HDKLS==='SEMUA'; // every recipient, Tahun 1 to 6, by class then name
@@ -1160,19 +1175,24 @@ function renderHadir(){
   const n=a=>a.filter(hadirAt).length,tot=n(all);
   const time=t=>new Date(t).toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'});
   box.innerHTML=`<div class="grid ms-kpi">
-    <div class="card"><div class="n">${tot} / ${all.length}</div><div class="l">Murid penerima hadir</div></div>
+    <div class="card"><div class="n">${tot} / ${all.length}</div><div class="l">Murid ${t6Day?'':'penerima '}hadir</div></div>
     <div class="card"><div class="n">${HDKLS?`${n(list)} / ${list.length}`:'—'}</div><div class="l">Hadir dalam ${ALL?'semua kelas':HDKLS?esc(HDKLS):'kelas dipilih'}</div></div>
     <div class="card"><div class="n">${all.length-tot}</div><div class="l">Belum hadir</div></div>
   </div>
   <div class="tools"><select class="fi" id="hdHari" style="width:auto;min-width:200px" aria-label="Pilih hari">${hariIds().map(h=>`<option value="${h}" ${h===HDHARI?'selected':''}>${esc(tarikhHari(h))}</option>`).join('')}</select><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option><option value="SEMUA" ${ALL?'selected':''}>Kehadiran semua · Tahun 1–6 (${tot}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
+  ${t6Day&&ROSTER_ERR?`<p class="warnmsg">Senarai murid Tahun 6 tidak dapat dimuatkan: ${esc(ROSTER_ERR)}</p>`:''}
   ${!all.length?'<div class="empty"><p>Tiada penerima. Masukkan penerima ke dalam anugerah dahulu.</p></div>'
-   :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid penerima dan anugerah mereka.</p></div>`
-   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" data-ids="${esc(s.items.flatMap(i=>i.ps.map(p=>p.id)).join(','))}" ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
+   :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid${t6Day?'':' penerima dan anugerah mereka'}.</p></div>`
+   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${s.t6?`data-t6="${esc(t6Key(s))}"`:`data-ids="${esc(s.items.flatMap(i=>i.ps.map(p=>p.id)).join(','))}"`} ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.t6?'<span class="b"><i style="background:var(--gold)"></i>Majlis T6</span>':s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
   $('#hdHari').onchange=e=>{HDHARI=e.target.value;store.set('hdhari',HDHARI,sessionStorage);renderHadir()};
   $('#hdKls').onchange=e=>{HDKLS=e.target.value;store.set('hdkls',HDKLS,sessionStorage);renderHadir()};
-  $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,ids=c.dataset.ids.split(','),on=c.checked;
-    D.penerima.forEach(p=>{if(ids.includes(p.id))p.hadir=on?new Date().toISOString():''});renderHadir(); // show the tick at once
-    try{await call('setHadir',{ids,hadir:on},{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
+  $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,k=c.dataset.t6,on=c.checked,at=on?new Date().toISOString():'';
+    let body;
+    if(k){const s=all.find(x=>x.t6&&t6Key(x)===k);body={nama:s.nama,kelas:s.kelas,hadir:on};D.t6=D.t6||[];
+      const r=D.t6.find(x=>t6Key(x)===k);if(r)r.hadir=at;else D.t6.push({nama:s.nama,kelas:s.kelas,hobi:'',cita:'',src:'',hadir:at})}
+    else{const ids=c.dataset.ids.split(',');body={ids,hadir:on};D.penerima.forEach(p=>{if(ids.includes(p.id))p.hadir=at})}
+    renderHadir(); // show the tick at once
+    try{await call(k?'setHadirT6':'setHadir',body,{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
 }
 /* ---------- Majlis T6 (Sijil Tamat Persekolahan Tahun 6): hobi, cita-cita & foto murid Tahun 6 ---------- */
 // ten presets each; anything else goes in through LAIN-LAIN

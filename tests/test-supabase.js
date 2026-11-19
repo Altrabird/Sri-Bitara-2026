@@ -42,7 +42,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgA
   let p = await pub();
   assert.deepStrictEqual([p.anugerah[0].n, p.anugerah[0].d], [1, 1]);
   assert.strictEqual(p.penerima.length, 1);
-  assert(!('hadir' in p.penerima[0]), 'attendance hidden from public');
+  assert('hadir' in p.penerima[0], 'attendance public: Kehadiran is open to everyone');
   assert.strictEqual(p.settings.now, 1);
   assert(!('bukan' in p.settings), 'unknown setting ignored');
   j = await call({ action: 'saveSettings', settings: { catatan: { kekuatan: 'Kerjasama baik', kelemahan: '', penambahbaikan: '' } } });

@@ -225,6 +225,16 @@ with sync_playwright() as p:
     pg.select_option('#hdKls', '4 KREATIF')
     pg.locator('#hd .ms.hd', has_text='MURID HADIR').click()
     expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.ms-n small')).to_have_text('BELUM HADIR')
+    # 21 Nov: every Year 6 pupil on the school list, award or not; a pupil without an award is ticked in t6
+    pg.select_option('#hdHari', '1')
+    pg.select_option('#hdKls', '6 KRITIS')
+    expect(pg.locator('#hd .ms.hd')).to_have_count(4)
+    t6row = pg.locator('#hd .ms.hd').first
+    expect(t6row.locator('.b')).to_have_text('Majlis T6')
+    t6row.click()
+    expect(pg.locator('#hd .ms.hd').first.locator('.ms-n small')).to_contain_text('✓ HADIR')
+    assert pg.evaluate("D.t6.some(t=>t.kelas==='6 KRITIS'&&t.hadir)"), 'Year 6 attendance saved'
+    pg.select_option('#hdHari', '3')
     # hari penyampaian: subject awards Tahun 6 on 21 Nov, Tahun 1-5 on 28 Nov, HEM on 27 Nov; ONE letter per pupil lists each award with its date
     pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'},{id:'d4',aid:h,kelas:'3 KREATIF',nama:'MURID HEM'}]},{quiet:true})})()")
     letter = lambda n: [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if f'<b>{n}</b>' in x]
@@ -369,7 +379,7 @@ with sync_playwright() as p:
     pg.locator('#admin .setp.on button', has_text='Kunci').click()
     pg.wait_for_timeout(500)
     assert not pg.evaluate('document.body.classList.contains("admin")')
-    expect(pg.locator('.nav[data-v=kehadiran]')).to_be_hidden()
+    expect(pg.locator('.nav[data-v=kehadiran]')).to_be_visible()  # Kehadiran is open to everyone
     # visitor with only the link: pupil list is there and adding works without the PIN
     pg.click('.nav[data-v=anugerah]')
     pg.locator('#awGrid .aw').nth(2).click()
@@ -418,7 +428,7 @@ with sync_playwright() as p:
     pg.evaluate("call('setT6',{nama:' murid contoh 6ino 1',kelas:'6 inovatif',hobi:'  bermain   catur '},{quiet:true})")
     pg.evaluate("call('setT6',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF',cita:'doktor gigi'},{quiet:true})")
     pg.evaluate("call('upload',{purpose:'t6',nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF',mime:'image/jpeg',data:'AAAA'},{quiet:true})")
-    assert pg.evaluate(f"[{t6}.hobi,{t6}.cita,!!{t6}.src,D.t6.length]") == ['BERMAIN CATUR', 'DOKTOR GIGI', True, 1]
+    assert pg.evaluate(f"[{t6}.hobi,{t6}.cita,!!{t6}.src,D.t6.length]") == ['BERMAIN CATUR', 'DOKTOR GIGI', True, 2]  # + the 6 KRITIS pupil ticked in Kehadiran
     assert pg.evaluate(f"t6Canvas({t6}).then(c=>[c.width,c.height])") == [1920, 1080]
     pg.evaluate("call('delT6Foto',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF'},{quiet:true})")
     assert pg.evaluate(f"{t6}.src") == ''
