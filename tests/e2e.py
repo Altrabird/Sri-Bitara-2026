@@ -286,6 +286,47 @@ with sync_playwright() as p:
     expect(pg.locator('#dxK .dx-row')).to_have_count(pg.evaluate('dxKelas(dxMurid()).length'))
     pg.locator('#dxK .dx-leg .chip', has_text='Semua').click()
     shot(pg, 'demo-dashboard')
+    # Gambar Murid: one photo per pupil, filled by class, then seen in Senarai Murid, Kehadiran and the dashboard
+    pg.click('.nav[data-v=gambar]')
+    expect(pg.locator('#gm .empty')).to_contain_text('Pilih kelas')
+    pg.select_option('#gmK', '4 KREATIF')
+    card = pg.locator('#gm .gm-card', has_text='MURID HADIR')
+    expect(card.locator('.gm-st')).to_have_text('BELUM ADA FOTO')
+    with pg.expect_file_chooser() as fc:
+        card.locator('[data-mfoto]').click()
+    fc.value.set_files(files=[IMG])
+    expect(pg.locator('#gm .gm-card', has_text='MURID HADIR').locator('.gm-st')).to_have_text('✓ ADA FOTO', timeout=8000)
+    # upload many: "murid lain.png" matches MURID LAIN, an unknown name is left out; nothing saved before Simpan
+    pg.set_input_files('#gmFiles', files=[{**IMG, 'name': 'murid lain.png'}, {**IMG, 'name': 'tiada nama ini.png'}])
+    expect(pg.locator('#gm .gm-br')).to_have_count(2)
+    assert pg.locator('#gm select[data-gb="0"]').input_value() == 'MURID LAIN|4 KREATIF'
+    assert pg.locator('#gm select[data-gb="1"]').input_value() == ''
+    expect(pg.locator('#gmBOk')).to_have_text('Simpan 1 foto')
+    assert not pg.evaluate("fotoOf({nama:'MURID LAIN',kelas:'4 KREATIF'})"), 'nothing saved before Simpan'
+    pg.select_option('#gm select[data-gb="1"]', 'MURID LAIN|4 KREATIF')  # same pupil twice: blocked
+    expect(pg.locator('#gm .warnmsg')).to_contain_text('MURID LAIN')
+    expect(pg.locator('#gmBOk')).to_be_disabled()
+    pg.select_option('#gm select[data-gb="1"]', '')
+    pg.click('#gmBOk')
+    pg.wait_for_function("fotoOf({nama:'MURID LAIN',kelas:'4 KREATIF'})", timeout=8000)
+    expect(pg.locator('#gm .gm-br')).to_have_count(0)
+    pg.check('#gmX')  # only pupils without a photo: none left in 4 KREATIF
+    expect(pg.locator('#gm .empty')).to_contain_text('sudah ada foto')
+    pg.uncheck('#gmX')
+    # the same photo shows elsewhere, view only
+    pg.click('.nav[data-v=anugerah]')
+    pg.click('#awMode [data-m=murid]')
+    expect(pg.locator('#awList .ms', has_text='MURID HADIR').locator('.foto-mini img')).to_have_count(1)
+    pg.click('#awMode [data-m=kad]')
+    pg.click('.nav[data-v=kehadiran]')
+    pg.select_option('#hdHari', '3')
+    pg.select_option('#hdKls', '4 KREATIF')
+    expect(pg.locator('#hd .ms.hd', has_text='MURID HADIR').locator('.foto-mini img')).to_have_count(1)
+    pg.click('.nav[data-v=dashboard]')
+    pg.locator('#dxT .dx-col').nth(3).click()
+    pg.locator('#dxT .dx-row', has_text='4 KREATIF').click()
+    expect(pg.locator('#dxT .dx-pl > div', has_text='MURID LAIN').locator('.foto-mini img')).to_have_count(1)
+    pg.locator('#dxT .dx-path button').first.click()
     # hari penyampaian: subject awards Tahun 6 on 21 Nov, Tahun 1-5 on 28 Nov, HEM on 27 Nov; ONE letter per pupil lists each award with its date
     pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'},{id:'d4',aid:h,kelas:'3 KREATIF',nama:'MURID HEM'}]},{quiet:true})})()")
     letter = lambda n: [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if f'<b>{n}</b>' in x]
@@ -479,7 +520,7 @@ with sync_playwright() as p:
     pg.evaluate("call('setT6',{nama:' murid contoh 6ino 1',kelas:'6 inovatif',hobi:'  bermain   catur '},{quiet:true})")
     pg.evaluate("call('setT6',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF',cita:'doktor gigi'},{quiet:true})")
     pg.evaluate("call('upload',{purpose:'t6',nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF',mime:'image/jpeg',data:'AAAA'},{quiet:true})")
-    assert pg.evaluate(f"[{t6}.hobi,{t6}.cita,!!{t6}.src,D.t6.length]") == ['BERMAIN CATUR', 'DOKTOR GIGI', True, 2]  # + the 6 KRITIS pupil ticked in Kehadiran
+    assert pg.evaluate(f"[{t6}.hobi,{t6}.cita,!!{t6}.src,D.t6.length]") == ['BERMAIN CATUR', 'DOKTOR GIGI', True, 4]  # + the 6 KRITIS pupil ticked in Kehadiran, 2 photos from Gambar Murid
     assert pg.evaluate(f"t6Canvas({t6}).then(c=>[c.width,c.height])") == [1920, 1080]
     pg.evaluate("call('delT6Foto',{nama:'MURID CONTOH 6INO 1',kelas:'6 INOVATIF'},{quiet:true})")
     assert pg.evaluate(f"{t6}.src") == ''

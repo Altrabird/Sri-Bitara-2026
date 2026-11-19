@@ -243,6 +243,20 @@ span.tg{display:inline-flex;align-items:center}
 .rcp-foto [data-mfoto]{width:30px;height:40px;border-radius:4px}.rcp-foto [data-mfoto] .i{width:15px;height:15px}
 [data-mfoto] img{width:100%;height:100%;object-fit:cover}[data-mfoto]:hover{border-style:solid}
 .foto-x{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1;display:grid;place-items:center;padding:0}.foto-x:hover{color:var(--bad);border-color:var(--bad)}
+/* Gambar Murid panel, and the small view-only photo used in other lists */
+.foto-mini{float:left;width:36px;height:48px;margin-right:10px;border-radius:5px;overflow:hidden;border:1px solid var(--line);background:var(--soft);display:grid;place-items:center;color:var(--muted)}
+.foto-mini img{width:100%;height:100%;object-fit:cover}.foto-mini .i{width:16px;height:16px}
+.gm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.gm-card{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:8px;background:var(--glass);border:1px solid var(--line)}
+.gm-card.ok{border-color:rgba(63,182,139,.45)}.gm-card .ms-n{min-width:0}.gm-card .ms-n b{overflow-wrap:anywhere}
+.gm-foto [data-mfoto]{width:84px;height:112px}
+.gm-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.gm-tags .b{min-height:24px;padding:2px 8px;font-size:11px}
+.gm-st{font-size:11.5px;font-weight:700;letter-spacing:.04em;margin-top:4px}.gm-st.ok{color:var(--ok-text)}.gm-st.no{color:var(--warn)}
+.gm-chk{display:inline-flex;gap:8px;align-items:center;font-size:13px;min-height:44px;cursor:pointer}.gm-chk input{width:20px;height:20px;accent-color:var(--gold)}
+.gm-br{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.gm-br img{width:64px;height:84px;object-fit:cover;border-radius:6px}
+.gm-br small{display:block;color:var(--muted);font-size:12px;margin-bottom:4px;overflow-wrap:anywhere}
+@media (max-width:600px){.gm-grid{grid-template-columns:1fr}.gm-br{grid-template-columns:56px 1fr}.gm-br img{width:56px;height:74px}.gm-br>.gm-st{grid-column:2}}
 .t6-f{display:flex;flex-direction:column;gap:6px}.t6-f .fi{min-height:38px;font-size:13px}.t6-f input{text-transform:uppercase}
 @media (max-width:980px){.t6-row{grid-template-columns:52px 1fr auto}.t6-i{display:none}.t6-f{grid-column:1/-1}}
 .ach{display:flex;gap:6px;align-items:center;margin-top:5px}.ach small,.ach .ed-c{flex:1;margin:0}.ach .del-p{width:28px;height:28px}
@@ -420,7 +434,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
   nav.side::-webkit-scrollbar{display:none}
   .brand,.stage-btn,.nav .lock{display:none}
   /* 9 tabs don't fit a phone: fixed-width tabs and a sideways-scrolling bar instead of labels squeezed into each other */
-  .nav{flex-direction:column;gap:2px;font-size:10.5px;padding:8px 4px;justify-content:center;text-align:center;flex:1 0 66px;min-width:66px;white-space:nowrap}
+  .nav{flex-direction:column;gap:2px;font-size:10.5px;padding:8px 4px;justify-content:center;text-align:center;flex:1 0 auto;width:auto;min-width:66px;white-space:nowrap}
   .hero,.dash2,.form{grid-template-columns:1fr}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .ti{grid-template-columns:64px 1fr}
@@ -521,6 +535,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <button class="nav" data-v="anugerah"><svg class="i"><use href="#i-award"/></svg>Anugerah</button>
     <button class="nav" data-v="persembahan"><svg class="i"><use href="#i-spark"/></svg>Persembahan</button>
     <button class="nav" data-v="t6"><svg class="i"><use href="#i-book"/></svg>Majlis T6</button>
+    <button class="nav" data-v="gambar"><svg class="i"><use href="#i-cam"/></svg>Gambar Murid</button>
     <button class="nav" data-v="kehadiran"><svg class="i"><use href="#i-check"/></svg>Kehadiran</button>
     <button class="nav" data-v="ajk"><svg class="i"><use href="#i-users"/></svg>AJK</button>
     <button class="nav" data-v="tentatif"><svg class="i"><use href="#i-cal"/></svg>Tentatif</button>
@@ -559,6 +574,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
       <div id="psAdm"></div>
     </section>
     <section class="view" id="v-t6"><div id="t6"></div></section>
+    <section class="view" id="v-gambar"><div id="gm"></div></section>
     <section class="view" id="v-kehadiran"><div id="hd"></div></section>
     <section class="view" id="v-ajk">
       <div class="tools"><label class="search"><svg class="i"><use href="#i-search"/></svg><input id="ajkQ" placeholder="Cari nama guru / jawatankuasa / tugas…" aria-label="Cari AJK"></label><button class="btn" onclick="openAjkStage()"><svg class="i"><use href="#i-stage"/></svg>Bentang AJK</button></div>
@@ -733,6 +749,8 @@ function publicView(db){
 const t6n=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' '),t6Key=s=>t6n(s.nama)+'|'+t6n(s.kelas);
 // one photo per pupil (kept with Majlis T6 data), shared by Majlis T6, the award/persembahan lists and every poster
 const fotoOf=s=>(D.t6||[]).find(t=>t6Key(t)===t6Key(s))?.src||'';
+// view-only thumbnail of that photo (Senarai Murid, Kehadiran, dashboard); the placeholder keeps rows lined up
+const fotoMini=s=>{const src=fotoOf(s);return `<span class="foto-mini" aria-hidden="true">${src?`<img src="${esc(src)}" alt="" loading="lazy">`:'<svg class="i"><use href="#i-users"/></svg>'}</span>`};
 const fotoBtn=(s,cls='rcp-foto')=>{const k=esc(t6Key(s)),src=fotoOf(s);
   return `<span class="${cls}"><button type="button" data-mfoto="${k}" title="${src?'Tukar foto':'Muat naik foto'}" aria-label="${src?'Tukar':'Muat naik'} foto ${esc(s.nama)}">${src?`<img src="${esc(src)}" alt="" loading="lazy">`:'<svg class="i"><use href="#i-cam"/></svg>'}</button>${src?`<button type="button" class="foto-x" data-mfotodel="${k}" title="Padam foto" aria-label="Padam foto ${esc(s.nama)}">×</button>`:''}</span>`};
 document.addEventListener('click',e=>{
@@ -855,7 +873,7 @@ const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' '
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
 /* ---------- navigasi ---------- */
-const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Tamat Persekolahan Tahun 6'],kehadiran:['Kehadiran','Pendaftaran murid pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
+const TITLES={dashboard:['Dashboard','Ringkasan majlis'],anugerah:['Anugerah','Senarai kategori & penerima'],persembahan:['Persembahan','Murid yang terlibat dalam persembahan majlis'],t6:['Majlis T6','Hobi, cita-cita & foto murid Tahun 6 · Sijil Tamat Persekolahan Tahun 6'],gambar:['Gambar Murid','Satu foto bagi setiap murid · digunakan di seluruh sistem'],kehadiran:['Kehadiran','Pendaftaran murid pada hari majlis'],ajk:['Ahli Jawatankuasa','Jawatankuasa pelaksana & bidang tugas'],tentatif:['Tentatif Majlis','Atur cara hari kejadian'],galeri:['Galeri','Detik-detik Sri Bitara 2026'],tetapan:['Tetapan','Pentadbiran sistem (admin sahaja)']};
 function go(v){if(!TITLES[v])v='dashboard';if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);show(v)}
 function show(v){
   VIEW=v;
@@ -878,6 +896,7 @@ function render(fromPoll,nav){
   if(VIEW==='anugerah')renderAw();
   if(VIEW==='persembahan')renderPs(fromPoll);
   if(VIEW==='t6')renderT6(fromPoll);
+  if(VIEW==='gambar')renderGambar(fromPoll);
   if(VIEW==='kehadiran')renderHadir();
   if(VIEW==='ajk')renderAjk();
   if(VIEW==='tentatif')renderTT();
@@ -949,7 +968,7 @@ function dxRows(groups,split){
 function dxPupils(a,c){
   if(!a.length)return '<p class="muted">Tiada murid penerima dalam kelas ini.</p>';
   return `<div class="dx-pl">${[...a].sort((x,y)=>x.nama.localeCompare(y.nama)).map(s=>{const it=s.items.filter(i=>c==='ALL'||i.a.kat===c);
-    return `<div><b>${esc(s.nama)}</b><small>${it.length} anugerah</small><span>${it.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</span></div>`}).join('')}</div>`;
+    return `<div><b>${fotoMini(s)}${esc(s.nama)}</b><small>${it.length} anugerah</small><span>${it.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</span></div>`}).join('')}</div>`;
 }
 function dxTahun(ms,nav){
   const {ty,tk}=DX,top=[['Semua tahun',{ty:'',tk:''}]];
@@ -1053,7 +1072,7 @@ function renderAwList(){
     <button class="btn ghost sm" id="msXlsFoto" ${list.length?'':'disabled'} title="Murid yang dipaparkan dengan foto dan anugerah, satu fail Excel"><svg class="i"><use href="#i-dl"/></svg><span>Excel + foto</span></button>
   </div>
   <div class="tools" style="margin-top:-6px">${Object.entries(CAT).map(([k,n])=>`<span class="lg"><i style="background:${COL[k]}"></i>${n}</span>`).join('')}<span class="lg">· ${list.length} murid dipaparkan</span></div>
-  ${list.length?list.map(s=>`<div class="ms ${s.items.length>2?'hi':''}"><div class="ms-n"><b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf" title="Kelas berbeza dalam senarai anugerah — sila semak">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b ${p.status==='Diterima'?'ok':''}" data-aid="${esc(a.id)}" title="${esc(CAT[a.kat]||'')} · ${esc(p.kelas||'tiada kelas')}${p.status==='Diterima'?' · Diterima':''}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}${p.status==='Diterima'?' ✓':''}</button>`).join('')}</div><div class="ms-c"><b>${s.items.length}</b><small>anugerah</small>${s.items.some(i=>['K','H','KO'].includes(i.a.kat))?`<button class="btn ghost sm poster-open" data-poster-name="${esc(s.nama)}" aria-label="Poster ${esc(s.nama)}">Poster</button>`:''}</div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan tapisan.':'Tiada penerima.'}</p></div>`}`;
+  ${list.length?list.map(s=>`<div class="ms ${s.items.length>2?'hi':''}"><div class="ms-n">${fotoMini(s)}<b>${hl(s.nama,q)}</b><small>${esc(s.kelas||'—')}</small>${s.conf?`<small class="cf" title="Kelas berbeza dalam senarai anugerah — sila semak">⚠ ${esc(s.conf.join(' / '))}</small>`:''}</div><div class="ms-aw">${s.items.map(({a,p})=>`<button class="b ${p.status==='Diterima'?'ok':''}" data-aid="${esc(a.id)}" title="${esc(CAT[a.kat]||'')} · ${esc(p.kelas||'tiada kelas')}${p.status==='Diterima'?' · Diterima':''}"><i style="background:${COL[a.kat]}"></i>${esc(short(a.nama))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}${p.status==='Diterima'?' ✓':''}</button>`).join('')}</div><div class="ms-c"><b>${s.items.length}</b><small>anugerah</small>${s.items.some(i=>['K','H','KO'].includes(i.a.kat))?`<button class="btn ghost sm poster-open" data-poster-name="${esc(s.nama)}" aria-label="Poster ${esc(s.nama)}">Poster</button>`:''}</div></div>`).join(''):`<div class="empty"><p>${all.length?'Tiada murid sepadan dengan tapisan.':'Tiada penerima.'}</p></div>`}`;
   $('#msMulti').onchange=e=>{AWMULTI=e.target.checked;renderAwList()};
   $('#msKls').onchange=e=>{AWKLS=e.target.value;renderAwList()};
   if($('#msConf'))$('#msConf').onclick=()=>{AWCONF=!AWCONF;renderAwList()};
@@ -1260,7 +1279,7 @@ function renderHadir(){
   ${t6Day&&ROSTER_ERR?`<p class="warnmsg">Senarai murid Tahun 6 tidak dapat dimuatkan: ${esc(ROSTER_ERR)}</p>`:''}
   ${!all.length?'<div class="empty"><p>Tiada penerima. Masukkan penerima ke dalam anugerah dahulu.</p></div>'
    :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid${t6Day?'':' penerima dan anugerah mereka'}.</p></div>`
-   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${s.t6?`data-t6="${esc(t6Key(s))}"`:`data-ids="${esc(s.items.flatMap(i=>i.ps.map(p=>p.id)).join(','))}"`} ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.t6?'<span class="b"><i style="background:var(--gold)"></i>Majlis T6</span>':s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
+   :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${s.t6?`data-t6="${esc(t6Key(s))}"`:`data-ids="${esc(s.items.flatMap(i=>i.ps.map(p=>p.id)).join(','))}"`} ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n">${fotoMini(s)}<b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.t6?'<span class="b"><i style="background:var(--gold)"></i>Majlis T6</span>':s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
   $('#hdHari').onchange=e=>{HDHARI=e.target.value;store.set('hdhari',HDHARI,sessionStorage);renderHadir()};
   $('#hdKls').onchange=e=>{HDKLS=e.target.value;store.set('hdkls',HDKLS,sessionStorage);renderHadir()};
   $('#hdFmt').onchange=e=>store.set('hdfmt',e.target.value,sessionStorage);
@@ -1296,6 +1315,85 @@ function hadirLapor(rows,kls){
     <h2>Ringkasan ikut kelas</h2>${tbl(ring)}
     ${ks.map(k=>{const a=inKls(k);return `<h2 class="pb">Kelas ${esc(k)} · ${hn(a)} hadir</h2>${tbl([head,...a.map(murid)])}`}).join('')}</div>`;
   preview(tajuk,'Word · '+sub,body,()=>wordDoc(base+'.doc',tajuk,body));
+}
+/* ---------- Gambar Murid: one photo per pupil, filled class by class; the same photo is used everywhere (fotoOf) ---------- */
+// GMJ: pen = penerima anugerah, ps = peserta persembahan, all = both; GMX: only pupils without a photo; GMB: upload-many check screen
+let GMK=store.get('gmkls','',sessionStorage),GMJ=store.get('gmjenis','pen',sessionStorage),GMQ='',GMX=false,GMB=null;
+const GM_JENIS={pen:'Penerima anugerah',ps:'Peserta persembahan',all:'Penerima & peserta'};
+// every pupil of the chosen kind, once per name + class (the photo key), with what they receive or perform
+function gmList(){
+  const m=new Map(),add=(nama,kelas,label,col)=>{const s={nama:t6n(nama),kelas:t6n(kelas)},k=t6Key(s),x=m.get(k)||{...s,tags:new Map()};x.tags.set(label,col);m.set(k,x)};
+  if(GMJ!=='ps')studentMap('ALL').forEach(s=>s.items.forEach(({a})=>add(s.nama,s.kelas,a.nama.replace(/^Anugerah\s+/i,''),COL[a.kat])));
+  if(GMJ!=='pen')(D.peserta||[]).forEach(p=>{const a=D.persembahan.find(x=>x.id===p.aid);if(a)add(p.nama,p.kelas,a.nama,'var(--gold)')});
+  return [...m.values()].sort((a,b)=>classSort(a.kelas,b.kelas)||a.nama.localeCompare(b.nama));
+}
+// file "Ahmad bin Ali.jpg" ↔ pupil "AHMAD BIN ALI": letters and digits only, any spacing or punctuation
+const gmNorm=v=>String(v).toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+function renderGambar(fromPoll){
+  const box=$('#gm'),act=document.activeElement,mine=box.contains(act);
+  if(fromPoll&&(mine||GMB))return; // don't wipe typing or the upload-many check screen
+  if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Nama murid belum dipaparkan. Admin perlu menghidupkan paparan nama penerima di Tetapan.</p></div>`;return}
+  const all=gmList(),classes=[...new Set(all.map(s=>s.kelas).filter(Boolean))].sort(classSort);
+  if(GMK&&GMK!=='SEMUA'&&!classes.includes(GMK))GMK='';
+  const has=s=>!!fotoOf(s),f=a=>a.filter(has).length,q=t6n(GMQ),pool=GMK==='SEMUA'?all:all.filter(s=>s.kelas===GMK);
+  const list=GMK||q?(GMK?pool:all).filter(s=>(!GMX||!has(s))&&(!q||s.nama.includes(q))):[];
+  const caret=mine&&act.id==='gmQ'?act.selectionStart:null;
+  box.innerHTML=`<div class="grid ms-kpi">
+    <div class="card"><div class="n">${all.length}</div><div class="l">${esc(GM_JENIS[GMJ])}</div></div>
+    <div class="card"><div class="n">${f(all)} / ${all.length}</div><div class="l">Ada foto</div></div>
+    <div class="card"><div class="n">${all.length-f(all)}</div><div class="l">Belum ada foto</div></div>
+  </div>
+  <div class="tools"><select class="fi" id="gmJ" style="width:auto" aria-label="Jenis murid" ${GMB?.busy!=null?'disabled':''}>${Object.entries(GM_JENIS).map(([k,l])=>`<option value="${k}" ${k===GMJ?'selected':''}>${l}</option>`).join('')}</select>
+    <select class="fi" id="gmK" style="width:auto;min-width:200px" aria-label="Pilih kelas" ${GMB?.busy!=null?'disabled':''}><option value="">Pilih kelas…</option><option value="SEMUA" ${GMK==='SEMUA'?'selected':''}>Semua kelas (${f(all)}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>s.kelas===k);return `<option value="${esc(k)}" ${k===GMK?'selected':''}>${esc(k)} (${f(c)}/${c.length})</option>`}).join('')}</select>
+    <input class="fi" id="gmQ" type="search" style="width:auto;min-width:180px;flex:1" placeholder="Cari nama…" value="${esc(GMQ)}" aria-label="Cari nama murid">
+    <label class="gm-chk"><input type="checkbox" id="gmX" ${GMX?'checked':''}>Belum ada foto sahaja</label>
+    <button class="btn ghost sm" id="gmMany" ${GMB?'disabled':''} title="Pilih banyak foto sekali gus; nama fail = nama murid"><svg class="i"><use href="#i-cam"/></svg>Muat naik banyak foto</button>
+    <input type="file" id="gmFiles" accept="image/*" multiple hidden></div>
+  ${GMB?gmBulkHTML(pool,has)
+   :!all.length?`<div class="empty"><p>Tiada ${esc(GM_JENIS[GMJ].toLowerCase())}.</p></div>`
+   :!GMK&&!q?`<div class="empty"><svg class="i"><use href="#i-cam"/></svg><p>Pilih kelas untuk memuat naik foto murid. Satu foto bagi setiap murid digunakan dalam senarai anugerah, poster, Majlis T6, Kehadiran dan Dashboard.</p></div>`
+   :!list.length?`<div class="empty"><p>${GMX?'Semua murid di sini sudah ada foto.':'Tiada murid sepadan.'}</p></div>`
+   :`<div class="gm-grid">${list.map(s=>`<div class="gm-card ${has(s)?'ok':''}">${fotoBtn(s,'gm-foto')}<div class="ms-n"><b>${esc(s.nama)}</b><small>${esc(s.kelas)}</small><div class="gm-st ${has(s)?'ok':'no'}">${has(s)?'✓ ADA FOTO':'BELUM ADA FOTO'}</div><div class="gm-tags">${[...s.tags].map(([l,c])=>`<span class="b"><i style="background:${c}"></i>${esc(l)}</span>`).join('')}</div></div></div>`).join('')}</div>`}`;
+  if(caret!=null){const el=$('#gmQ');el.focus();try{el.setSelectionRange(caret,caret)}catch{}}
+  $('#gmJ').onchange=e=>{GMJ=e.target.value;store.set('gmjenis',GMJ,sessionStorage);gmClose();renderGambar()};
+  $('#gmK').onchange=e=>{GMK=e.target.value;store.set('gmkls',GMK,sessionStorage);gmClose();renderGambar()};
+  $('#gmQ').oninput=e=>{GMQ=e.target.value;renderGambar()};
+  $('#gmX').onchange=e=>{GMX=e.target.checked;renderGambar()};
+  $('#gmMany').onclick=()=>{if(!GMK)return toast('Pilih kelas dahulu',true);$('#gmFiles').click()};
+  $('#gmFiles').onchange=e=>{const fs=[...e.target.files].filter(x=>x.type.startsWith('image/'));e.target.value='';if(!fs.length)return;
+    // a file name matches when exactly one pupil here has that name; a pupil is matched to one file only
+    const used=new Set();
+    GMB={rows:fs.map(file=>{const n=gmNorm(file.name.replace(/\.[^.]+$/,'')),hit=pool.filter(s=>gmNorm(s.nama)===n),k=hit.length===1&&!used.has(t6Key(hit[0]))?t6Key(hit[0]):'';if(k)used.add(k);
+      return {file,url:URL.createObjectURL(file),k,auto:k}}),busy:null,err:[]};
+    renderGambar()};
+  if(GMB){
+    $$('#gm select[data-gb]').forEach(c=>c.onchange=()=>{GMB.rows[+c.dataset.gb].k=c.value;renderGambar()});
+    $('#gmBX').onclick=()=>{gmClose();renderGambar()};
+    $('#gmBOk').onclick=()=>gmSave();
+  }
+}
+// check screen: every chosen file with the pupil it will be saved for; nothing is uploaded until Simpan
+function gmBulkHTML(pool,has){
+  const R=GMB.rows,ks=R.filter(r=>r.k).map(r=>r.k),dup=ks.filter((k,i)=>ks.indexOf(k)!==i),busy=GMB.busy!=null,name=k=>pool.find(s=>t6Key(s)===k);
+  const st=r=>!r.k?['no','Tidak sepadan']:r.k===r.auto?['ok','Sepadan nama fail']:['ok','Dipilih sendiri'];
+  return `<div class="card gm-bulk"><h3>SEMAK SEBELUM SIMPAN</h3>
+    <p class="muted" style="font-size:13px">${R.length} fail · ${ks.length} akan disimpan · ${R.length-ks.length} tidak sepadan (tidak dimuat naik) · ${ks.filter(k=>has(name(k)||{})).length} akan menggantikan foto sedia ada. Tukar murid bagi mana-mana fail jika perlu.</p>
+    ${dup.length?`<p class="warnmsg">Murid yang sama dipilih untuk lebih daripada satu fail: ${esc([...new Set(dup)].map(k=>name(k)?.nama||k).join(', '))}</p>`:''}
+    ${GMB.err.length?`<p class="warnmsg">Tidak berjaya disimpan (cuba lagi): ${esc(GMB.err.join(' · '))}</p>`:''}
+    ${R.map((r,i)=>{const [c,t]=st(r);return `<div class="gm-br"><img src="${esc(r.url)}" alt=""><div><small>${esc(r.file.name)}</small><select class="fi" data-gb="${i}" ${busy?'disabled':''} aria-label="Murid bagi ${esc(r.file.name)}"><option value="">— Jangan muat naik —</option>${pool.map(s=>{const k=t6Key(s);return `<option value="${esc(k)}" ${k===r.k?'selected':''}>${esc(s.nama)} · ${esc(s.kelas)}${has(s)?' (ada foto, akan diganti)':''}</option>`}).join('')}</select></div><span class="gm-st ${c}">${t}</span></div>`}).join('')}
+    <div class="tools" style="margin:14px 0 0;justify-content:flex-end"><button class="btn ghost" id="gmBX" ${busy?'disabled':''}>Batal</button><button class="btn" id="gmBOk" ${busy||!ks.length||dup.length?'disabled':''}>${busy?`Menyimpan ${GMB.busy} / ${ks.length}…`:`Simpan ${ks.length} foto`}</button></div></div>`;
+}
+function gmClose(){if(GMB)GMB.rows.forEach(r=>URL.revokeObjectURL(r.url));GMB=null}
+// one upload at a time (same call as a single photo); failures stay on the check screen to try again
+async function gmSave(){
+  const rows=GMB.rows.filter(r=>r.k),fail=[];GMB.busy=0;GMB.err=[];renderGambar();
+  for(const r of rows){const i=r.k.lastIndexOf('|'),s={nama:r.k.slice(0,i),kelas:r.k.slice(i+1)};
+    try{const data=await compress(r.file,900,'image/jpeg',.85);await call('upload',{purpose:'t6',...s,mime:'image/jpeg',data},{quiet:true,poll:true})}
+    catch(e){fail.push(r);GMB.err.push(s.nama+': '+e.message)}
+    GMB.busy++;renderGambar()}
+  const ok=rows.length-fail.length;
+  if(fail.length){GMB.rows.filter(r=>!fail.includes(r)).forEach(r=>URL.revokeObjectURL(r.url));GMB.rows=fail;GMB.busy=null}else gmClose();
+  render();toast(`${ok} foto disimpan${fail.length?` · ${fail.length} tidak berjaya`:''}`,!!fail.length);
 }
 /* ---------- Majlis T6 (Sijil Tamat Persekolahan Tahun 6): hobi, cita-cita & foto murid Tahun 6 ---------- */
 // ten presets each; anything else goes in through LAIN-LAIN
