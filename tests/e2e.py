@@ -381,10 +381,10 @@ with sync_playwright() as p:
     assert len(five) == 1 and '28 November 2026 (Sabtu)' in five[0] and '21 November' not in five[0]
     # parents are invited on hari 1 and 3 only; hari 2 (HEM) is for pupils
     hem = letter('MURID HEM')
-    assert 'menjemput tuan/puan hadir bersama anak pada <b>21 November 2026 (Sabtu)</b>' in six[0] and 'tidak diperlukan pada <b>27 November 2026 (Jumaat)</b>' in six[0], six[0]
-    assert 'menjemput tuan/puan hadir bersama anak pada <b>28 November 2026 (Sabtu)</b>' in five[0] and 'tidak diperlukan' not in five[0]
-    assert len(hem) == 1 and 'menjemput' not in hem[0] and 'melibatkan murid sahaja' in hem[0] and 'kehadiran ibu bapa/penjaga tidak diperlukan' in hem[0]
-    assert 'MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU' in six[0] and 'sempena Majlis Anugerah Sri Bitara' in six[0] and 'Majlis Anugerah Apresiasi' not in six[0] and 'MAJLIS APRESIASI' not in six[0]
+    assert 'mengundang tuan/puan hadir bersama anak pada <b>21 November 2026 (Sabtu)</b>' in six[0] and 'Ibu bapa tidak perlu hadir pada <b>27 November 2026 (Jumaat)</b>' in six[0], six[0]
+    assert 'mengundang tuan/puan hadir bersama anak pada <b>28 November 2026 (Sabtu)</b>' in five[0] and 'tidak perlu hadir' not in five[0]
+    assert len(hem) == 1 and 'mengundang' not in hem[0] and 'melibatkan murid sahaja' in hem[0] and 'ibu bapa tidak perlu hadir' in hem[0]
+    assert 'MAKLUMAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU' in six[0] and 'PENERIMAAN ANUGERAH' not in six[0] and 'penerima pada Majlis Anugerah Sri Bitara pada ketetapan berikut:' in six[0] and 'Majlis Anugerah Apresiasi' not in six[0] and 'MAJLIS APRESIASI' not in six[0]
     # Tetapan › Hari Penyampaian: times per day and a per-anugerah override
     pg.click('.nav[data-v=tetapan]')
     pg.click('#admin .chip[data-t=hari]')
@@ -551,6 +551,8 @@ with sync_playwright() as p:
     pg.evaluate("call('setCatatan',{ids:['k2'],catatan:' olahraga – johan – negeri '},{quiet:true})")
     s = pg.evaluate(f"(()=>{{const s=studentMap('ALL').find(s=>s.nama==='MURID KOKO');const i=s.items.find(i=>i.a.id==='{ko}');return [i.p.catatan,i.ps.length,counts(i.a).n]}})()")
     assert s == ['BOLA SEPAK – JOHAN – DAERAH; OLAHRAGA – JOHAN – NEGERI', 2, pg.evaluate(f"new Set(D.penerima.filter(p=>p.aid==='{ko}').map(p=>p.nama+'|'+p.kelas)).size")], s
+    koko = [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if '<b>MURID KOKO</b>' in x]
+    assert len(koko) == 1 and 'JOHAN' not in koko[0], 'surat lists award names only, no catatan'
     assert pg.evaluate("posterCanvas(studentMap('ALL').find(s=>s.nama==='MURID KOKO'),'KO').then(c=>[c.width,c.height])") == [1920, 1080]
     # the 'Semua poster' ZIP writer: read back by Python's zipfile (CRC, sizes, UTF-8 folder names)
     import io, zipfile
@@ -722,7 +724,7 @@ with sync_playwright() as p:
         assert surat['n'] == names, (surat['n'], names)
         aw5, aw12 = pg.evaluate('[D.anugerah[5].nama, D.anugerah[12].nama]')
         letter = [x for x in surat['html'].split('class="pb"') if '<b>MURID BAHARU</b>' in x]
-        assert len(letter) == 1 and aw5 in letter[0] and aw12 in letter[0] and '<b>2</b> anugerah' in letter[0], 'one letter, both awards'
+        assert len(letter) == 1 and aw5 in letter[0] and aw12 in letter[0], 'one letter, both awards'
         # downloads: per kategori, keseluruhan, surat (each shows a preview first; Muat turun saves)
         def download(open_):
             open_()

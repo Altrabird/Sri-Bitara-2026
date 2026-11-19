@@ -2094,16 +2094,16 @@ function suratList(){
 function suratHTML(){
   const list=suratList();
   return {n:list.length,html:suratDoc(list,({nama,kelas,items},{y,jadual,lain})=>{
-    const aw=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`+(p.catatan?` (${esc(p.catatan)})`:''),hari:hariOf(a,p)}));
-    return `<p><b>MAKLUMAN PENERIMAAN ANUGERAH MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
+    const aw=items.map(({a,p})=>({nama:`<b>${esc(a.nama)}</b>`,hari:hariOf(a,p)}));
+    return `<p><b>MAKLUMAN MAJLIS ANUGERAH SRI BITARA SK BANDAR TAWAU SESI AKADEMIK ${y}/${y+1}</b></p>
     <p>Dengan segala hormatnya perkara di atas adalah dirujuk.</p>
-    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima ${aw.length>1?`<b>${aw.length}</b> anugerah`:'anugerah'} berikut sempena Majlis Anugerah Sri Bitara. Anugerah akan disampaikan mengikut tarikh seperti berikut:</p>
+    <p style="text-align:justify">2. &nbsp; &nbsp; Sukacita dimaklumkan bahawa anak tuan/puan <b>${esc(nama)}</b>${kelas?` (${esc(kelas)})`:''} telah terpilih sebagai penerima pada Majlis Anugerah Sri Bitara pada ketetapan berikut:</p>
     ${jadual(aw,'Anugerah')}
     ${lain(aw,'Pakaian Rasmi Sekolah')}
     <p>&nbsp;</p>
     <p style="text-align:justify">3. &nbsp; &nbsp; ${(({ya,tak})=>ya.length
-      ?`Sehubungan dengan itu, pihak sekolah amat berbesar hati menjemput tuan/puan hadir bersama anak pada ${senaraiTarikh(ya)} bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.${tak.length?` Kehadiran ibu bapa/penjaga tidak diperlukan pada ${senaraiTarikh(tak)}.`:''}`
-      :`Majlis penyampaian anugerah pada ${senaraiTarikh(tak)} melibatkan murid sahaja. Oleh itu, kehadiran ibu bapa/penjaga tidak diperlukan.`)(jemputHari(aw))}</p>
+      ?`Sehubungan dengan itu, pihak sekolah amat berbesar hati mengundang tuan/puan hadir bersama anak pada ${senaraiTarikh(ya)} bagi memeriahkan majlis tersebut dan sebagai tanda sokongan serta penghargaan atas kejayaan anak tuan/puan.${tak.length?` Ibu bapa tidak perlu hadir pada ${senaraiTarikh(tak)}.`:''}`
+      :`Majlis penyampaian anugerah pada ${senaraiTarikh(tak)} melibatkan murid sahaja. Oleh itu, ibu bapa tidak perlu hadir.`)(jemputHari(aw))}</p>
     <p style="text-align:justify">Keprihatinan dan sokongan tuan/puan dalam perkara ini amatlah dihargai serta didahului dengan ucapan terima kasih.</p>`})};
 }
 // letterhead, date block and signature shared by the surat jemputan and the surat pemakluman persembahan; mid() writes the perkara and body
