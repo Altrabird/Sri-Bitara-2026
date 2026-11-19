@@ -234,7 +234,33 @@ with sync_playwright() as p:
     t6row.click()
     expect(pg.locator('#hd .ms.hd').first.locator('.ms-n small')).to_contain_text('✓ HADIR')
     assert pg.evaluate("D.t6.some(t=>t.kelas==='6 KRITIS'&&t.hadir)"), 'Year 6 attendance saved'
+    # Kehadiran report: preview first, summary by class with penerima / bukan penerima, then the pupils
+    pg.click('#hdDl')
+    expect(pg.locator('#pvS')).to_contain_text('Word · 4 murid · 1 hadir · 1 kelas')
+    pv = pg.frame_locator('#pvF')
+    expect(pv.locator('h2', has_text='Ringkasan ikut kelas')).to_be_visible()
+    expect(pv.locator('tr.tot td')).to_have_text(['JUMLAH', '4', '1', '3', '25%', '0 / 0', '1 / 4'])
+    expect(pv.get_by_role('cell', name='Bukan penerima', exact=True)).to_have_count(4)
+    expect(pv.get_by_role('cell', name='TIDAK HADIR', exact=True)).to_have_count(3)
+    with pg.expect_download() as dl:
+        pg.click('#pvOk')
+    assert dl.value.suggested_filename == 'Kehadiran-2026-11-21-6-KRITIS.doc'
+    pg.select_option('#hdFmt', 'xlsx')
+    pg.click('#hdDl')
+    expect(pg.locator('#pvS')).to_contain_text('Excel')
+    with pg.expect_download() as dl:
+        pg.click('#pvOk')
+    import openpyxl
+    wb = openpyxl.load_workbook(open(dl.value.path(), 'rb'))
+    assert wb.sheetnames == ['Ringkasan', 'Senarai'], wb.sheetnames
+    assert list(wb['Ringkasan'].values)[-1] == ('JUMLAH', 4, 1, 3, '25%', '0 / 0', '1 / 4')
+    assert len(list(wb['Senarai'].values)) == 5
+    pg.select_option('#hdFmt', 'doc')
     pg.select_option('#hdHari', '3')
+    pg.select_option('#hdKls', 'SEMUA')  # other days: every pupil is a penerima, no bukan penerima columns
+    pg.click('#hdDl')
+    expect(pg.frame_locator('#pvF').locator('th', has_text='Bukan penerima')).to_have_count(0)
+    pg.click('#pvC')
     # hari penyampaian: subject awards Tahun 6 on 21 Nov, Tahun 1-5 on 28 Nov, HEM on 27 Nov; ONE letter per pupil lists each award with its date
     pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'},{id:'d4',aid:h,kelas:'3 KREATIF',nama:'MURID HEM'}]},{quiet:true})})()")
     letter = lambda n: [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if f'<b>{n}</b>' in x]

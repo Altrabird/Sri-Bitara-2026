@@ -1179,13 +1179,16 @@ function renderHadir(){
     <div class="card"><div class="n">${HDKLS?`${n(list)} / ${list.length}`:'—'}</div><div class="l">Hadir dalam ${ALL?'semua kelas':HDKLS?esc(HDKLS):'kelas dipilih'}</div></div>
     <div class="card"><div class="n">${all.length-tot}</div><div class="l">Belum hadir</div></div>
   </div>
-  <div class="tools"><select class="fi" id="hdHari" style="width:auto;min-width:200px" aria-label="Pilih hari">${hariIds().map(h=>`<option value="${h}" ${h===HDHARI?'selected':''}>${esc(tarikhHari(h))}</option>`).join('')}</select><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option><option value="SEMUA" ${ALL?'selected':''}>Kehadiran semua · Tahun 1–6 (${tot}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select></div>
+  <div class="tools"><select class="fi" id="hdHari" style="width:auto;min-width:200px" aria-label="Pilih hari">${hariIds().map(h=>`<option value="${h}" ${h===HDHARI?'selected':''}>${esc(tarikhHari(h))}</option>`).join('')}</select><select class="fi" id="hdKls" style="width:auto;min-width:220px" aria-label="Pilih kelas"><option value="">Pilih kelas…</option><option value="SEMUA" ${ALL?'selected':''}>Kehadiran semua · Tahun 1–6 (${tot}/${all.length})</option>${classes.map(k=>{const c=all.filter(s=>inK(s,k));return `<option value="${esc(k)}" ${k===HDKLS?'selected':''}>${esc(k)} (${n(c)}/${c.length})</option>`}).join('')}</select><select class="fi" id="hdFmt" style="width:auto" aria-label="Format muat turun kehadiran"><option value="doc">Word</option><option value="xlsx" ${store.get('hdfmt','',sessionStorage)==='xlsx'?'selected':''}>Excel</option></select><button class="btn ghost sm" id="hdDl"><svg class="i"><use href="#i-dl"/></svg>Muat turun kehadiran</button></div>
   ${t6Day&&ROSTER_ERR?`<p class="warnmsg">Senarai murid Tahun 6 tidak dapat dimuatkan: ${esc(ROSTER_ERR)}</p>`:''}
   ${!all.length?'<div class="empty"><p>Tiada penerima. Masukkan penerima ke dalam anugerah dahulu.</p></div>'
    :!HDKLS?`<div class="empty"><svg class="i"><use href="#i-users"/></svg><p>Pilih kelas untuk memaparkan murid${t6Day?'':' penerima dan anugerah mereka'}.</p></div>`
    :list.map(s=>{const t=hadirAt(s);return `<label class="ms hd ${t?'on':''}"><input type="checkbox" data-n="${esc(s.nama)}" ${s.t6?`data-t6="${esc(t6Key(s))}"`:`data-ids="${esc(s.items.flatMap(i=>i.ps.map(p=>p.id)).join(','))}"`} ${t?'checked':''} aria-label="Hadir: ${esc(s.nama)}"><div class="ms-n"><b>${esc(s.nama)}</b><small>${ALL?esc(s.kelas||'—')+' · ':''}${t?'✓ HADIR · '+time(t):'BELUM HADIR'}</small></div><div class="ms-aw">${s.t6?'<span class="b"><i style="background:var(--gold)"></i>Majlis T6</span>':s.items.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</div></label>`}).join('')}`;
   $('#hdHari').onchange=e=>{HDHARI=e.target.value;store.set('hdhari',HDHARI,sessionStorage);renderHadir()};
   $('#hdKls').onchange=e=>{HDKLS=e.target.value;store.set('hdkls',HDKLS,sessionStorage);renderHadir()};
+  $('#hdFmt').onchange=e=>store.set('hdfmt',e.target.value,sessionStorage);
+  // one class chosen: that class only (a pupil listed under two classes counts in it); otherwise every class
+  $('#hdDl').onclick=()=>hadirLapor(HDKLS&&!ALL?all.filter(s=>inK(s,HDKLS)).map(s=>({...s,kelas:HDKLS})):all,HDKLS&&!ALL?HDKLS:'');
   $$('#hd input[data-n]').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,k=c.dataset.t6,on=c.checked,at=on?new Date().toISOString():'';
     let body;
     if(k){const s=all.find(x=>x.t6&&t6Key(x)===k);body={nama:s.nama,kelas:s.kelas,hadir:on};D.t6=D.t6||[];
@@ -1193,6 +1196,29 @@ function renderHadir(){
     else{const ids=c.dataset.ids.split(',');body={ids,hadir:on};D.penerima.forEach(p=>{if(ids.includes(p.id))p.hadir=at})}
     renderHadir(); // show the tick at once
     try{await call(k?'setHadirT6':'setHadir',body,{quiet:true});toast(on?nama+' hadir':'Kehadiran '+nama+' dibatalkan')}catch(e){toast(e.message,true);refresh()}});
+}
+// Kehadiran report for the chosen day: overall summary, summary by class (penerima / bukan penerima), then each class's pupils
+function hadirLapor(rows,kls){
+  if(!rows.length)return toast('Tiada murid untuk dimuat turun',true);
+  const fmt=$('#hdFmt').value,hari=tarikhHari(HDHARI),bp=rows.some(s=>s.t6); // bukan penerima only on the Year 6 day: no empty columns on other days
+  const time=t=>t?new Date(t).toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'}):'';
+  const ks=[...new Set(rows.map(s=>s.kelas||'—'))].sort(classSort),inKls=k=>rows.filter(s=>(s.kelas||'—')===k).sort((a,b)=>a.nama.localeCompare(b.nama));
+  const hn=a=>`${a.filter(hadirAt).length} / ${a.length}`,pen=a=>a.filter(s=>!s.t6),bkn=a=>a.filter(s=>s.t6);
+  const line=(k,a)=>{const h=a.filter(hadirAt).length;return [k,a.length,h,a.length-h,a.length?Math.round(h/a.length*100)+'%':'—'].concat(bp?[hn(pen(a)),hn(bkn(a))]:[])};
+  const ring=[['Kelas','Jumlah murid','Hadir','Tidak hadir','% hadir'].concat(bp?['Penerima hadir','Bukan penerima hadir']:[]),...ks.map(k=>line(k,inKls(k))),line('JUMLAH',rows)];
+  const aw=s=>s.t6?'—':s.items.map(({a,p})=>a.nama+(p.catatan?` (${p.catatan})`:'')).join('; ');
+  const murid=(s,i)=>[i+1,s.nama,s.kelas||'—',s.t6?'Bukan penerima':'Penerima',aw(s),hadirAt(s)?'HADIR':'TIDAK HADIR',time(hadirAt(s))];
+  const head=['Bil','Nama','Kelas','Status','Anugerah','Kehadiran','Masa daftar'],sen=[head,...ks.flatMap(inKls).map(murid)];
+  const tajuk='Kehadiran Murid · '+hari+(kls?' · '+kls:''),base='Kehadiran-'+hariInfo(HDHARI).tarikh+(kls?'-'+kls.replace(/\s+/g,'-'):'');
+  const h=rows.filter(hadirAt).length,sub=`${rows.length} murid · ${h} hadir · ${ks.length} kelas`;
+  if(fmt==='xlsx')return preview(tajuk,'Excel · '+sub+' · helaian Ringkasan dan Senarai',`<h2 style="font:700 14px Arial">Ringkasan</h2>${rowsHTML(ring)}<h2 style="font:700 14px Arial">Senarai</h2>${rowsHTML(sen)}`,()=>saveSheets(base,{Ringkasan:ring,Senarai:sen}));
+  const tbl=r=>`<table><tr>${r[0].map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${r.slice(1).map((x,i)=>`<tr class="${i===r.length-2&&x[0]==='JUMLAH'?'tot':''}">${x.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+  const body=`<div class="lap"><h1>KEHADIRAN MURID · ${esc(hari.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU${kls?' · '+esc(kls):''}</div>
+    <p>Dijana pada ${esc(new Date().toLocaleString('ms-MY',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}))}</p>
+    <h2>Ringkasan keseluruhan</h2>${tbl([['Perkara','Bilangan'],['Jumlah murid',rows.length],['Hadir',h],['Tidak hadir',rows.length-h],['Peratus kehadiran',ring.at(-1)[4]]].concat(bp?[['Penerima hadir',hn(pen(rows))],['Bukan penerima hadir',hn(bkn(rows))]]:[]))}
+    <h2>Ringkasan ikut kelas</h2>${tbl(ring)}
+    ${ks.map(k=>{const a=inKls(k);return `<h2 class="pb">Kelas ${esc(k)} · ${hn(a)} hadir</h2>${tbl([head,...a.map(murid)])}`}).join('')}</div>`;
+  preview(tajuk,'Word · '+sub,body,()=>wordDoc(base+'.doc',tajuk,body));
 }
 /* ---------- Majlis T6 (Sijil Tamat Persekolahan Tahun 6): hobi, cita-cita & foto murid Tahun 6 ---------- */
 // ten presets each; anything else goes in through LAIN-LAIN
@@ -1767,10 +1793,15 @@ const wordDoc=(name,title,body)=>saveBlob(name,new Blob(['﻿'+docHTML(title,'<s
 // Excel (.xlsx via the SheetJS loader the importer already uses) or CSV from the same rows
 async function saveRows(base,rows,fmt=$('#dlFmt').value){
   if(fmt==='csv')return downloadCSV(base+'.csv',rows);
+  return saveSheets(base,{Senarai:rows});
+}
+async function saveSheets(base,sheets){
   try{await loadXLSX()}catch(e){return toast(e.message,true)}
-  const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
-  ws['!cols']=rows[0].map((_,i)=>({wch:Math.min(50,Math.max(...rows.map(r=>String(r[i]??'').length))+2)}));
-  XLSX.utils.book_append_sheet(wb,ws,'Senarai');XLSX.writeFile(wb,base+'.xlsx');
+  const wb=XLSX.utils.book_new();
+  Object.entries(sheets).forEach(([name,rows])=>{const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=rows[0].map((_,i)=>({wch:Math.min(50,Math.max(...rows.map(r=>String(r[i]??'').length))+2)}));
+    XLSX.utils.book_append_sheet(wb,ws,name)});
+  XLSX.writeFile(wb,base+'.xlsx');
 }
 /* download pickers: one class, or one pupil (a pupil wins over the class) */
 function dlOpts(){
