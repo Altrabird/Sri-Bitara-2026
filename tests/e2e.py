@@ -166,13 +166,9 @@ with sync_playwright() as p:
     pg.locator('#gal .open').first.click()
     expect(pg.locator('#lb')).to_have_class('lb on')
     pg.keyboard.press('Escape')
-    # dashboard Galeri Foto card shows it and opens the viewer
+    # the dashboard no longer shows gallery photos (Galeri tab only)
     pg.click('.nav[data-v=dashboard]')
-    expect(pg.locator('#v-dashboard .dgal .open')).to_have_count(1)
-    shot(pg, 'demo-dashboard-galeri')
-    pg.locator('#v-dashboard .dgal .open').first.click()
-    expect(pg.locator('#lb')).to_have_class('lb on')
-    pg.keyboard.press('Escape')
+    expect(pg.locator('#v-dashboard img')).to_have_count(0)
     pg.click('.nav[data-v=galeri]')
     pg.locator('#gal .del').first.click()
     expect(pg.locator('#gal .ph')).to_have_count(0)
@@ -261,6 +257,35 @@ with sync_playwright() as p:
     pg.click('#hdDl')
     expect(pg.frame_locator('#pvF').locator('th', has_text='Bukan penerima')).to_have_count(0)
     pg.click('#pvC')
+    # dashboard: Penerima counts pupils once (MURID HADIR has 3 awards); Tahun → kelas → murid drill-down
+    pg.click('.nav[data-v=dashboard]')
+    assert pg.evaluate("D.penerima.filter(p=>p.nama==='MURID HADIR').length") == 3
+    uniq = pg.evaluate("new Set(D.penerima.map(p=>p.nama)).size")
+    expect(pg.locator('#v-dashboard .kpi')).to_have_count(2)
+    expect(pg.locator('#v-dashboard .kpi .n').nth(1)).to_have_text(str(uniq))
+    for gone in ['Jawatankuasa pelaksana', 'Acara dalam tentatif', 'GALERI FOTO']:
+        expect(pg.locator('#v-dashboard')).not_to_contain_text(gone)
+    expect(pg.locator('#v-dashboard')).to_contain_text('STATUS PERSIAPAN JAWATANKUASA')
+    expect(pg.locator('#v-dashboard')).to_contain_text('Kategori anugerah')
+    cols = pg.eval_on_selector_all('#dxT .dx-col b', 'e=>e.map(x=>+x.textContent)')
+    assert len(cols) == 6 and sum(cols) == uniq, cols
+    pg.locator('#dxT .dx-col').nth(3).click()  # Tahun 4
+    expect(pg.locator('#dxT .dx-row')).to_have_count(5)  # every class of Tahun 4, empty ones show 0
+    pg.locator('#dxT .dx-row', has_text='4 KREATIF').click()
+    expect(pg.locator('#dxT .dx-pl > div', has_text='MURID HADIR').locator('small').first).to_have_text('3 anugerah')
+    pg.evaluate('refresh(true)'); pg.wait_for_timeout(300)
+    expect(pg.locator('#dxT .dx-path')).to_contain_text('4 KREATIF')  # the drill-down survives the live refresh
+    pg.locator('#dxT .dx-path button').first.click()
+    expect(pg.locator('#dxT .dx-col')).to_have_count(6)
+    # kategori: HEM → Tahun 4 → 4 KREATIF shows MURID HADIR with only the HEM award
+    pg.locator('#dxK .dx-leg .chip', has_text='Hal Ehwal Murid').click()
+    pg.locator('#dxK .dx-row', has_text='Tahun 4').click()
+    pg.locator('#dxK .dx-row', has_text='4 KREATIF').click()
+    expect(pg.locator('#dxK .dx-pl > div', has_text='MURID HADIR').locator('small').first).to_have_text('1 anugerah')
+    pg.locator('#dxK .dx-seg button', has_text='Ikut Kelas').click()
+    expect(pg.locator('#dxK .dx-row')).to_have_count(pg.evaluate('dxKelas(dxMurid()).length'))
+    pg.locator('#dxK .dx-leg .chip', has_text='Semua').click()
+    shot(pg, 'demo-dashboard')
     # hari penyampaian: subject awards Tahun 6 on 21 Nov, Tahun 1-5 on 28 Nov, HEM on 27 Nov; ONE letter per pupil lists each award with its date
     pg.evaluate("(()=>{const m=D.anugerah.find(a=>a.nama==='Anugerah Matematik').id,h=D.anugerah.find(a=>a.kat==='H').id;return call('addPenerima',{rows:[{id:'d1',aid:m,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d2',aid:h,kelas:'6 KREATIF',nama:'MURID ENAM'},{id:'d3',aid:m,kelas:'5 KREATIF',nama:'MURID LIMA'},{id:'d4',aid:h,kelas:'3 KREATIF',nama:'MURID HEM'}]},{quiet:true})})()")
     letter = lambda n: [x for x in pg.evaluate('suratHTML().html').split('class="pb"') if f'<b>{n}</b>' in x]

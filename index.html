@@ -131,26 +131,55 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .cd b.tick{animation:tick .45s var(--ease)}
 @keyframes tick{from{transform:translateY(-8px);opacity:.3}}
 .cd-msg{text-align:center;font:700 clamp(22px,3vw,34px)/1.2 var(--hf);color:var(--gold2)}
-.kpis{grid-template-columns:repeat(4,1fr);margin:16px 0}
+.kpis{grid-template-columns:repeat(2,1fr);margin:16px 0}
+.kpi .s{color:var(--muted);font-size:11.5px;margin-top:2px}
 .kpi .n{font:700 36px var(--hf);color:var(--text)}
 .kpi .l{color:var(--muted);font-size:12.5px}
 .kpi .ic{position:absolute;right:16px;top:16px;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:rgba(var(--gold-rgb),.12);color:var(--gold2)}
 .dash2{grid-template-columns:1.2fr 1fr}
-.dgal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.dgal button{aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--panel);cursor:zoom-in;padding:0}
-.dgal img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--ease)}.dgal button:hover img{transform:scale(1.06)}
 @keyframes pulse{70%{box-shadow:0 0 0 12px rgba(63,182,139,0)}100%{box-shadow:0 0 0 0 rgba(63,182,139,0)}}
 .bar{display:grid;grid-template-columns:150px 1fr 44px;gap:12px;align-items:center;font-size:13px;margin:10px 0}
 .bar i{display:block;height:8px;border-radius:9px;background:var(--soft);overflow:hidden}
 .bar i em{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--gold3),var(--gold2));transition:width 1.4s var(--ease)}
 .bar span:last-child{text-align:right;color:var(--gold2);font-weight:700}
-.donut{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
-.donut svg{width:150px;height:150px;transform:rotate(-90deg)}
-.donut circle{fill:none;stroke-width:16;transition:stroke-dasharray 1.4s var(--ease)}
-.legend{flex:1;min-width:150px}
-.legend div{display:flex;gap:8px;align-items:center;font-size:13px;margin:6px 0}
-.legend i{width:10px;height:10px;border-radius:3px}
-.legend b{margin-left:auto}
+/* dashboard charts (penerima = pupils): Tahun columns, category donut, drill-down rows, pupil list, hover tip */
+.dx-full{margin-top:16px}
+.dx-tot{font-size:13px;color:var(--muted);margin:-4px 0 12px}.dx-tot b{color:var(--gold2)}
+.dx-cols{display:flex;gap:10px;height:220px;padding-top:4px}
+.dx-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 2px;border-radius:8px;color:var(--text)}
+.dx-col:hover,.dx-col:focus-visible{background:var(--soft)}
+.dx-col b{font:700 19px var(--hf);color:var(--gold2)}
+.dx-cb{flex:1;width:100%;max-width:46px;display:flex;align-items:flex-end;background:var(--soft);border-radius:6px;overflow:hidden}
+.dx-cb em{display:block;width:100%;background:linear-gradient(0deg,var(--gold3),var(--gold2));border-radius:6px 6px 0 0;transition:height 1s var(--ease)}
+.dx-col small{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.dx-rows{display:flex;flex-direction:column;gap:2px}
+.dx-row{display:grid;grid-template-columns:110px 1fr 36px auto;gap:10px;align-items:center;width:100%;padding:7px 8px;border-radius:8px;text-align:left;color:var(--text);font-size:13px;min-height:40px}
+.dx-row:hover,.dx-row:focus-visible{background:var(--soft)}
+.dx-b{height:10px;border-radius:9px;background:var(--soft);overflow:hidden}
+.dx-b em{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--gold3),var(--gold2))}
+.dx-row>b{text-align:right;color:var(--gold2)}
+.dx-c{display:flex;gap:4px}
+.dx-c i{font-style:normal;font-size:11px;font-weight:700;min-width:28px;text-align:center;padding:1px 5px;border-radius:6px;color:var(--c);border:1px solid var(--c)}
+.dx-path{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:13px;margin-bottom:8px}
+.dx-path button{color:var(--gold2);text-decoration:underline;min-height:32px;padding:0 2px}.dx-path span{color:var(--muted)}.dx-path b{color:var(--text)}
+.dx-pl>div{display:grid;grid-template-columns:minmax(160px,1fr) 84px 2fr;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px}
+.dx-pl>div>small{color:var(--muted)}.dx-pl>div>span{display:flex;flex-wrap:wrap;gap:6px}
+.dx-kat{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.dx-donut{position:relative;width:170px;height:170px}
+.dx-donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.dx-donut circle{fill:none;stroke-width:18;transition:stroke-dasharray 1.4s var(--ease),opacity .3s}.dx-donut circle[data-dxs]{cursor:pointer}
+.dx-dc{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+.dx-dc b{font:700 30px var(--hf);color:var(--gold2)}.dx-dc small{font-size:11px;color:var(--muted)}
+.dx-leg{display:flex;flex-wrap:wrap;gap:8px}.dx-leg .chip i{width:10px;height:10px;border-radius:3px}
+.dx-note,.dx-hint{font-size:12px;color:var(--muted);margin:10px 0 0}
+.dx-seg{margin:18px 0 12px}
+.dx-tip{position:fixed;z-index:200;pointer-events:none;background:#1A0709;border:1px solid var(--line);color:var(--text);font-size:12.5px;padding:7px 10px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:280px;opacity:0;transition:opacity .15s}.dx-tip.on{opacity:1}
+@media (max-width:600px){
+  .dx-kat{grid-template-columns:1fr;justify-items:center;gap:16px}.dx-leg{justify-content:center}
+  .dx-cols{height:180px;gap:4px}.dx-col b{font-size:16px}.dx-col small{font-size:10.5px}
+  .dx-row{grid-template-columns:96px 1fr 32px}.dx-c{grid-column:1/-1}
+  .dx-pl>div{grid-template-columns:1fr auto}.dx-pl>div>span{grid-column:1/-1}
+}
 
 /* anugerah */
 .tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
@@ -791,8 +820,6 @@ function setData(d){
   D.persembahan=D.anugerah.filter(a=>a.kat==='P');D.anugerah=D.anugerah.filter(a=>a.kat!=='P');D.peserta=null;
   if(D.penerima){const ids=new Set(D.anugerah.map(a=>a.id)),ps=new Set(D.persembahan.map(a=>a.id));D.peserta=D.penerima.filter(p=>ps.has(p.aid));D.penerima=D.penerima.filter(p=>ids.has(p.aid))}
 }
-// share of capped awards' targets filled (unlimited awards don't count); null when no targets set
-function sasaranPct(){let f=0,t=0;D.anugerah.forEach(a=>{const s=+a.sasaran||0;if(s){t+=s;f+=Math.min(counts(a).n,s)}});return t?Math.round(f/t*100):null}
 function counts(a){
   if(!D.penerima)return {n:+a.n||0,d:+a.d||0};
   return pupilCounts((a.kat==='P'?D.peserta:D.penerima).filter(p=>p.aid===a.id))[a.id]||{n:0,d:0};
@@ -862,12 +889,10 @@ function render(fromPoll,nav){
 
 /* ---------- dashboard ---------- */
 function renderDash(nav){
-  const s=D.settings, T=D.tentatif;
-  const total=D.anugerah.reduce((t,a)=>t+counts(a).n,0), got=D.anugerah.reduce((t,a)=>t+counts(a).d,0);
-  const sg=sasaranPct();
-  const SUM=Object.keys(CAT).map(k=>[k,D.anugerah.filter(a=>a.kat===k).reduce((t,a)=>t+counts(a).n,0)]);
+  const s=D.settings;
+  // owner's choice (2026-11-19): Penerima counts pupils, once each however many awards; the award total (the old figure) stays as a note
+  const awards=D.anugerah.reduce((t,a)=>t+counts(a).n,0),ms=canNames()?dxMurid():null;
   const d=new Date(s.tarikh+'T'+(s.masa||'07:30'));
-  const G=D.galeri.slice(-6).reverse(); // latest 6 photos
   $('#v-dashboard').innerHTML=`
   <div class="card hero rise">
     <div>
@@ -884,9 +909,7 @@ function renderDash(nav){
   </div>
   <div class="grid kpis">
     <div class="card kpi rise" style="animation-delay:.1s"><div class="ic"><svg class="i"><use href="#i-award"/></svg></div><div class="n" data-count="${D.anugerah.length}">0</div><div class="l">Kategori anugerah</div></div>
-    <div class="card kpi rise" style="animation-delay:.18s"><div class="ic"><svg class="i"><use href="#i-spark"/></svg></div><div class="n" data-count="${total}">0</div><div class="l">Penerima${got?` · ${got} sudah menerima`:''}${sg==null?'':` · sasaran ${sg}%`}</div></div>
-    <div class="card kpi rise" style="animation-delay:.26s"><div class="ic"><svg class="i"><use href="#i-users"/></svg></div><div class="n" data-count="${D.ajk.length}">0</div><div class="l">Jawatankuasa pelaksana</div></div>
-    <div class="card kpi rise" style="animation-delay:.34s"><div class="ic"><svg class="i"><use href="#i-cal"/></svg></div><div class="n" data-count="${T.filter(t=>!isDay(t)).length}">0</div><div class="l">Acara dalam tentatif</div></div>
+    <div class="card kpi rise" style="animation-delay:.18s"><div class="ic"><svg class="i"><use href="#i-spark"/></svg></div>${ms?`<div class="n" data-count="${ms.length}">0</div>`:'<div class="n">—</div>'}<div class="l">Murid penerima</div><div class="s">${ms?`Seorang murid dikira sekali · daripada ${awards.toLocaleString('ms-MY')} anugerah diterima`:'Nama penerima belum dipaparkan'}</div></div>
   </div>
   <div class="grid dash2">
     <div class="card rise" style="animation-delay:.4s">
@@ -894,24 +917,78 @@ function renderDash(nav){
       ${D.persiapan.length?D.persiapan.map(p=>{const v=Math.max(0,Math.min(100,+p.peratus||0));return `<div class="bar"><span>${esc(p.nama)}</span><i><em ${nav?`data-p="${v}"`:`style="width:${v}%"`}></em></i><span>${v}%</span></div>`}).join(''):'<p class="muted">Tiada data persiapan.</p>'}
     </div>
     <div class="card rise" style="animation-delay:.48s">
-      <h3>GALERI FOTO</h3>
-      ${G.length?`<div class="dgal">${G.map((g,i)=>`<button class="open" data-i="${i}" aria-label="Buka foto ${esc(g.kapsyen||g.kat)}"><img src="${esc(imgURL(g,400))}" alt="${esc(g.kapsyen||g.kat)}" loading="lazy"></button>`).join('')}</div><button class="btn ghost sm" style="margin:12px 0 20px" onclick="go('galeri')"><svg class="i"><use href="#i-img"/></svg>Lihat semua ${D.galeri.length} foto</button>`:`<p class="muted" style="margin-bottom:20px">Belum ada foto. Foto majlis akan dikongsi di sini.</p>`}
-      <h3>PECAHAN PENERIMA</h3>
-      ${total?`<div class="donut"><svg viewBox="0 0 160 160" id="donut" aria-hidden="true"></svg><div class="legend">${SUM.map(([k,n])=>`<div><i style="background:${COL[k]}"></i>${CAT[k]}<b>${n}</b></div>`).join('')}</div></div>`:'<p class="muted">Senarai penerima belum dimuat naik.</p>'}
+      <h3>PENERIMA MENGIKUT TAHUN</h3>
+      <div id="dxT"></div>
     </div>
+  </div>
+  <div class="card rise dx-full" style="animation-delay:.56s">
+    <h3>PENERIMA MENGIKUT KATEGORI</h3>
+    <div id="dxK"></div>
   </div>`;
   tick(true);
-  $$('#v-dashboard .dgal .open').forEach(b=>b.onclick=()=>{LB=G;openLb(+b.dataset.i)});
   $$('#v-dashboard [data-count]').forEach(e=>nav?countUp(e,+e.dataset.count):e.textContent=(+e.dataset.count).toLocaleString('ms-MY'));
   const bars=$$('#v-dashboard .bar em[data-p]');$('#vs').textContent=s.nama;
   requestAnimationFrame(()=>requestAnimationFrame(()=>bars.forEach(e=>e.style.width=e.dataset.p+'%')));
-  if(total){
-    const C=2*Math.PI*58;let off=0;
-    $('#donut').innerHTML=`<circle cx="80" cy="80" r="58" style="stroke:var(--soft)"/>`+SUM.filter(x=>x[1]).map(([k,n])=>{const len=n/total*C;const c=`<circle cx="80" cy="80" r="58" style="stroke:${COL[k]}" stroke-dasharray="0 ${C}" stroke-dashoffset="${-off}" data-len="${Math.max(0,len-2)}"/>`;off+=len;return c}).join('');
-    const fill=()=>$$('#donut [data-len]').forEach(c=>c.setAttribute('stroke-dasharray',`${c.dataset.len} ${C}`));
-    nav?requestAnimationFrame(()=>requestAnimationFrame(fill)):fill();
-  }
+  dxRender(nav);
 }
+/* dashboard charts: one pupil = one penerima. Click goes Tahun → kelas → murid; the state survives the live refresh */
+const DX={ty:'',tk:'',kc:'ALL',km:'tahun',ky:'',kk:''},DX_YRS=['1','2','3','4','5','6'];
+const dxMurid=()=>studentMap('ALL').map(s=>({...s,kat:new Set(s.items.map(i=>i.a.kat)),tahun:tahunOf(s.kelas)}));
+// the school's classes (Tahun 1-6 × KLS, same as the Hadir@SKBT list) plus any other class a pupil has, so empty classes show 0
+const dxKelas=(ms,t)=>[...new Set(DX_YRS.flatMap(y=>KLS.map(k=>y+' '+k)).concat(ms.map(s=>s.kelas).filter(Boolean)))].filter(k=>!t||tahunOf(k)===t).sort(classSort);
+const dxs=p=>`data-dxs="${esc(JSON.stringify(p))}"`;
+const dxTip=(label,a,split=true)=>`${label} · ${a.length} murid`+(split?Object.keys(CAT).map(k=>` · ${CAT[k]} ${a.filter(s=>s.kat.has(k)).length}`).join(''):'');
+const dxPath=steps=>`<nav class="dx-path" aria-label="Laluan carta">${steps.map(([l,p])=>p?`<button type="button" ${dxs(p)}>${esc(l)}</button><span aria-hidden="true">›</span>`:`<b>${esc(l)}</b>`).join('')}</nav>`;
+// one row per group (year or class): bar = pupils, chips = pupils per category (they can add up to more: one pupil, several categories)
+function dxRows(groups,split){
+  const max=Math.max(1,...groups.map(g=>g[2].length));
+  return `<div class="dx-rows">${groups.map(([p,label,a])=>{const tip=dxTip(label,a,split);
+    return `<button type="button" class="dx-row" ${dxs(p)} data-tip="${esc(tip)}" aria-label="${esc(tip)}"><span>${esc(label)}</span><span class="dx-b"><em style="width:${a.length/max*100}%"></em></span><b>${a.length}</b>${split?`<span class="dx-c">${Object.keys(CAT).map(k=>`<i style="--c:${COL[k]}" title="${CAT[k]}">${a.filter(s=>s.kat.has(k)).length}</i>`).join('')}</span>`:''}</button>`}).join('')}</div>`;
+}
+// pupils of one class: name, how many awards, which ones (only the chosen category's)
+function dxPupils(a,c){
+  if(!a.length)return '<p class="muted">Tiada murid penerima dalam kelas ini.</p>';
+  return `<div class="dx-pl">${[...a].sort((x,y)=>x.nama.localeCompare(y.nama)).map(s=>{const it=s.items.filter(i=>c==='ALL'||i.a.kat===c);
+    return `<div><b>${esc(s.nama)}</b><small>${it.length} anugerah</small><span>${it.map(({a,p})=>`<span class="b"><i style="background:${COL[a.kat]}"></i>${esc(a.nama.replace(/^Anugerah\s+/i,''))}${p.catatan?` <small class="muted">(${esc(p.catatan)})</small>`:''}</span>`).join('')}</span></div>`}).join('')}</div>`;
+}
+function dxTahun(ms,nav){
+  const {ty,tk}=DX,top=[['Semua tahun',{ty:'',tk:''}]];
+  if(tk)return dxPath([...top,['Tahun '+ty,{tk:''}],[tk]])+`<p class="dx-tot"><b>${ms.filter(s=>s.kelas===tk).length}</b> murid penerima dalam ${esc(tk)}</p>`+dxPupils(ms.filter(s=>s.kelas===tk),'ALL');
+  if(ty){const a=ms.filter(s=>s.tahun===ty);
+    return dxPath([...top,['Tahun '+ty]])+`<p class="dx-tot"><b>${a.length}</b> murid penerima dalam Tahun ${ty}</p>`+dxRows(dxKelas(ms,ty).map(k=>[{tk:k},k,ms.filter(s=>s.kelas===k)]),true)+'<p class="dx-hint">Klik kelas untuk melihat murid penerima.</p>'}
+  const g=DX_YRS.map(t=>[t,ms.filter(s=>s.tahun===t)]),max=Math.max(1,...g.map(x=>x[1].length)),lain=ms.length-g.reduce((n,x)=>n+x[1].length,0);
+  return `<p class="dx-tot"><b>${ms.length}</b> murid penerima${lain?` · ${lain} tanpa kelas`:''}</p><div class="dx-cols">${g.map(([t,a])=>{const tip=dxTip('Tahun '+t,a),h=a.length/max*100;
+    return `<button type="button" class="dx-col" ${dxs({ty:t,tk:''})} data-tip="${esc(tip)}" aria-label="${esc(tip)}"><b>${a.length}</b><span class="dx-cb"><em ${nav?`style="height:0" data-h="${h}"`:`style="height:${h}%"`}></em></span><small>Tahun ${t}</small></button>`}).join('')}</div><p class="dx-hint">Klik bar untuk melihat penerima ikut kelas.</p>`;
+}
+function dxKat(ms,nav){
+  const {kc:c,km,ky,kk}=DX,a=ms.filter(s=>c==='ALL'||s.kat.has(c)),split=c==='ALL',lab=split?'Semua kategori':CAT[c];
+  const N=Object.keys(CAT).map(k=>[k,ms.filter(s=>s.kat.has(k))]),sum=N.reduce((n,x)=>n+x[1].length,0),C=2*Math.PI*58;let off=0;
+  const seg=N.filter(x=>x[1].length).map(([k,x])=>{const len=x.length/sum*C,dash=Math.max(0,len-2),o=off;off+=len;
+    return `<circle cx="80" cy="80" r="58" style="stroke:${COL[k]};opacity:${split||c===k?1:.3}" stroke-dasharray="${nav?0:dash} ${C}" ${nav?`data-len="${dash}"`:''} stroke-dashoffset="${-o}" ${dxs({kc:k,ky:'',kk:''})} data-tip="${esc(dxTip(CAT[k],x,false))}"/>`}).join('');
+  let drill;
+  if(kk)drill=dxPath([[lab,{ky:'',kk:''}],...(km==='tahun'&&ky?[['Tahun '+ky,{kk:''}]]:[]),[kk]])+dxPupils(a.filter(s=>s.kelas===kk),c);
+  else if(km==='tahun'&&ky)drill=dxPath([[lab,{ky:''}],['Tahun '+ky]])+dxRows(dxKelas(ms,ky).map(k=>[{kk:k},k,a.filter(s=>s.kelas===k)]),split)+'<p class="dx-hint">Klik kelas untuk melihat murid penerima.</p>';
+  else if(km==='tahun')drill=dxRows(DX_YRS.map(t=>[{ky:t,kk:''},'Tahun '+t,a.filter(s=>s.tahun===t)]),split)+'<p class="dx-hint">Klik tahun untuk melihat penerima ikut kelas.</p>';
+  else drill=dxRows(dxKelas(ms).map(k=>[{kk:k},k,a.filter(s=>s.kelas===k)]),split)+'<p class="dx-hint">Klik kelas untuk melihat murid penerima.</p>';
+  return `<div class="dx-kat"><div class="dx-donut"><svg viewBox="0 0 160 160" role="img" aria-label="${esc(N.map(([k,x])=>CAT[k]+' '+x.length+' murid').join(', '))}"><circle cx="80" cy="80" r="58" style="stroke:var(--soft)"/>${seg}</svg><div class="dx-dc"><b>${a.length}</b><small>${esc(split?'murid penerima':CAT[c])}</small></div></div>
+    <div><div class="dx-leg" role="group" aria-label="Pilih kategori">${[['ALL','Semua',ms],...N.map(([k,x])=>[k,CAT[k],x])].map(([k,l,x])=>`<button type="button" class="chip ${c===k?'on':''}" ${dxs({kc:k,ky:'',kk:''})} aria-pressed="${c===k}">${k==='ALL'?'':`<i style="background:${COL[k]}"></i>`}${esc(l)} · ${x.length}</button>`).join('')}</div>
+    <p class="dx-note">Seorang murid boleh menerima anugerah dalam lebih daripada satu kategori, jadi jumlah ketiga-tiga kategori (${sum}) boleh melebihi jumlah murid penerima (${ms.length}).</p></div></div>
+  <div class="seg dx-seg" role="group" aria-label="Pecahan ${esc(lab)}">${[['tahun','Ikut Tahun'],['kelas','Ikut Kelas']].map(([m,l])=>`<button type="button" class="${km===m?'on':''}" ${dxs({km:m,ky:'',kk:''})} aria-pressed="${km===m}">${l}</button>`).join('')}</div>${drill}`;
+}
+function dxRender(nav){
+  const T=$('#dxT'),K=$('#dxK');if(!T||!K)return;
+  DXTIP.classList.remove('on');
+  if(!canNames()){T.innerHTML=K.innerHTML='<p class="muted">Nama penerima belum dipaparkan. Admin perlu menghidupkan paparan nama penerima di Tetapan.</p>';return}
+  const ms=dxMurid();T.innerHTML=dxTahun(ms,nav);K.innerHTML=dxKat(ms,nav);
+  if(nav)requestAnimationFrame(()=>requestAnimationFrame(()=>{$$('#dxT [data-h]').forEach(e=>e.style.height=e.dataset.h+'%');$$('#dxK [data-len]').forEach(e=>e.setAttribute('stroke-dasharray',`${e.dataset.len} ${2*Math.PI*58}`))}));
+}
+const DXTIP=document.body.appendChild(Object.assign(document.createElement('div'),{className:'dx-tip'}));
+$('#v-dashboard').addEventListener('click',e=>{const b=e.target.closest('[data-dxs]');if(!b)return;const box=b.closest('#dxT,#dxK');
+  Object.assign(DX,JSON.parse(b.dataset.dxs));dxRender();box?.querySelector('button')?.focus({preventScroll:true})}); // keyboard users keep their place
+// hover box with the numbers (mouse only: a tap on a phone goes straight to the next level)
+$('#v-dashboard').addEventListener('pointermove',e=>{const t=e.pointerType==='mouse'&&e.target.closest('[data-tip]');if(!t)return DXTIP.classList.remove('on');
+  DXTIP.textContent=t.dataset.tip;DXTIP.classList.add('on');DXTIP.style.left=Math.max(8,Math.min(innerWidth-DXTIP.offsetWidth-8,e.clientX+14))+'px';DXTIP.style.top=Math.max(8,e.clientY-DXTIP.offsetHeight-12)+'px'});
+$('#v-dashboard').addEventListener('pointerleave',()=>DXTIP.classList.remove('on'));
 async function setNow(i){const d=i<D.settings.now?-1:1;while(D.tentatif[i]&&isDay(D.tentatif[i]))i+=d;i=Math.max(-1,Math.min(D.tentatif.length,i));try{await call('saveSettings',{settings:{now:i}},{quiet:true});toast(D.tentatif[i]?'Sekarang: '+D.tentatif[i].acara:'Dikemas kini')}catch(e){toast(e.message,true)}}
 function tick(force){
   const box=$('#cdBox');if(!box)return;
