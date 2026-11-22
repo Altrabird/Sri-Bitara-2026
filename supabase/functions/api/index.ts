@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
     // owner's choice (2026-11-12): locking and unlocking an anugerah (setKunci) both need the PIN
     // owner's choice (2026-11-16): Majlis T6 (hobi, cita-cita) and pupil photos (any recipient) are filled like Anugerah, without a PIN
     // owner's choice (2026-11-19): Kehadiran (setHadir, and setHadirT6 for Year 6 pupils on 21 Nov) needs no PIN
-    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'setT6', 'delT6Foto', 'setHadir', 'setHadirT6'].includes(r.action) || (r.action === 'upload' && r.purpose === 't6');
+    // owner's choice (2026-11-22): teachers vote for Tokoh Murid (undi, delUndi) without a PIN, like Anugerah entry
+    const open = ['roster', 'addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'setT6', 'delT6Foto', 'setHadir', 'setHadirT6', 'undi', 'delUndi'].includes(r.action) || (r.action === 'upload' && r.purpose === 't6');
     if (!open || r.pin) await checkPin(r.pin);
     else await checkKunci(r);
     if (r.action === 'login') return out({ ok: true });
@@ -95,6 +96,15 @@ async function handle(r: any) {
     }
     case 'delPenerima':
       await q(db.from('penerima').delete().in('id', (r.ids || []).map(String)));
+      break;
+    case 'undi': { // owner's choice (2026-11-22): one vote per teacher, the unique (aid, guru) makes a new vote replace the old one
+      const v = { aid: cell(r.aid), nama: norm(r.nama), kelas: norm(r.kelas), guru: norm(r.guru).slice(0, 60), masa: new Date().toISOString() };
+      if (!v.aid || !v.nama || !v.kelas || !v.guru) throw new Error('Undian tidak lengkap');
+      await q(db.from('undi').upsert(v, { onConflict: 'aid,guru' }));
+      break;
+    }
+    case 'delUndi':
+      await q(db.from('undi').delete().eq('aid', cell(r.aid)).eq('guru', norm(r.guru)));
       break;
     case 'setStatus':
       await q(db.from('penerima').update({ status: r.status === 'Diterima' ? 'Diterima' : '' }).in('id', (r.ids || []).map(String)));
@@ -167,10 +177,11 @@ async function dikunci(): Promise<string[]> {
 
 // PIN-less entry (add, remove, tick Diterima) is refused on a locked anugerah; the admin PIN bypasses it
 async function checkKunci(r: any) {
-  if (!['addPenerima', 'delPenerima', 'setStatus', 'setCatatan'].includes(r.action)) return;
+  if (!['addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'undi', 'delUndi'].includes(r.action)) return;
   const k = await dikunci();
   if (!k.length) return;
   const aids = r.action === 'addPenerima' ? (r.rows || []).map((x: any) => cell(x.aid))
+    : ['undi', 'delUndi'].includes(r.action) ? [cell(r.aid)]
     : (await q(db.from('penerima').select('aid').in('id', (r.ids || []).map(String)))).map((p: any) => p.aid);
   if (aids.some((a: string) => k.includes(a))) throw new Error('Anugerah ini dikunci. Minta admin membuka kunci.');
 }
@@ -183,6 +194,7 @@ async function q(p: PromiseLike<{ data: any; error: any }>) {
 }
 
 const cell = (v: unknown) => (v === null || v === undefined ? '' : String(v));
+const norm = (v: unknown) => cell(v).trim().toUpperCase().replace(/\s+/g, ' ');
 const pub = (path: string) => `${SB_URL}/storage/v1/object/public/foto/${path}`;
 
 /* ---------- data ---------- */
@@ -202,6 +214,8 @@ async function publicPayload() {
     anugerah: d.anugerah.map((a: any) => ({ ...a, ...(cnt[a.id] || { n: 0, d: 0 }) })),
     penerima: d.settings.showNames ? d.penerima : null, // with attendance: Kehadiran is open to everyone
     t6: d.settings.showNames ? d.t6 : null,
+    // secret ballot: visitors get the candidate and nothing about the teacher; only the admin payload (allData) has guru
+    undi: d.settings.showNames ? d.undi.map((v: any) => ({ aid: v.aid, nama: v.nama, kelas: v.kelas })) : null,
     ajk: d.ajk, fotoAjk: d.fotoAjk, tentatif: d.tentatif, persiapan: d.persiapan, galeri: d.galeri
   };
 }
@@ -213,6 +227,7 @@ async function allData() {
   delete d.tetapan;
   d.galeri.forEach((g: any) => (g.src = pub(g.fid)));
   d.fotoAjk.forEach((f: any) => (f.src = pub(f.fid)));
+  d.undi = await q(db.from('undi').select('aid,nama,kelas,guru,masa').order('ord'));
   d.t6 = (await q(db.from('murid_t6').select('nama,kelas,hobi,cita,fid,hadir').order('k'))).map((x: any) => ({ ...x, src: x.fid ? pub(x.fid) : '' }));
   return d;
 }

@@ -279,6 +279,10 @@ span.tg{display:inline-flex;align-items:center}
 .ed-c{display:flex;gap:6px;margin-top:6px}.ed-c .fi{min-height:34px;padding:6px 10px;font-size:12.5px}
 .addp{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(var(--gold-rgb),.05)}
 .addp h5{font:700 14px var(--hf);letter-spacing:.2em;color:var(--gold);margin-bottom:10px}
+.kriteria p,.kriteria li{font-size:13px;line-height:1.55}.kriteria p{margin:8px 0}.kriteria ol,.kriteria ul{padding-left:20px;display:grid;gap:4px}
+.prf{display:grid;gap:1px;margin-top:3px;font-size:11.5px;line-height:1.4;color:var(--muted);font-weight:400}.prf b{color:var(--gold);font-weight:600}
+.pgd{display:block;margin-top:3px}.myvote{margin:10px 0 0;font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.kriteria h6{font:700 12px var(--hf);letter-spacing:.14em;color:var(--gold);margin:12px 0 6px;text-transform:uppercase}
 .addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.addrow .fi{flex:1 1 160px;width:auto}
 .bulk{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.bulk summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--gold2);padding:6px 0}.bulk textarea{min-height:130px;font-size:13px}
 .studs{max-height:280px;overflow:auto;display:grid;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--panel)}
@@ -782,7 +786,7 @@ function pupilCounts(rows){const g={};rows.forEach(p=>{const m=g[p.aid]=g[p.aid]
 function publicView(db){
   const cnt=pupilCounts(db.penerima);
   const {catatan,...settings}=db.settings; // Catatan Pengarah stays admin-only
-  return {ok:true,t:Date.now(),settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,t6:db.settings.showNames?(db.t6||[]):null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
+  return {ok:true,t:Date.now(),settings,anugerah:db.anugerah.map(a=>({...a,...(cnt[a.id]||{n:0,d:0})})),penerima:db.settings.showNames?db.penerima:null,t6:db.settings.showNames?(db.t6||[]):null,undi:db.settings.showNames?(db.undi||[]).map(({aid,nama,kelas})=>({aid,nama,kelas})):null,ajk:db.ajk,fotoAjk:db.fotoAjk||[],tentatif:db.tentatif,persiapan:db.persiapan,galeri:db.galeri};
 }
 const t6n=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' '),t6Key=s=>t6n(s.nama)+'|'+t6n(s.kelas);
 // one photo per pupil (kept with Majlis T6 data), shared by Majlis T6, the award/persembahan lists and every poster
@@ -839,9 +843,9 @@ $('#fcFile').onchange=e=>{const f=e.target.files[0],s=FC.s;e.target.value='';if(
 function t6Row(db,r){db.t6=db.t6||[];let x=db.t6.find(t=>t6Key(t)===t6Key(r));if(!x)db.t6.push(x={nama:t6n(r.nama),kelas:t6n(r.kelas),hobi:'',cita:'',src:''});return x}
 function localCall(r){
   const db=ldb();
-  const open=['roster','addPenerima','delPenerima','setStatus','setCatatan','setT6','delT6Foto','setHadir','setHadirT6'].includes(r.action)||(r.action==='upload'&&r.purpose==='t6'); // same as the server: Anugerah and Majlis T6 entry need no PIN, locking an anugerah does
+  const open=['roster','addPenerima','delPenerima','setStatus','setCatatan','setT6','delT6Foto','setHadir','setHadirT6','undi','delUndi'].includes(r.action)||(r.action==='upload'&&r.purpose==='t6'); // same as the server: Anugerah and Majlis T6 entry need no PIN, locking an anugerah does
   if(r.action!=='public'&&(!open||r.pin)&&String(r.pin)!==DEMO_PIN)throw Error('PIN salah');
-  if(!r.pin&&['addPenerima','delPenerima','setStatus','setCatatan'].includes(r.action)){const k=db.settings.dikunci||[],aids=r.action==='addPenerima'?r.rows.map(x=>x.aid):db.penerima.filter(p=>r.ids.includes(p.id)).map(p=>p.aid);
+  if(!r.pin&&['addPenerima','delPenerima','setStatus','setCatatan','undi','delUndi'].includes(r.action)){const k=db.settings.dikunci||[],aids=r.action==='addPenerima'?r.rows.map(x=>x.aid):['undi','delUndi'].includes(r.action)?[r.aid]:db.penerima.filter(p=>r.ids.includes(p.id)).map(p=>p.aid);
     if(aids.some(a=>k.includes(a)))throw Error('Anugerah ini dikunci. Minta admin membuka kunci.')}
   const out={ok:true};
   switch(r.action){
@@ -854,6 +858,9 @@ function localCall(r){
     case 'roster':return {ok:true,roster:['1','2','3','4','5','6'].flatMap(t=>KLS.flatMap(k=>[1,2,3,4].map(n=>({nama:`MURID CONTOH ${t}${k.slice(0,3)} ${n}`,kelas:t+' '+k}))))};
     case 'addPenerima':{const ko=new Set(db.anugerah.filter(a=>a.kat==='KO').map(a=>a.id)),key=x=>x.aid+'|'+x.nama+'|'+x.kelas+(ko.has(x.aid)?'|'+x.catatan:''),have=new Set(db.penerima.map(key));const add=r.rows.filter(x=>!have.has(key(x))&&have.add(key(x))).map(x=>({...x,status:''}));db.penerima.push(...add);out.added=add.length;break}
     case 'delPenerima':db.penerima=db.penerima.filter(p=>!r.ids.includes(p.id));break;
+    case 'undi':{const v={aid:String(r.aid||''),nama:t6n(r.nama),kelas:t6n(r.kelas),guru:t6n(r.guru).slice(0,60),masa:new Date().toISOString()}; // one vote per teacher: a new vote replaces the old one
+      if(!v.aid||!v.nama||!v.kelas||!v.guru)throw Error('Undian tidak lengkap');db.undi=(db.undi||[]).filter(x=>!(x.aid===v.aid&&x.guru===v.guru)).concat(v);break}
+    case 'delUndi':db.undi=(db.undi||[]).filter(x=>!(x.aid===String(r.aid||'')&&x.guru===t6n(r.guru)));break;
     case 'setHadir':db.penerima.forEach(p=>{if(r.ids?r.ids.includes(p.id):r.nama.includes(p.nama))p.hadir=r.hadir?new Date().toISOString():''});break;
     case 'setKunci':{const k=new Set(db.settings.dikunci||[]);r.ids.forEach(id=>r.kunci?k.add(id):k.delete(id));db.settings.dikunci=[...k];break}
     case 'setStatus':db.penerima.forEach(p=>{if(r.ids.includes(p.id))p.status=r.status==='Diterima'?'Diterima':''});break;
@@ -865,7 +872,7 @@ function localCall(r){
     case 'deletePhoto':db.galeri=db.galeri.filter(g=>g.id!==r.id);break;
     default:throw Error('Tindakan tidak dikenali');
   }
-  lsave(db);out.data=db;return out;
+  lsave(db);out.data=r.pin?db:{...db,undi:publicView(db).undi};return out; // secret ballot, like the server: visitors never get the Tokoh Murid voters
 }
 /* ---------- backend: Google Apps Script ---------- */
 async function remote(body){
@@ -902,7 +909,7 @@ async function refresh(fromPoll){
   render(fromPoll);
 }
 function setData(d){
-  D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[],fotoAjk:d.fotoAjk||[],t6:d.t6||null};
+  D={settings:{...SET_DEFAULT,...d.settings},anugerah:d.anugerah||[],penerima:d.penerima||null,ajk:d.ajk||[],tentatif:d.tentatif||[],persiapan:d.persiapan||[],galeri:d.galeri||[],fotoAjk:d.fotoAjk||[],t6:d.t6||null,undi:d.undi||null};
   FOTO=new Map(D.fotoAjk.map(f=>[nameKey(f.n),f.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(f.fid)}&sz=w200`]));
   D.settings.showNames=D.settings.showNames===true||D.settings.showNames==='true';
   D.settings.now=+D.settings.now;
@@ -1556,7 +1563,7 @@ function openAw(id){
     body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(row).join('')}</div>`).join(''):`<div class="empty"><p>Tiada ${isP?'murid':'penerima'} untuk ${W} ini.</p></div>`;
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
   $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((isP?'Persembahan':CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n}${+a.sasaran?` / ${+a.sasaran}`:''} ${isP?'murid terlibat':'penerima'}${+a.sasaran&&c.n>+a.sasaran?' (melebihi sasaran)':''}${ps.length>c.n?` · ${ps.length} pencapaian`:''}${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
-  <div class="body">${isP?`<button class="btn" style="width:100%;margin-top:12px" id="toKad"><svg class="i"><use href="#i-img"/></svg>Kad tajuk</button>`:''}${PIN&&c.n&&!isP?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}${canNames()&&c.n?`<button class="btn ghost" style="width:100%;margin-top:8px" id="awXlsFoto" title="Senarai ${isP?'murid':'penerima'} dengan foto, satu fail Excel"><svg class="i"><use href="#i-dl"/></svg><span>Excel + foto</span></button>`:''}<div class="lockbar">${locked?`<p class="warnmsg" style="margin:12px 0 6px"><svg class="i" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"/></svg> ${isP?'Persembahan':'Anugerah'} ini dikunci.${PIN?' Admin masih boleh mengubah.':' Masukkan PIN admin untuk membuka kunci.'}</p>`:''}${PIN?`<button class="btn ghost sm" id="awKunci" style="${locked?'':'margin-top:12px'}"><svg class="i"><use href="#i-lock"/></svg>${locked?'Buka kunci':'Kunci '+W+' ini'}</button>`:`<details class="bulk" ${locked?'open':''} style="${locked?'':'margin-top:12px'}"><summary>${locked?'Buka kunci':'Kunci '+W+' ini'} (PIN admin)</summary><form class="addrow" id="awKunciF" autocomplete="off"><input class="fi" id="awKunciPin" type="password" maxlength="32" autocomplete="off" placeholder="PIN admin" aria-label="PIN admin"><button class="btn">${locked?'Buka kunci':'Kunci'}</button></form></details>`}</div>${ro?'':'<div class="addp" id="addp"></div>'}${body}</div>`;
+  <div class="body">${isP?`<button class="btn" style="width:100%;margin-top:12px" id="toKad"><svg class="i"><use href="#i-img"/></svg>Kad tajuk</button>`:''}${PIN&&c.n&&!isP?`<button class="btn" style="width:100%;margin-top:12px" id="toStage"><svg class="i"><use href="#i-stage"/></svg>Tayang di Mod Pentas</button>`:''}${canNames()&&c.n?`<button class="btn ghost" style="width:100%;margin-top:8px" id="awXlsFoto" title="Senarai ${isP?'murid':'penerima'} dengan foto, satu fail Excel"><svg class="i"><use href="#i-dl"/></svg><span>Excel + foto</span></button>`:''}<div class="lockbar">${locked?`<p class="warnmsg" style="margin:12px 0 6px"><svg class="i" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"/></svg> ${isP?'Persembahan':'Anugerah'} ini dikunci.${PIN?' Admin masih boleh mengubah.':' Masukkan PIN admin untuk membuka kunci.'}</p>`:''}${PIN?`<button class="btn ghost sm" id="awKunci" style="${locked?'':'margin-top:12px'}"><svg class="i"><use href="#i-lock"/></svg>${locked?'Buka kunci':'Kunci '+W+' ini'}</button>`:`<details class="bulk" ${locked?'open':''} style="${locked?'':'margin-top:12px'}"><summary>${locked?'Buka kunci':'Kunci '+W+' ini'} (PIN admin)</summary><form class="addrow" id="awKunciF" autocomplete="off"><input class="fi" id="awKunciPin" type="password" maxlength="32" autocomplete="off" placeholder="PIN admin" aria-label="PIN admin"><button class="btn">${locked?'Buka kunci':'Kunci'}</button></form></details>`}</div>${isTokoh(a)?TOKOH_HTML+'<div class="addp" id="undip"></div>':''}${ro||isTokoh(a)&&!PIN?'':'<div class="addp" id="addp"></div>'}${body}</div>`;
   $('#drawer .x').onclick=closeDrawer;
   $('#toKad')&&($('#toKad').onclick=e=>openKad(a,e.currentTarget));
   $('#toStage')&&($('#toStage').onclick=()=>{closeDrawer();openStage(id)});
@@ -1572,7 +1579,8 @@ function openAw(id){
   const setKunci=(kunci,pin)=>call('setKunci',{ids:[id],kunci,...(pin?{pin}:{})},{quiet:true}).then(()=>toast(kunci?'Anugerah dikunci':'Kunci dibuka'),e=>toast(e.message,true));
   $('#awKunci')&&($('#awKunci').onclick=e=>busy(e.currentTarget,()=>setKunci(!locked)));
   $('#awKunciF')&&($('#awKunciF').onsubmit=e=>{e.preventDefault();const v=$('#awKunciPin').value;if(v)busy(e.submitter,()=>setKunci(!locked,v))});
-  if(!ro)drawAdd(id);
+  if(!ro&&!(isTokoh(a)&&!PIN))drawAdd(id); // Tokoh Murid: teachers vote; only the admin adds the winner
+  if(isTokoh(a))drawUndi(id,ro);
   $('#drawer .body').scrollTop=sc;
   if(!$('#drawer').classList.contains('on')){$('#drawer').classList.add('on');$('#scrim').classList.add('on');$('#drawer .x').focus()}
 }
@@ -1595,6 +1603,55 @@ function parseBulk(text,defKls){
   }).filter(x=>x.nama);
 }
 const KK=['KETUA KELAS','PEN. KETUA KELAS'];
+/* ---------- Tokoh Murid: teachers read the criteria and vote; the same pupil picked by several teachers = several votes ---------- */
+// owner's choice (2026-11-22): criteria from pendidik2u.my (Tokoh Akademik vs Tokoh Murid) and a Tokoh Murid selection minit; Tahun 6 only
+const isTokoh=a=>!!a&&a.kat!=='P'&&/tokoh murid/i.test(a.nama);
+const TOKOH_HTML=`<details class="bulk kriteria" open style="margin-top:12px"><summary>Kriteria pemilihan Tokoh Murid</summary>
+<p>Tokoh Murid menilai <b>kemenjadian murid secara menyeluruh</b>: akademik, kokurikulum, kepimpinan dan sahsiah, bukan pencapaian akademik sahaja.</p>
+<h6>Syarat kelayakan</h6><ol><li>Murid Tahun 6 yang berdaftar dan belajar di SK Bandar Tawau dalam tempoh penilaian (tahun 2026).</li><li>Pencapaian akademik yang baik dan konsisten berdasarkan rekod PBD dan UASA.</li><li>Sikap positif terhadap pembelajaran: bersungguh-sungguh, menyiapkan tugasan dan menerima teguran guru.</li><li>Sahsiah yang baik. Jika ada rekod disiplin, nilai konteks kes dan rekod pemulihannya secara adil.</li></ol>
+<h6>Aspek penilaian</h6><ol><li><b>Akademik</b>: Tahap Penguasaan PBD yang tinggi dan keputusan UASA, konsisten sepanjang tahun.</li><li><b>Kokurikulum</b> (komponen utama): aktif dalam unit beruniform, kelab/persatuan dan sukan/permainan; mewakili sekolah dalam pertandingan (zon, daerah, negeri, kebangsaan).</li><li><b>Kepimpinan</b> (komponen penting): memegang jawatan seperti pengawas, ketua kelas atau AJK kelab/unit, dan menjadi contoh kepada rakan.</li><li><b>Koakademik</b>: kuiz, STEM/inovasi, pidato, syarahan atau penulisan.</li><li><b>Sahsiah dan disiplin</b> (diberi penekanan): bertanggungjawab, menghormati guru, bekerjasama dengan rakan dan berkelakuan baik.</li></ol>
+<h6>Panduan guru</h6><ul><li>Pilih berdasarkan rekod dan bukti, bukan populariti atau kedekatan dengan guru.</li><li>Setiap guru mempunyai <b>satu undian sahaja</b>. Undian adalah sulit: guru lain hanya melihat nama calon dan jumlah undinya; hanya admin melihat siapa mengundi siapa.</li><li>Senarai anugerah Kurikulum, HEM dan Kokurikulum yang diterima setiap murid dipaparkan di bawah namanya sebagai bukti pencapaian.</li><li>Undian ialah pencalonan. Keputusan muktamad dibuat dalam mesyuarat pemilihan dan disahkan oleh Guru Besar; keputusan seri diselesaikan secara berrekod.</li></ul>
+<p class="muted" style="font-size:11.5px">Rujukan: pendidik2u.my, <i>Kriteria Pemilihan Tokoh Akademik Murid &amp; Rubrik</i> (perbezaan Tokoh Akademik dan Tokoh Murid, syarat umum dan prosedur pemilihan) dan minit mesyuarat pemilihan Tokoh Murid 2024/2025 (aspek akademik, kepimpinan dan kokurikulum). Panduan sekolah, bukan skema rasmi KPM.</p></details>`;
+const UNDI={kls:''};
+// teachers' names from the AJK lists (lines that start with Pn/En/Cik/Ustazah…), for the name box
+const guruList=()=>[...new Set(D.ajk.flatMap(j=>ahliList(j.ahli).map(m=>m.nama.replace(/\s*\(.*$/,'').trim())).filter(n=>HONOR.test(n)))].sort();
+// a pupil's other anugerah by category (Kokurikulum with its achievement), shown as evidence beside every candidate name
+function prestasi(s,aid){
+  const by={};(D.penerima||[]).filter(p=>p.aid!==aid&&p.nama===s.nama&&p.kelas===s.kelas).forEach(p=>{const a=D.anugerah.find(x=>x.id===p.aid);if(a)(by[a.kat]=by[a.kat]||[]).push(esc(a.nama)+(a.kat==='KO'&&p.catatan?` (${esc(p.catatan)})`:''))});
+  const ks=Object.keys(CAT).filter(k=>by[k]);
+  return `<span class="prf">${ks.length?ks.map(k=>`<span><b>${CAT[k]}:</b> ${by[k].join(', ')}</span>`).join(''):'<span>Tiada anugerah lain</span>'}</span>`;
+}
+async function drawUndi(aid,ro){
+  if(!ROSTER&&!ROSTER_ERR){try{await loadRoster()}catch(e){ROSTER_ERR=e.message}if(DRAWER!==aid)return}
+  const box=$('#undip');if(!box)return;
+  const guru=t6n(store.get('guru','')),V=(D.undi||[]).filter(v=>v.aid===aid),key=x=>x.nama+'|'+x.kelas;
+  // secret ballot: only the admin's data carries guru; a teacher's own vote is remembered on this device
+  const saya=store.get('undiSaya',{}),mine=PIN?V.find(v=>v.guru===guru):saya[aid+'|'+guru],mk=mine?key(mine):'';
+  const classes=(ROSTER?[...new Set(ROSTER.map(r=>r.kelas))]:KLS.map(k=>'6 '+k)).filter(k=>tahunOf(k)==='6').sort(classSort);
+  const studs=UNDI.kls&&ROSTER?ROSTER.filter(r=>r.kelas===UNDI.kls).sort((x,y)=>x.nama.localeCompare(y.nama)):[];
+  const tally=[...V.reduce((m,v)=>{const k=key(v);(m.get(k)||m.set(k,{nama:v.nama,kelas:v.kelas,guru:[]}).get(k)).guru.push(v.guru);return m},new Map()).values()]
+    .sort((x,y)=>y.guru.length-x.guru.length||x.nama.localeCompare(y.nama));
+  const won=new Set((D.penerima||[]).filter(p=>p.aid===aid).map(key));
+  box.innerHTML=`<h5>UNDIAN CALON</h5>${ro?'<p class="warnmsg">Undian ditutup kerana anugerah ini dikunci.</p>':`<p class="muted" style="font-size:12.5px;margin-bottom:8px">Baca kriteria di atas, tulis nama anda, pilih kelas, kemudian pilih <b>seorang</b> murid. Anda boleh menukar atau membatalkan undian anda.</p>
+  ${ROSTER_ERR?`<p class="warnmsg">${esc(ROSTER_ERR)}</p>`:''}
+  <div class="addrow"><input class="fi" id="unGuru" list="unGuruL" maxlength="60" placeholder="1. Nama guru" value="${esc(store.get('guru',''))}" aria-label="Nama guru" autocomplete="off"><datalist id="unGuruL">${guruList().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+  <select class="fi" id="unKls" aria-label="Pilih kelas" ${guru?'':'disabled'}><option value="">2. Pilih kelas Tahun 6…</option>${classes.map(k=>`<option ${k===UNDI.kls?'selected':''}>${esc(k)}</option>`).join('')}</select></div>
+  ${guru&&mine?`<p class="myvote">Undian anda: <b>${esc(mine.nama)}</b> (${esc(mine.kelas)}) <button class="btn ghost sm" id="unBatal">Batal undian</button></p>`:''}
+  ${guru&&UNDI.kls?studs.length?`<p class="muted" style="font-size:12.5px;margin:10px 0 6px">3. Pilih seorang murid · ${studs.length} murid dalam ${esc(UNDI.kls)}</p><div class="studs">${studs.map(r=>`<label class="st"><input type="radio" name="undi" data-n="${esc(r.nama)}" ${mk===key(r)?'checked':''}><span>${esc(r.nama)}${prestasi(r,aid)}</span>${mk===key(r)?'<small>UNDI ANDA</small>':''}</label>`).join('')}</div>`:`<p class="muted" style="margin-top:8px">Tiada murid dalam senarai untuk ${esc(UNDI.kls)}.</p>`:''}`}
+  ${tally.length?`<h5 style="margin-top:16px">KEPUTUSAN UNDIAN</h5><p class="muted" style="font-size:12.5px;margin-bottom:6px">${V.length} undian · ${tally.length} calon${PIN?' · nama pengundi dilihat oleh admin sahaja':''}</p>${tally.map((t,i)=>`<div class="rcp"><span class="k">${esc(t.kelas)}</span><span>${i+1}. ${esc(t.nama)}${prestasi(t,aid)}${PIN?`<small class="pgd">Pengundi: ${esc(t.guru.join(', '))}</small>`:''}</span><span class="rcp-act"><span class="tg">${t.guru.length} undi</span>${!PIN?'':won.has(key(t))?'<span class="tg ok">✓ Dilantik</span>':`<button class="btn sm" data-lantik="${esc(key(t))}">Lantik</button>`}</span></div>`).join('')}`:''}`;
+  $('#unGuru')&&($('#unGuru').onchange=e=>{store.set('guru',e.target.value.trim());drawUndi(aid,ro)});
+  $('#unKls')&&($('#unKls').onchange=e=>{UNDI.kls=e.target.value;drawUndi(aid,ro)});
+  const remember=v=>{const s=store.get('undiSaya',{});if(v)s[aid+'|'+guru]=v;else delete s[aid+'|'+guru];store.set('undiSaya',s)};
+  $$('#undip .studs input').forEach(c=>c.onchange=async()=>{const nama=c.dataset.n,kelas=UNDI.kls;
+    if(mine&&!confirm(`Tukar undian anda daripada ${mine.nama} kepada ${nama}?`))return drawUndi(aid,ro);
+    $$('#undip .studs input').forEach(x=>x.disabled=true);
+    try{await call('undi',{aid,guru,nama,kelas},{quiet:true});remember({nama,kelas});drawUndi(aid,ro);toast(`Undian anda untuk ${nama} disimpan`)}
+    catch(e){toast(e.message,true);refresh()}});
+  $('#unBatal')&&($('#unBatal').onclick=e=>{if(!confirm(`Batalkan undian anda untuk ${mine.nama}?`))return;
+    busy(e.currentTarget,async()=>{await call('delUndi',{aid,guru},{quiet:true});remember(null);drawUndi(aid,ro);toast('Undian anda dibatalkan')})});
+  $$('#undip [data-lantik]').forEach(b=>b.onclick=()=>{const t=tally.find(x=>key(x)===b.dataset.lantik);if(!t||!confirm(`Lantik ${t.nama} (${t.kelas}) sebagai penerima ${D.anugerah.find(a=>a.id===aid)?.nama||'anugerah ini'}?`))return;
+    busy(b,async()=>{await call('addPenerima',{rows:[{id:'r'+uid(),aid,kelas:t.kelas,tahun:tahunOf(t.kelas),nama:t.nama,catatan:''}]},{quiet:true});toast(`${t.nama} dilantik`)})});
+}
 async function drawAdd(aid){
   if(!ROSTER&&!ROSTER_ERR){$('#addp').innerHTML='<h5>TAMBAH PENERIMA</h5><p class="muted">Memuatkan senarai murid…</p>';try{await loadRoster()}catch(e){ROSTER_ERR=e.message}if(DRAWER!==aid)return}
   const box=$('#addp');if(!box)return;
