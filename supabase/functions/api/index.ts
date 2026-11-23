@@ -178,6 +178,12 @@ async function dikunci(): Promise<string[]> {
 // PIN-less entry (add, remove, tick Diterima) is refused on a locked anugerah; the admin PIN bypasses it
 async function checkKunci(r: any) {
   if (!['addPenerima', 'delPenerima', 'setStatus', 'setCatatan', 'undi', 'delUndi'].includes(r.action)) return;
+  // owner's choice (2026-11-23): Tokoh Murid is chosen by the teachers' vote; only the admin (PIN) appoints the winner
+  if (r.action === 'addPenerima') {
+    const ids = [...new Set((r.rows || []).map((x: any) => cell(x.aid)))];
+    if (ids.length && (await q(db.from('anugerah').select('id').in('id', ids).ilike('nama', '%tokoh murid%'))).length)
+      throw new Error('Tokoh Murid dipilih melalui undian guru. Muat semula halaman untuk mengundi.');
+  }
   const k = await dikunci();
   if (!k.length) return;
   const aids = r.action === 'addPenerima' ? (r.rows || []).map((x: any) => cell(x.aid))

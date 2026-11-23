@@ -845,6 +845,7 @@ function localCall(r){
   const db=ldb();
   const open=['roster','addPenerima','delPenerima','setStatus','setCatatan','setT6','delT6Foto','setHadir','setHadirT6','undi','delUndi'].includes(r.action)||(r.action==='upload'&&r.purpose==='t6'); // same as the server: Anugerah and Majlis T6 entry need no PIN, locking an anugerah does
   if(r.action!=='public'&&(!open||r.pin)&&String(r.pin)!==DEMO_PIN)throw Error('PIN salah');
+  if(!r.pin&&r.action==='addPenerima'&&r.rows.some(x=>isTokoh(db.anugerah.find(a=>a.id===x.aid))))throw Error('Tokoh Murid dipilih melalui undian guru. Muat semula halaman untuk mengundi.'); // same as the server: only the admin appoints
   if(!r.pin&&['addPenerima','delPenerima','setStatus','setCatatan','undi','delUndi'].includes(r.action)){const k=db.settings.dikunci||[],aids=r.action==='addPenerima'?r.rows.map(x=>x.aid):['undi','delUndi'].includes(r.action)?[r.aid]:db.penerima.filter(p=>r.ids.includes(p.id)).map(p=>p.aid);
     if(aids.some(a=>k.includes(a)))throw Error('Anugerah ini dikunci. Minta admin membuka kunci.')}
   const out={ok:true};
