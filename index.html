@@ -2351,7 +2351,7 @@ function renderTayang(){
   if(!PIN){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Mod Tayang untuk admin sahaja. Masukkan PIN admin di Tetapan.</p></div>`;return}
   if(!D.penerima){box.innerHTML=`<div class="empty"><p>Senarai penerima belum dimuatkan.</p></div>`;return}
   const warn=tayangCheck(),sh=n=>esc(n.replace(/^Anugerah\s+/i,''));
-  box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
+  box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Tayangan dibuka dalam skrin penuh (<b>F</b> untuk tukar, <b>Esc</b> untuk keluar). Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
   +(warn.length?`<div class="card" style="margin-bottom:16px;border-color:var(--red,#c0392b)"><p class="warnmsg" style="margin:0 0 6px"><b>Semak:</b> rekod berikut tidak sepadan dengan susunan tayangan.</p><ul style="margin:0;padding-left:1.2em">${warn.map(([t,n])=>`<li>${esc(t)} — ${n} rekod</li>`).join('')}</ul></div>`:'')
   +TAYANG.map(d=>`<h3 class="tday">${esc(tarikhHari(d.hari).toUpperCase())}</h3><div class="tay">${d.secs.map(tayangSec).map((s,j)=>`<div class="card tay-s"><div>${s.b?`<small>BAHAGIAN ${s.b}</small>`:''}<b>${esc(s.t)}</b><span class="muted" style="font-size:12.5px">${tahunTeks(s.y)} · ${s.aws.map(a=>sh(a.nama)).join(' · ')||'Tiada anugerah sepadan'}</span></div><div class="tay-n"><b>${s.ps.length}</b><small>murid · ${s.rows} rekod</small></div><button class="btn sm" data-th="${d.hari}" data-tj="${j}" ${s.ps.length?'':'disabled'}><svg class="i"><use href="#i-stage"/></svg>Tayang</button></div>`).join('')}</div>`).join('');
   $$('#v-tayang [data-th]').forEach(b=>b.onclick=()=>openTayang(b.dataset.th,+b.dataset.tj));
@@ -2368,6 +2368,7 @@ function openTayang(hari,j=0){
   if(!PIN){go('tetapan');return toast('Buka mod admin dahulu',true)}
   SG.mode='tayang';SG.day=hari;TCACHE.clear();SG.i=Math.max(0,slides().findIndex(x=>!x.s&&x.j===j));
   $('#stage').classList.remove('ajk');$('#stage').classList.add('on','tayang');stageOpts();showSlide();
+  if(!document.fullscreenElement)toggleFull(); // the Tayang click is the user gesture browsers require for full screen
 }
 // shortcut: posters are drawn once per show (current ±2 kept); an edit made mid-show appears after reopening Mod Tayang
 const TCACHE=new Map();let TTOK=0;
