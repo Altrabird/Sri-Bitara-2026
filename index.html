@@ -229,6 +229,8 @@ section.view.anim{animation:viewIn .55s var(--ease)}
 .rcp{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;background:var(--soft);margin-bottom:6px;font-size:13.5px}
 .rcp .k{font-size:11.5px;color:var(--muted);letter-spacing:.06em}
 .rcp small{display:block;color:var(--gold);font-size:11px;letter-spacing:.08em}
+.rcp small.ts{color:var(--muted);letter-spacing:0}
+.baru{color:var(--warn);font-weight:700;font-size:11px;letter-spacing:.06em;white-space:nowrap}
 .tg{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);min-height:34px;white-space:nowrap}
 .tg.ok{background:rgba(63,182,139,.15);border-color:var(--ok);color:var(--ok-text)}
 span.tg{display:inline-flex;align-items:center}
@@ -873,7 +875,7 @@ function localCall(r){
     case 'saveTable':db[r.table]=r.rows;break;
     case 'replacePenerima':db.anugerah=r.anugerah;db.penerima=r.penerima;break;
     case 'roster':return {ok:true,roster:['1','2','3','4','5','6'].flatMap(t=>KLS.flatMap(k=>[1,2,3,4].map(n=>({nama:`MURID CONTOH ${t}${k.slice(0,3)} ${n}`,kelas:t+' '+k}))))};
-    case 'addPenerima':{const ko=new Set(db.anugerah.filter(a=>a.kat==='KO').map(a=>a.id)),key=x=>x.aid+'|'+x.nama+'|'+x.kelas+(ko.has(x.aid)?'|'+x.catatan:''),have=new Set(db.penerima.map(key));const add=r.rows.filter(x=>!have.has(key(x))&&have.add(key(x))).map(x=>({...x,status:''}));db.penerima.push(...add);out.added=add.length;break}
+    case 'addPenerima':{const ko=new Set(db.anugerah.filter(a=>a.kat==='KO').map(a=>a.id)),key=x=>x.aid+'|'+x.nama+'|'+x.kelas+(ko.has(x.aid)?'|'+x.catatan:''),have=new Set(db.penerima.map(key));const add=r.rows.filter(x=>!have.has(key(x))&&have.add(key(x))).map(x=>({...x,status:'',ditambah:new Date().toISOString()}));db.penerima.push(...add);out.added=add.length;break}
     case 'delPenerima':db.penerima=db.penerima.filter(p=>!r.ids.includes(p.id));break;
     case 'undi':{const v={aid:String(r.aid||''),nama:t6n(r.nama),kelas:t6n(r.kelas),guru:t6n(r.guru).slice(0,60),masa:new Date().toISOString()}; // one vote per teacher: a new vote replaces the old one
       if(!v.aid||!v.nama||!v.kelas||!v.guru)throw Error('Undian tidak lengkap');db.undi=(db.undi||[]).filter(x=>!(x.aid===v.aid&&x.guru===v.guru)).concat(v);break}
@@ -967,6 +969,14 @@ const isDay=t=>!t.masa; // tentatif row with no time = day heading
 const ahliList=t=>lines(t).map(x=>({nama:x.replace(/\s*\(K\)\s*$/i,''),k:/\(K\)\s*$/i.test(x)}));
 const imgURL=(g,w)=>g.src||`https://drive.google.com/thumbnail?id=${encodeURIComponent(g.fid)}&sz=w${w}`;
 const logoURL=()=>{const l=D.settings.logo;return !l?'':/^(data|https?):/.test(l)?l:`https://drive.google.com/thumbnail?id=${encodeURIComponent(l)}&sz=w400`};
+// ditambah = time the Supabase server saved the name (column default now()), shown in Malaysia time whatever the phone's zone
+// owner's choice (2026-11-27): names added from 26 Nov onward (anugerah opened for last updates) are marked *BAHARU
+const BARU_SEJAK=Date.parse('2026-11-26T00:00:00+08:00');
+const tTambah=g=>Math.max(0,...g.map(p=>Date.parse(p.ditambah)||0));
+const fmtTambah=t=>new Date(t).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+const isBaru=p=>(Date.parse(p.ditambah)||0)>=BARU_SEJAK;
+const baruN=aid=>new Set([...(D.penerima||[]),...(D.peserta||[])].filter(p=>p.aid===aid&&isBaru(p)).map(p=>p.nama+'|'+p.kelas)).size;
+const baruTag=aid=>{const n=baruN(aid);return n?` <span class="baru">*BAHARU ${n}</span>`:''};
 const byKelas=(a,b)=>(+a.tahun||0)-(+b.tahun||0)||KLS.indexOf((a.kelas.split(' ')[1]||''))-KLS.indexOf((b.kelas.split(' ')[1]||''))||a.kelas.localeCompare(b.kelas)||a.nama.localeCompare(b.nama);
 const canNames=()=>!!(D.penerima&&(PIN||D.settings.showNames));
 
@@ -1245,7 +1255,7 @@ function renderAw(){
   if(AWMODE==='trofi')return renderTrofi();
   const q=$('#awQ').value.toLowerCase();
   const list=D.anugerah.filter(a=>(awCat==='ALL'||a.kat===awCat)&&a.nama.toLowerCase().includes(q));
-  $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a),t=+a.sasaran||0;return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}</div><h4>${esc(a.nama)}</h4><div class="muted" style="font-size:11.5px;margin:-4px 0 8px">${esc(hariLabel(a))}</div><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b>${t?` / ${t}`:''} penerima</span></div>${t?`<div class="prog t ${c.n>t?'over':''}" title="Sasaran ${t} penerima"><i style="width:${Math.min(100,c.n/t*100)}%"></i></div>`:''}${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
+  $('#awGrid').innerHTML=list.length?list.map((a,n)=>{const c=counts(a),t=+a.sasaran||0;return `<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div class="cat">${esc((CAT[a.kat]||'').toUpperCase())}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}${baruTag(a.id)}</div><h4>${esc(a.nama)}</h4><div class="muted" style="font-size:11.5px;margin:-4px 0 8px">${esc(hariLabel(a))}</div><div class="row"><span>${c.d?`${c.d} sudah menerima`:'&nbsp;'}</span><span><b>${c.n}</b>${t?` / ${t}`:''} penerima</span></div>${t?`<div class="prog t ${c.n>t?'over':''}" title="Sasaran ${t} penerima"><i style="width:${Math.min(100,c.n/t*100)}%"></i></div>`:''}${c.n?`<div class="prog"><i style="width:${c.d/c.n*100}%"></i></div>`:''}</button>`}).join(''):`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-award"/></svg><p>Tiada anugerah ditemui.</p></div>`;
   $$('#awGrid .aw').forEach(b=>b.onclick=()=>openAw(b.dataset.id));
 }
 /* ---------- persembahan ---------- */
@@ -1254,7 +1264,7 @@ function renderPs(fromPoll){
   const sel=$('#psSel'),sv=D.persembahan.some(a=>a.id===sel.value)?sel.value:'';
   sel.innerHTML='<option value="">Semua persembahan</option>'+D.persembahan.map(a=>`<option value="${esc(a.id)}" ${a.id===sv?'selected':''}>${esc(a.nama)}</option>`).join('');
   const q=$('#psQ').value.toLowerCase(),list=D.persembahan.filter(a=>a.nama.toLowerCase().includes(q));
-  $('#psGrid').innerHTML=list.length?list.map((a,n)=>`<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#i-spark"/></svg></div><div class="cat">PERSEMBAHAN ${n+1}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}</div><h4>${esc(a.nama)}</h4><div class="muted" style="font-size:11.5px;margin:-4px 0 8px">${esc(hariLabel(a))}</div><div class="row"><span>&nbsp;</span><span><b>${counts(a).n}</b> murid</span></div></button>`).join('')
+  $('#psGrid').innerHTML=list.length?list.map((a,n)=>`<button class="card aw rise" style="animation-delay:${Math.min(n,16)*.035}s" data-id="${esc(a.id)}"><div class="medal"><svg class="i"><use href="#i-spark"/></svg></div><div class="cat">PERSEMBAHAN ${n+1}${isLocked(a.id)?' <svg class="i" style="width:12px;height:12px;vertical-align:-1px" aria-label="Dikunci"><use href="#i-lock"/></svg>':''}${baruTag(a.id)}</div><h4>${esc(a.nama)}</h4><div class="muted" style="font-size:11.5px;margin:-4px 0 8px">${esc(hariLabel(a))}</div><div class="row"><span>&nbsp;</span><span><b>${counts(a).n}</b> murid</span></div></button>`).join('')
     :`<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-spark"/></svg><p>${D.persembahan.length?'Tiada persembahan ditemui.':PIN?'Belum ada persembahan. Tambah persembahan di bawah.':'Belum ada persembahan.'}</p></div>`;
   $$('#psGrid .aw').forEach(b=>b.onclick=()=>openAw(b.dataset.id));
   if(fromPoll&&PIN)return; // keep unsaved edits in the editor below
@@ -1577,7 +1587,8 @@ function openAw(id){
     const edBtns=p=>`<button class="del-p ed" data-ed="${esc(p.id)}" aria-label="Ubah catatan ${esc(p.nama)}${p.catatan?' ('+esc(p.catatan)+')':''}"><svg class="i" style="width:16px"><use href="#i-pen"/></svg></button><button class="del-p" data-del="${esc(p.id)}" aria-label="Padam ${esc(p.nama)}${p.catatan?' ('+esc(p.catatan)+')':''}"><svg class="i" style="width:16px"><use href="#i-trash"/></svg></button>`;
     const cat=p=>ADD.ed===p.id&&!ro?`<form class="ed-c" data-id="${esc(p.id)}"><input class="fi" maxlength="80" value="${esc(p.catatan)}" placeholder="${a.kat==='KO'?'Aktiviti – pencapaian – peringkat':'Catatan'}" aria-label="Catatan ${esc(p.nama)}"><button class="btn sm">Simpan</button></form>`:p.catatan?`<small>${esc(p.catatan)}</small>`:'';
     const row=g=>{const p=g[0],one=g.length===1,got=g.every(x=>x.status==='Diterima');
-      return `<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${one?cat(p):g.map(x=>`<div class="ach">${cat(x)||'<small>—</small>'}${ro?'':edBtns(x)}</div>`).join('')}</span><span class="rcp-act">${fotoBtn(p)}${isP?`<button class="del-p ed poster-open" data-ps-key="${esc(p.nama+'|'+p.kelas)}" title="Poster" aria-label="Poster ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button>`:''}${isP&&ro?'':ro?`<span class="tg ${got?'ok':''}">${got?'✓ Diterima':'Belum'}</span>`:`${isP?'':`<button class="tg ${got?'ok':''}" data-ids="${esc(g.map(x=>x.id).join(','))}" aria-pressed="${got}">${got?'✓ Diterima':'Belum'}</button>`}${one?edBtns(p):''}`}</span></div>`};
+      const t=tTambah(g);
+      return `<div class="rcp"><span class="k">${esc(p.kelas)}</span><span>${esc(p.nama)}${g.some(isBaru)?' <span class="baru">*BAHARU</span>':''}${one?cat(p):g.map(x=>`<div class="ach">${cat(x)||'<small>—</small>'}${ro?'':edBtns(x)}</div>`).join('')}${t?`<small class="ts">Ditambah ${fmtTambah(t)}</small>`:''}</span><span class="rcp-act">${fotoBtn(p)}${isP?`<button class="del-p ed poster-open" data-ps-key="${esc(p.nama+'|'+p.kelas)}" title="Poster" aria-label="Poster ${esc(p.nama)}"><svg class="i" style="width:16px"><use href="#i-img"/></svg></button>`:''}${isP&&ro?'':ro?`<span class="tg ${got?'ok':''}">${got?'✓ Diterima':'Belum'}</span>`:`${isP?'':`<button class="tg ${got?'ok':''}" data-ids="${esc(g.map(x=>x.id).join(','))}" aria-pressed="${got}">${got?'✓ Diterima':'Belum'}</button>`}${one?edBtns(p):''}`}</span></div>`};
     body=ps.length?Object.entries(groups).map(([t,arr])=>`<div class="tahun"><h5>${t==='-'?'LAIN-LAIN':'TAHUN '+esc(t)}</h5>${arr.map(row).join('')}</div>`).join(''):`<div class="empty"><p>Tiada ${isP?'murid':'penerima'} untuk ${W} ini.</p></div>`;
   }else body=`<div class="empty"><svg class="i"><use href="#i-award"/></svg><p>Senarai nama penerima akan diumumkan pada hari majlis.</p></div>`;
   $('#drawer').innerHTML=`<header><div class="medal"><svg class="i"><use href="#${CATIC[a.kat]||'i-award'}"/></svg></div><div><small style="color:var(--gold);letter-spacing:.2em;font-size:11px;font-weight:700">${esc((isP?'Persembahan':CAT[a.kat]||'').toUpperCase())}</small><h3>${esc(a.nama)}</h3><small class="muted">${c.n}${+a.sasaran?` / ${+a.sasaran}`:''} ${isP?'murid terlibat':'penerima'}${+a.sasaran&&c.n>+a.sasaran?' (melebihi sasaran)':''}${ps.length>c.n?` · ${ps.length} pencapaian`:''}${c.d?` · ${c.d} sudah menerima`:''}</small></div><button class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></header>
