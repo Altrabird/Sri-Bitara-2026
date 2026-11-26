@@ -2017,7 +2017,7 @@ const LAP_CSS=`.lap{background:#fff;color:#111;font:13px/1.55 Arial,Helvetica,sa
 .lap p{margin:6px 0}
 .lap table{width:100%;border-collapse:collapse;margin:6px 0}
 .lap th,.lap td{border:1px solid #555;padding:5px 8px;text-align:left;vertical-align:top;color:#111;background:none;position:static;letter-spacing:0;font-size:12.5px;font-weight:400}
-.lap th{background:#eee;font-weight:700}.lap td.n{text-align:right}.lap tr.tot td{font-weight:700;background:#f4f4f4}
+.lap th{background:#eee;font-weight:700}.lap td.n{text-align:right}.lap td.c,.lap th.c{text-align:center}.lap tr.tot td{font-weight:700;background:#f4f4f4}
 .lap ul{margin:2px 0;padding-left:20px}
 .lap .warn{border:1px solid #c80;background:#fff6e0;padding:8px 12px;margin-bottom:14px}
 .lap table.sig td,.lap table.gal td{border:0;width:50%;padding:8px;vertical-align:top}.lap table.sig{margin-top:40px}
@@ -2311,15 +2311,17 @@ addEventListener('keydown',e=>{
 
 /* ---------- mod tayang: one poster per pupil, in the order of the tentatif ---------- */
 // owner's running order (2026-11-26). Tahun 6 received their awards on 21/11, so only the Ikon / Tokoh Murid sections show them.
+// owner's choice (2026-11-26): aw order = column order of the Senarai penerima; AINS (ikut) keeps the order of the list provided, not by class
 const awRe=(...ns)=>ns.map(n=>new RegExp('^Anugerah '+n+'$','i'));
 const TAYANG=[
   {hari:'2',secs:[
-    {t:'Anugerah Hal Ehwal Murid · Tahap 1',k:'H',y:'123',aw:awRe('Pengawas','Duta Sahsiah','Ketua Kelas.*','Kehadiran Penuh')},
-    {t:'Anugerah Hal Ehwal Murid · Tahap 2',k:'H',y:'45',aw:awRe('Pengawas','Pengawas PSS Cemerlang','Pengawas PSS','Pembimbing Rakan Sebaya','Duta Sahsiah','Ketua Kelas.*','Kehadiran Penuh')}]},
+    {t:'Anugerah Hal Ehwal Murid · Tahap 1',sh:'HEM Tahap 1',k:'H',y:'123',aw:awRe('Ketua Kelas.*','Pengawas','Duta Sahsiah','Kehadiran Penuh')},
+    {t:'Anugerah Hal Ehwal Murid · Tahap 2',sh:'HEM Tahap 2',k:'H',y:'45',aw:awRe('Ketua Kelas.*','Pengawas','Pengawas PSS','Pengawas PSS Cemerlang','Duta Sahsiah','Pembimbing Rakan Sebaya','Kehadiran Penuh')}]},
   {hari:'3',secs:[
-    {b:1,t:'PITS · PLaN · AINS · Pemulihan Khas',k:'K',y:'12345',aw:awRe('PITS','PLaN','AINS','Pemulihan Khas')},
-    {b:2,t:'Anugerah Emas PBD · Mata Pelajaran Terbaik Mengikut Kelas',k:'K',y:'12345',aw:awRe('Bahasa Melayu','Bahasa Inggeris','Pendidikan Agama Islam','Pendidikan Moral','Matematik','Sains','Sejarah','Bahasa Arab','RBT','PSV','Pendidikan Muzik','PJPK')},
-    {b:3,t:'Anugerah Murid Cemerlang Kokurikulum 2026',k:'KO',y:'12345',aw:[/Penglibatan Luar Aktif/i,/Sukan/i,/Kelab/i,/Beruniform/i]},
+    {b:1,t:'PITS · PLaN · Pemulihan Khas',sh:'B1 PITS PLaN Pemulihan',k:'K',y:'12345',aw:awRe('PITS','PLaN','Pemulihan Khas')},
+    {b:1,t:'Anugerah AINS',sh:'B1 AINS',ikut:1,k:'K',y:'12345',aw:awRe('AINS')},
+    {b:2,t:'Anugerah Emas PBD · Mata Pelajaran Terbaik Mengikut Kelas',sh:'B2 Emas PBD',k:'K',y:'12345',aw:awRe('Bahasa Melayu','Bahasa Inggeris','Pendidikan Agama Islam','Pendidikan Moral','Matematik','Sains','Sejarah','Bahasa Arab','RBT','PSV','Pendidikan Muzik','PJPK')},
+    {b:3,t:'Anugerah Murid Cemerlang Kokurikulum 2026',sh:'B3 Kokurikulum',k:'KO',y:'12345',aw:[/Sukan/i,/Kelab/i,/Beruniform/i,/Penglibatan Luar Aktif/i]},
     {b:4,k:'IKH',y:'123456',aw:[/./]},{b:4,k:'IKO',y:'123456',aw:[/./]},{b:4,k:'TM',y:'123456',aw:[/./]}]}
 ];
 const tahunP=p=>p.tahun||tahunOf(p.kelas);
@@ -2331,7 +2333,7 @@ function tayangSec(sec){
     const k=t6Key(p),s=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[]},it=s.items.find(i=>i.a.id===p.aid);
     if(it){it.ps.push(p);it.p={...it.p,catatan:it.ps.map(x=>x.catatan).filter(Boolean).join('; ')}}else s.items.push({a:byId.get(p.aid),p,ps:[p]});
     m.set(k,s)});
-  const ps=[...m.values()].sort((a,b)=>classSort(a.kelas,b.kelas)||a.nama.localeCompare(b.nama));
+  const ps=[...m.values()];if(!sec.ikut)ps.sort((a,b)=>classSort(a.kelas,b.kelas)||a.nama.localeCompare(b.nama)); // ikut: first-seen order of D.penerima = the list as provided
   ps.forEach(s=>s.items.sort((x,y)=>rank(x.a)-rank(y.a)||x.a.nama.localeCompare(y.a.nama)));
   aws.sort((x,y)=>rank(x)-rank(y)||x.nama.localeCompare(y.nama));
   return {...sec,t:sec.t||aws.map(a=>a.nama).join(' · ')||'Anugerah '+POSTER_STYLE[sec.k].title,aws,ps,rows:ps.reduce((n,s)=>n+s.items.reduce((m,i)=>m+i.ps.length,0),0)};
@@ -2343,6 +2345,9 @@ function tayangCheck(){
   (D.penerima||[]).forEach(p=>{const a=D.anugerah.find(x=>x.id===p.aid);if(!a||a.kat==='P')return;const h=hariOf(a,p),d=shown.get(p.id);
     if(d&&d!==h)add(`${a.nama}: ditayang ${hariPendek(d)} tetapi hari penyampaian ${hariPendek(h)}`);
     else if(!d&&TAYANG.some(x=>x.hari===h)&&tahunP(p)!=='6')add(`${a.nama}: tidak ditayang (Tahun ${tahunP(p)||'?'})`)});
+  // AINS is a separate list, so a pupil also in another Bahagian 1 list would go up twice
+  TAYANG.forEach(d=>{const ss=d.secs.map(tayangSec);ss.filter(s=>s.ikut).forEach(s=>{const o=ss.filter(x=>x!==s&&x.b===s.b),k=new Set(o.flatMap(x=>x.ps.map(t6Key)));
+    s.ps.filter(p=>k.has(t6Key(p))).forEach(p=>add(`${p.nama} (${p.kelas}) dalam senarai ${s.t} dan ${o.map(x=>x.t).join(', ')}: naik pentas dua kali`))})});
   return Object.entries(out);
 }
 const tahunTeks=y=>y.length>5?'Tahun 1–6':y.length>1?`Tahun ${y[0]}–${y.at(-1)}`:'Tahun '+y;
@@ -2353,8 +2358,33 @@ function renderTayang(){
   const warn=tayangCheck(),sh=n=>esc(n.replace(/^Anugerah\s+/i,''));
   box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Tayangan dibuka dalam skrin penuh (<b>F</b> untuk tukar, <b>Esc</b> untuk keluar). Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
   +(warn.length?`<div class="card" style="margin-bottom:16px;border-color:var(--red,#c0392b)"><p class="warnmsg" style="margin:0 0 6px"><b>Semak:</b> rekod berikut tidak sepadan dengan susunan tayangan.</p><ul style="margin:0;padding-left:1.2em">${warn.map(([t,n])=>`<li>${esc(t)} — ${n} rekod</li>`).join('')}</ul></div>`:'')
-  +TAYANG.map(d=>`<h3 class="tday">${esc(tarikhHari(d.hari).toUpperCase())}</h3><div class="tay">${d.secs.map(tayangSec).map((s,j)=>`<div class="card tay-s"><div>${s.b?`<small>BAHAGIAN ${s.b}</small>`:''}<b>${esc(s.t)}</b><span class="muted" style="font-size:12.5px">${tahunTeks(s.y)} · ${s.aws.map(a=>sh(a.nama)).join(' · ')||'Tiada anugerah sepadan'}</span></div><div class="tay-n"><b>${s.ps.length}</b><small>murid · ${s.rows} rekod</small></div><button class="btn sm" data-th="${d.hari}" data-tj="${j}" ${s.ps.length?'':'disabled'}><svg class="i"><use href="#i-stage"/></svg>Tayang</button></div>`).join('')}</div>`).join('');
+  +TAYANG.map(d=>`<h3 class="tday">${esc(tarikhHari(d.hari).toUpperCase())}</h3><div class="tools"><button class="btn ghost sm" data-sn="${d.hari}" data-f="doc"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Word)</button><button class="btn ghost sm" data-sn="${d.hari}" data-f="xlsx"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Excel)</button></div><div class="tay">${d.secs.map(tayangSec).map((s,j)=>`<div class="card tay-s"><div>${s.b?`<small>BAHAGIAN ${s.b}</small>`:''}<b>${esc(s.t)}</b><span class="muted" style="font-size:12.5px">${tahunTeks(s.y)} · ${s.aws.map(a=>sh(a.nama)).join(' · ')||'Tiada anugerah sepadan'}</span></div><div class="tay-n"><b>${s.ps.length}</b><small>murid · ${s.rows} rekod</small></div><button class="btn sm" data-th="${d.hari}" data-tj="${j}" ${s.ps.length?'':'disabled'}><svg class="i"><use href="#i-stage"/></svg>Tayang</button></div>`).join('')}</div>`).join('');
   $$('#v-tayang [data-th]').forEach(b=>b.onclick=()=>openTayang(b.dataset.th,+b.dataset.tj));
+  $$('#v-tayang [data-sn]').forEach(b=>b.onclick=()=>senaraiHari(b.dataset.sn,b.dataset.f));
+}
+// Senarai penerima for the juru acara, in the same order as the posters: one row per pupil (each goes up once),
+// a ✓/✗ column per award that has penerima (Ketua Kelas shows the jawatan); Bahagian 4 is one row, one anugerah
+const kolum=a=>{const n=a.nama.replace(/^(Anugerah|Cemerlang Kokurikulum)\s+/i,'');return /^Pengawas$/i.test(n)?'Pengawas Sekolah':/^Ketua Kelas/i.test(n)?'Ketua Kelas / Penolong':n};
+function senaraiBlok(sec){
+  if(sec.b===4)return {head:['Nama','Kelas','Anugerah'],rows:sec.ps.map(s=>[s.nama,s.kelas,s.items.map(i=>i.a.nama+(i.p.catatan?` (${i.p.catatan})`:'')).join('; ')])};
+  const aws=sec.aws.filter(a=>sec.ps.some(s=>s.items.some(i=>i.a.id===a.id)));
+  if(aws.length<2){const cat=sec.ps.some(s=>s.items.some(i=>i.p.catatan));
+    return {head:['Nama','Kelas',...(cat?['Catatan']:[])],rows:sec.ps.map(s=>[s.nama,s.kelas,...(cat?[s.items.map(i=>i.p.catatan).filter(Boolean).join('; ')]:[])])}}
+  return {head:['Nama','Kelas',...aws.map(kolum)],tick:1,rows:sec.ps.map(s=>[s.nama,s.kelas,...aws.map(a=>{const i=s.items.find(x=>x.a.id===a.id);return !i?'✗':/ketua kelas/i.test(a.nama)&&i.p.catatan||'✓'})])};
+}
+function senaraiHari(hari,fmt){
+  const bl=[];
+  TAYANG.find(x=>x.hari===hari).secs.map(tayangSec).filter(s=>s.ps.length).forEach(s=>{const b=senaraiBlok(s),last=bl.at(-1);
+    if(s.b===4&&last?.b===4)last.rows.push(...b.rows);else bl.push({...b,b:s.b,y:s.y,t:s.b===4?'Anugerah Ikon & Tokoh Murid':s.t,sh:s.b===4?'B4 Ikon & Tokoh Murid':s.sh})});
+  if(!bl.length)return toast('Tiada penerima untuk hari ini',true);
+  bl.forEach(b=>{b.head=['Bil',...b.head];b.rows=b.rows.map((r,i)=>[i+1,...r]);b.h=`${b.b?'Bahagian '+b.b+' · ':''}${b.t} · ${tahunTeks(b.y)} · ${b.rows.length} murid`});
+  const hr=tarikhHari(hari),tajuk='Senarai Penerima · '+hr,base='Senarai-Penerima-'+hariInfo(hari).tarikh,n=bl.reduce((a,b)=>a+b.rows.length,0),sub=`${n} baris · ${bl.length} senarai`;
+  if(fmt==='xlsx')return preview(tajuk,'Excel · '+sub+' · satu helaian bagi setiap senarai',bl.map(b=>`<h2 style="font:700 14px Arial">${esc(b.h)}</h2>${rowsHTML([b.head,...b.rows])}`).join(''),()=>saveSheets(base,Object.fromEntries(bl.map(b=>[b.sh,[b.head,...b.rows]]))));
+  const c=(b,j)=>j===0||b.tick&&j>2?'c':''; // Bil and the ✓/✗ columns centred
+  const tbl=b=>`<table><tr>${b.head.map((x,j)=>`<th class="${c(b,j)}">${esc(x)}</th>`).join('')}</tr>${b.rows.map(r=>`<tr>${r.map((v,j)=>`<td class="${c(b,j)}">${esc(v)}</td>`).join('')}</tr>`).join('')}</table>`;
+  const body=`<div class="lap"><h1>SENARAI PENERIMA · ${esc(hr.toUpperCase())}</h1><div class="sub">${esc(D.settings.nama.toUpperCase())} · SK BANDAR TAWAU</div>${bl.map((b,i)=>`<h2 class="${i?'pb':''}">${esc(b.h)}</h2>${tbl(b)}`).join('')}</div>`;
+  // landscape: Emas PBD has up to 12 subject columns
+  preview(tajuk,'Word · '+sub+' · A4 melintang',body,()=>saveBlob(base+'.doc',new Blob(['\ufeff'+docHTML(tajuk,'<style>@page Seksyen{size:841.9pt 595.3pt;mso-page-orientation:landscape;margin:28pt}div.Seksyen{page:Seksyen}</style><div class="Seksyen">'+body+'</div>')],{type:'application/msword'})));
 }
 function tayangSlides(){
   const d=TAYANG.find(x=>x.hari===SG.day);if(!d||!D.penerima)return [];
