@@ -572,7 +572,7 @@ td select{min-height:34px;border-radius:6px;background:var(--panel);border:1px s
     <button class="nav" data-v="kehadiran"><svg class="i"><use href="#i-check"/></svg>Kehadiran</button>
     <button class="nav" data-v="ajk"><svg class="i"><use href="#i-users"/></svg>AJK</button>
     <button class="nav" data-v="tentatif"><svg class="i"><use href="#i-cal"/></svg>Tentatif</button>
-    <button class="nav adm" data-v="tayang"><svg class="i"><use href="#i-stage"/></svg>Mod Tayang</button>
+    <button class="nav" data-v="tayang"><svg class="i"><use href="#i-stage"/></svg>Mod Tayang</button>
     <button class="nav" data-v="galeri"><svg class="i"><use href="#i-img"/></svg>Galeri</button>
     <button class="nav" data-v="tetapan"><svg class="i"><use href="#i-set"/></svg>Tetapan<svg class="i lock"><use href="#i-lock"/></svg></button>
     <button class="stage-btn adm" onclick="openStage()"><svg class="i"><use href="#i-stage"/></svg>MOD PENTAS</button>
@@ -2353,7 +2353,8 @@ function tayangCheck(){
 const tahunTeks=y=>y.length>5?'Tahun 1–6':y.length>1?`Tahun ${y[0]}–${y.at(-1)}`:'Tahun '+y;
 function renderTayang(){
   const box=$('#v-tayang');
-  if(!PIN){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Mod Tayang untuk admin sahaja. Masukkan PIN admin di Tetapan.</p></div>`;return}
+  // owner's choice (2026-11-27): Mod Tayang is open to everyone, no admin PIN; it only needs the names to be shown (Papar nama penerima)
+  if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Senarai nama penerima belum dibuka. Admin perlu menghidupkan Papar nama penerima di Tetapan.</p></div>`;return}
   if(!D.penerima){box.innerHTML=`<div class="empty"><p>Senarai penerima belum dimuatkan.</p></div>`;return}
   const warn=tayangCheck(),sh=n=>esc(n.replace(/^Anugerah\s+/i,''));
   box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Tayangan dibuka dalam skrin penuh (<b>F</b> untuk tukar, <b>Esc</b> untuk keluar). Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
@@ -2395,7 +2396,7 @@ function tayangOpts(){
   $('#stAw').innerHTML=(d?d.secs.map(tayangSec).map((s,j)=>s.ps.length?`<option value="${j}" ${S[SG.i]?.j===j?'selected':''}>${s.b?s.b+'. ':''}${esc(s.t)} (${s.ps.length})</option>`:'').join(''):'')||'<option>Tiada penerima</option>';
 }
 function openTayang(hari,j=0){
-  if(!PIN){go('tetapan');return toast('Buka mod admin dahulu',true)}
+  if(!canNames())return toast('Senarai nama penerima belum dibuka',true);
   SG.mode='tayang';SG.day=hari;TCACHE.clear();SG.i=Math.max(0,slides().findIndex(x=>!x.s&&x.j===j));
   $('#stage').classList.remove('ajk');$('#stage').classList.add('on','tayang');stageOpts();showSlide();
   if(!document.fullscreenElement)toggleFull(); // the Tayang click is the user gesture browsers require for full screen
