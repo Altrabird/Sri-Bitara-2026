@@ -2323,15 +2323,26 @@ addEventListener('keydown',e=>{
 
 /* ---------- mod tayang: one poster per pupil, in the order of the tentatif ---------- */
 // owner's running order (2026-11-26). Tahun 6 received their awards on 21/11, so only the Ikon / Tokoh Murid sections show them.
-// owner's choice (2026-11-26): aw order = column order of the Senarai penerima; AINS (ikut) keeps the order of the list provided, not by class
+// owner's choice (2026-11-26): aw order = column order of the Senarai penerima
 const awRe=(...ns)=>ns.map(n=>new RegExp('^Anugerah '+n+'$','i'));
+// owner's list Cabaran AINS 2026 (2026-11-27): placement by pupil, names as spelled in the penerima list.
+// Shown Tahap 1 then Tahap 2, each from the last place up to Johan; the placement is printed on the poster.
+const AINS_LIST={
+  'AZZRA HUSNA BINTI ARIZWAN':'JOHAN','MUHAMMED YUSOF ALEXANDER BIN RUDIH':'NAIB JOHAN','MASYITAH BINTI MASDOR':'KETIGA',
+  'AISYAH AZZAHRA BINTI MOHD SHAHRIR':'KE-4','NUR SYIFAA HAURA BINTI SERMAN':'KE-5','TUAH YUSUF BIN KARTAMIN':'KE-6',
+  'NUR ADRYANA BINTI MOHD JAIS':'KE-7','MOHAMAD IQBAL BIN MOHD SAKIR':'KE-8',
+  'NUR AMIRAH FILZAH BINTI RUSLAN':'JOHAN','NAYRA SHAMANIE BINTI MOHD JAIS':'NAIB JOHAN','NUR KHALIQA INARA BINTI ASMIRAN':'KE-5',
+  'NUR QAIRAH AZ ZAHRAH BINTI MUHLIS':'KE-6','AINUR MARDHIAH BINTI MOHD. SHAIFUDDIN':'KE-7'
+},AINS_TEMPAT=new Map(Object.entries(AINS_LIST).map(([n,t])=>[nameKey(n),t]));
+const tempatNo=t=>({JOHAN:1,'NAIB JOHAN':2,KETIGA:3})[t]||+String(t).replace(/\D/g,'')||99;
 const TAYANG=[
   {hari:'2',secs:[
     {t:'Anugerah Hal Ehwal Murid · Tahap 1',sh:'HEM Tahap 1',k:'H',y:'123',aw:awRe('Ketua Kelas.*','Pengawas','Duta Sahsiah','Kehadiran Penuh')},
     {t:'Anugerah Hal Ehwal Murid · Tahap 2',sh:'HEM Tahap 2',k:'H',y:'45',aw:awRe('Ketua Kelas.*','Pengawas','Pengawas PSS','Pengawas PSS Cemerlang','Duta Sahsiah','Pembimbing Rakan Sebaya','Kehadiran Penuh')}]},
   {hari:'3',secs:[
     {b:1,t:'PITS · PLaN · Pemulihan Khas',sh:'B1 PITS PLaN Pemulihan',k:'K',y:'12345',aw:awRe('PITS','PLaN','Pemulihan Khas')},
-    {b:1,t:'Anugerah AINS',sh:'B1 AINS',ikut:1,k:'K',y:'12345',aw:awRe('AINS')},
+    {b:1,t:'Anugerah AINS · Tahap 1',sh:'B1 AINS Tahap 1',tempat:AINS_TEMPAT,tahap:1,k:'K',y:'123',aw:awRe('AINS')},
+    {b:1,t:'Anugerah AINS · Tahap 2',sh:'B1 AINS Tahap 2',tempat:AINS_TEMPAT,tahap:2,k:'K',y:'45',aw:awRe('AINS')},
     {b:2,t:'Anugerah Emas PBD · Mata Pelajaran Terbaik Mengikut Kelas',sh:'B2 Emas PBD',k:'K',y:'12345',aw:awRe('Bahasa Melayu','Bahasa Inggeris','Pendidikan Agama Islam','Pendidikan Moral','Matematik','Sains','Sejarah','Bahasa Arab','RBT','PSV','Pendidikan Muzik','PJPK')},
     {b:3,t:'Anugerah Murid Cemerlang Kokurikulum 2026',sh:'B3 Kokurikulum',k:'KO',y:'12345',aw:[/Sukan/i,/Kelab/i,/Beruniform/i,/Penglibatan Luar Aktif/i]},
     {b:4,k:'IKH',y:'123456',aw:[/./]},{b:4,k:'IKO',y:'123456',aw:[/./]},{b:4,k:'TM',y:'123456',aw:[/./]}]}
@@ -2342,10 +2353,11 @@ function tayangSec(sec){
   const aws=D.anugerah.filter(a=>a.kat!=='P'&&posterKat(a)===sec.k&&sec.aw.some(r=>r.test(a.nama))),byId=new Map(aws.map(a=>[a.id,a])),m=new Map();
   const rank=a=>sec.aw.findIndex(r=>r.test(a.nama));
   (D.penerima||[]).forEach(p=>{const y=tahunP(p);if(!byId.has(p.aid)||!y||!sec.y.includes(y))return;
-    const k=t6Key(p),s=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[]},it=s.items.find(i=>i.a.id===p.aid);
+    const t=sec.tempat?.get(nameKey(p.nama));if(t)p={...p,catatan:[`${t} · TAHAP ${sec.tahap}`,p.catatan].filter(Boolean).join('; ')}; // a copy: the placement shows on the poster and in the Senarai, not saved
+    const k=t6Key(p),s=m.get(k)||{nama:p.nama,kelas:p.kelas,items:[],tempat:t},it=s.items.find(i=>i.a.id===p.aid);
     if(it){it.ps.push(p);it.p={...it.p,catatan:it.ps.map(x=>x.catatan).filter(Boolean).join('; ')}}else s.items.push({a:byId.get(p.aid),p,ps:[p]});
     m.set(k,s)});
-  const ps=[...m.values()];if(!sec.ikut)ps.sort((a,b)=>classSort(a.kelas,b.kelas)||a.nama.localeCompare(b.nama)); // ikut: first-seen order of D.penerima = the list as provided
+  const ps=[...m.values()];ps.sort(sec.tempat?(a,b)=>tempatNo(b.tempat)-tempatNo(a.tempat)||a.nama.localeCompare(b.nama):(a,b)=>classSort(a.kelas,b.kelas)||a.nama.localeCompare(b.nama)); // tempat: last place first, Johan last
   ps.forEach(s=>s.items.sort((x,y)=>rank(x.a)-rank(y.a)||x.a.nama.localeCompare(y.a.nama)));
   aws.sort((x,y)=>rank(x)-rank(y)||x.nama.localeCompare(y.nama));
   return {...sec,t:sec.t||aws.map(a=>a.nama).join(' · ')||'Anugerah '+POSTER_STYLE[sec.k].title,aws,ps,rows:ps.reduce((n,s)=>n+s.items.reduce((m,i)=>m+i.ps.length,0),0)};
@@ -2358,8 +2370,12 @@ function tayangCheck(){
     if(d&&d!==h)add(`${a.nama}: ditayang ${hariPendek(d)} tetapi hari penyampaian ${hariPendek(h)}`);
     else if(!d&&TAYANG.some(x=>x.hari===h)&&tahunP(p)!=='6')add(`${a.nama}: tidak ditayang (Tahun ${tahunP(p)||'?'})`)});
   // AINS is a separate list, so a pupil also in another Bahagian 1 list would go up twice
-  TAYANG.forEach(d=>{const ss=d.secs.map(tayangSec);ss.filter(s=>s.ikut).forEach(s=>{const o=ss.filter(x=>x!==s&&x.b===s.b),k=new Set(o.flatMap(x=>x.ps.map(t6Key)));
-    s.ps.filter(p=>k.has(t6Key(p))).forEach(p=>add(`${p.nama} (${p.kelas}) dalam senarai ${s.t} dan ${o.map(x=>x.t).join(', ')}: naik pentas dua kali`))})});
+  TAYANG.forEach(d=>{const ss=d.secs.map(tayangSec);ss.filter(s=>s.tempat).forEach(s=>{const o=ss.filter(x=>x!==s&&x.b===s.b&&x.tempat!==s.tempat),k=new Set(o.flatMap(x=>x.ps.map(t6Key)));
+    s.ps.filter(p=>k.has(t6Key(p))).forEach(p=>add(`${p.nama} (${p.kelas}) dalam senarai ${s.t} dan ${o.map(x=>x.t).join(', ')}: naik pentas dua kali`));
+    s.ps.filter(p=>!p.tempat).forEach(p=>add(`${s.t}: ${p.nama} (${p.kelas}) tiada kedudukan dalam senarai Cabaran AINS`))});
+    // a name on the owner's list that no AINS section shows (spelling differs from the penerima list, or not entered)
+    const seen=new Set(ss.filter(s=>s.tempat).flatMap(s=>s.ps.map(p=>nameKey(p.nama))));
+    if(ss.some(s=>s.tempat))Object.entries(AINS_LIST).forEach(([n,t])=>seen.has(nameKey(n))||add(`Cabaran AINS: ${n} (${t}) tiada dalam senarai penerima AINS Tahun 1–5 (semak ejaan)`))});
   return Object.entries(out);
 }
 const tahunTeks=y=>y.length>5?'Tahun 1–6':y.length>1?`Tahun ${y[0]}–${y.at(-1)}`:'Tahun '+y;
@@ -2369,7 +2385,7 @@ function renderTayang(){
   if(!canNames()){box.innerHTML=`<div class="empty"><svg class="i"><use href="#i-lock"/></svg><p>Senarai nama penerima belum dibuka. Admin perlu menghidupkan Papar nama penerima di Tetapan.</p></div>`;return}
   if(!D.penerima){box.innerHTML=`<div class="empty"><p>Senarai penerima belum dimuatkan.</p></div>`;return}
   const warn=tayangCheck(),sh=n=>esc(n.replace(/^Anugerah\s+/i,''));
-  box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Tayangan dibuka dalam skrin penuh (<b>F</b> untuk tukar, <b>Esc</b> untuk keluar). Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
+  box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Tayangan dibuka dalam skrin penuh (<b>F</b> untuk tukar, <b>Esc</b> untuk keluar). Anugerah AINS ikut kedudukan Cabaran AINS: Tahap 1 dahulu, kemudian Tahap 2, setiap satu dari tempat terakhir hingga Johan. Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
   +(warn.length?`<div class="card" style="margin-bottom:16px;border-color:var(--red,#c0392b)"><p class="warnmsg" style="margin:0 0 6px"><b>Semak:</b> rekod berikut tidak sepadan dengan susunan tayangan.</p><ul style="margin:0;padding-left:1.2em">${warn.map(([t,n])=>`<li>${esc(t)} — ${n} rekod</li>`).join('')}</ul></div>`:'')
   +TAYANG.map(d=>`<h3 class="tday">${esc(tarikhHari(d.hari).toUpperCase())}</h3><div class="tools"><button class="btn ghost sm" data-sn="${d.hari}" data-f="doc"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Word)</button><button class="btn ghost sm" data-sn="${d.hari}" data-f="xlsx"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Excel)</button></div><div class="tay">${d.secs.map(tayangSec).map((s,j)=>`<div class="card tay-s"><div>${s.b?`<small>BAHAGIAN ${s.b}</small>`:''}<b>${esc(s.t)}</b><span class="muted" style="font-size:12.5px">${tahunTeks(s.y)} · ${s.aws.map(a=>sh(a.nama)).join(' · ')||'Tiada anugerah sepadan'}</span></div><div class="tay-n"><b>${s.ps.length}</b><small>murid · ${s.rows} rekod</small></div>${(z=>`<button class="btn ghost sm" data-tz="${z}" ${TZIP||!s.ps.length?'disabled':''} title="Poster setiap murid bahagian ini, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${TZIP.z===z?TZIP.t:'Poster (ZIP)'}</span></button>`)(d.hari+'-'+j)}<button class="btn sm" data-th="${d.hari}" data-tj="${j}" ${s.ps.length?'':'disabled'}><svg class="i"><use href="#i-stage"/></svg>Tayang</button></div>`).join('')}</div>`).join('');
   $$('#v-tayang [data-th]').forEach(b=>b.onclick=()=>openTayang(b.dataset.th,+b.dataset.tj));
