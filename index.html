@@ -1136,6 +1136,7 @@ $('#awCats').innerHTML=[['ALL','Semua'],...Object.entries(CAT)].map(([k,n])=>`<b
 $$('#awCats .chip').forEach(b=>b.onclick=()=>{awCat=b.dataset.c;$$('#awCats .chip').forEach(x=>x.classList.toggle('on',x===b));renderAw()});
 $('#awQ').oninput=renderAw;
 let AWMODE=store.get('awmode','kad',sessionStorage),AWMULTI=false,AWKLS='',AWCONF=false; // every pupil by default: "> 1 anugerah" hid single-award pupils (e.g. a Ketua Kelas)
+let TZIP=''; // Mod Tayang per-section ZIP progress, kept so a poll re-render still shows it
 let PZIP=''; // 'download all posters' progress; renderAwList (re-run by the poll) shows it on the button
 $$('#awMode button').forEach(b=>b.onclick=()=>{AWMODE=b.dataset.m;store.set('awmode',AWMODE,sessionStorage);$('#awQ').value='';renderAw()});
 // one entry per pupil name; if the source lists the same name under different classes we flag it instead of splitting
@@ -2370,9 +2371,13 @@ function renderTayang(){
   const warn=tayangCheck(),sh=n=>esc(n.replace(/^Anugerah\s+/i,''));
   box.innerHTML=`<p class="muted" style="margin:0 0 14px">Satu poster bagi setiap murid, mengikut kelas (Tahun → kelas → nama). Tekan <b>Tayang</b> untuk mula dari bahagian itu; tayangan bersambung ke bahagian seterusnya pada hari yang sama. Tayangan dibuka dalam skrin penuh (<b>F</b> untuk tukar, <b>Esc</b> untuk keluar). Murid Tahun 6 hanya dalam Bahagian 4 (Ikon &amp; Tokoh Murid).</p>`
   +(warn.length?`<div class="card" style="margin-bottom:16px;border-color:var(--red,#c0392b)"><p class="warnmsg" style="margin:0 0 6px"><b>Semak:</b> rekod berikut tidak sepadan dengan susunan tayangan.</p><ul style="margin:0;padding-left:1.2em">${warn.map(([t,n])=>`<li>${esc(t)} — ${n} rekod</li>`).join('')}</ul></div>`:'')
-  +TAYANG.map(d=>`<h3 class="tday">${esc(tarikhHari(d.hari).toUpperCase())}</h3><div class="tools"><button class="btn ghost sm" data-sn="${d.hari}" data-f="doc"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Word)</button><button class="btn ghost sm" data-sn="${d.hari}" data-f="xlsx"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Excel)</button></div><div class="tay">${d.secs.map(tayangSec).map((s,j)=>`<div class="card tay-s"><div>${s.b?`<small>BAHAGIAN ${s.b}</small>`:''}<b>${esc(s.t)}</b><span class="muted" style="font-size:12.5px">${tahunTeks(s.y)} · ${s.aws.map(a=>sh(a.nama)).join(' · ')||'Tiada anugerah sepadan'}</span></div><div class="tay-n"><b>${s.ps.length}</b><small>murid · ${s.rows} rekod</small></div><button class="btn sm" data-th="${d.hari}" data-tj="${j}" ${s.ps.length?'':'disabled'}><svg class="i"><use href="#i-stage"/></svg>Tayang</button></div>`).join('')}</div>`).join('');
+  +TAYANG.map(d=>`<h3 class="tday">${esc(tarikhHari(d.hari).toUpperCase())}</h3><div class="tools"><button class="btn ghost sm" data-sn="${d.hari}" data-f="doc"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Word)</button><button class="btn ghost sm" data-sn="${d.hari}" data-f="xlsx"><svg class="i"><use href="#i-dl"/></svg>Senarai penerima (Excel)</button></div><div class="tay">${d.secs.map(tayangSec).map((s,j)=>`<div class="card tay-s"><div>${s.b?`<small>BAHAGIAN ${s.b}</small>`:''}<b>${esc(s.t)}</b><span class="muted" style="font-size:12.5px">${tahunTeks(s.y)} · ${s.aws.map(a=>sh(a.nama)).join(' · ')||'Tiada anugerah sepadan'}</span></div><div class="tay-n"><b>${s.ps.length}</b><small>murid · ${s.rows} rekod</small></div>${(z=>`<button class="btn ghost sm" data-tz="${z}" ${TZIP||!s.ps.length?'disabled':''} title="Poster setiap murid bahagian ini, satu fail ZIP"><svg class="i"><use href="#i-dl"/></svg><span>${TZIP.z===z?TZIP.t:'Poster (ZIP)'}</span></button>`)(d.hari+'-'+j)}<button class="btn sm" data-th="${d.hari}" data-tj="${j}" ${s.ps.length?'':'disabled'}><svg class="i"><use href="#i-stage"/></svg>Tayang</button></div>`).join('')}</div>`).join('');
   $$('#v-tayang [data-th]').forEach(b=>b.onclick=()=>openTayang(b.dataset.th,+b.dataset.tj));
   $$('#v-tayang [data-sn]').forEach(b=>b.onclick=()=>senaraiHari(b.dataset.sn,b.dataset.f));
+  $$('#v-tayang [data-tz]').forEach(b=>b.onclick=()=>{
+    const [h,j]=b.dataset.tz.split('-'),s=tayangSec(TAYANG.find(x=>x.hari===h).secs[j]),nm=(s.sh||'B4 '+POSTER_STYLE[s.k].title).replace(/\s+/g,'-');
+    if(confirm(`Jana ${s.ps.length} poster untuk ${s.t} dalam satu fail ZIP?\nIni mungkin mengambil masa beberapa minit. Jangan tutup halaman ini.`))
+      downloadAllPosters(s.ps.map(p=>[p,s.k]),`#v-tayang [data-tz="${b.dataset.tz}"]`,`Poster-${hariInfo(h).tarikh}-${nm}.zip`)});
 }
 // Senarai penerima for the juru acara, in the same order as the posters: one row per pupil (each goes up once),
 // a ✓/✗ column per award that has penerima (Ketua Kelas shows the jawatan); Bahagian 4 is one row, one anugerah
@@ -2783,7 +2788,7 @@ async function downloadPoster(){
 // JPEG because 300 PNGs at ~3 MB each would not fit in the browser's memory
 async function downloadAllPosters(jobs,sel,zipName){
   const label=$(sel).querySelector('span').textContent;
-  const set=t=>{if(sel==='#msPoster')PZIP=t;if(sel.startsWith('#t6'))T6ZIP=t?{sel,t}:'';const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
+  const set=t=>{if(sel==='#msPoster')PZIP=t;if(sel.startsWith('#t6'))T6ZIP=t?{sel,t}:'';if(sel.startsWith('#v-tayang'))TZIP=t?{z:sel.match(/"(.+)"/)[1],t}:'';const b=$(sel);if(b){b.disabled=!!t;b.querySelector('span').textContent=t||label}};
   const clean=s=>String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'').trim(),files=[];
   try{
     for(const [i,[s,k]] of jobs.entries()){
